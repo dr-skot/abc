@@ -88,6 +88,20 @@ module ABC
   end
 
   class Pitch < MusicNode
+    def octave
+      note_letter.octave + octave_shift.value
+    end
+    def note
+      note_letter.text_value.upcase
+    end
+    # half steps above C
+    def height_in_octave
+      height % 12
+    end
+    # half steps above middle C
+    def height
+      12 * octave + "C D EF G A B".index(note) + (accidental.value || 0)
+    end
   end
 
   class Rest < MusicNode

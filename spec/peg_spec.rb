@@ -17,7 +17,6 @@ describe "abc-2.0-draft4 PEG" do
   def parse(abc)
     p = @parser.parse abc
     p.should_not be(nil), @parser.failure_reason
-    # p.clean
     p
   end
   
@@ -123,7 +122,7 @@ describe "abc-2.0-draft4 PEG" do
     end
   end
 
-  describe "pitch" do
+  describe "octave" do
 
     it "accepts notes in various octaves" do
       parse "ABC abc a,b'C,,D'' e,', f'', G,,,,,'''"
@@ -180,6 +179,37 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[3].pitch.accidental.value.should == -2
       p.tunes[0].items[4].pitch.accidental.value.should == 0
       p.tunes[0].items[5].pitch.accidental.value.should == nil
+    end
+  end
+
+  describe "pitch" do
+    it "knows note name" do
+      p = parse "C^Cd_e''F,',^^E'g'''__Ba,,,,b"
+      p.tunes[0].items[0].pitch.note.should == 'C'
+      p.tunes[0].items[1].pitch.note.should == 'C'
+      p.tunes[0].items[2].pitch.note.should == 'D'
+      p.tunes[0].items[3].pitch.note.should == 'E'
+      p.tunes[0].items[4].pitch.note.should == 'F'
+      p.tunes[0].items[5].pitch.note.should == 'E'
+      p.tunes[0].items[6].pitch.note.should == 'G'
+      p.tunes[0].items[7].pitch.note.should == 'B'
+      p.tunes[0].items[8].pitch.note.should == 'A'
+      p.tunes[0].items[9].pitch.note.should == 'B'
+    end
+    it "knows height in octave" do
+      p = parse "C^^B,d_e''EF,',^^E'g'''_a__B,,,,^ab"
+      0.upto 11 do |i|
+        p.tunes[0].items[i].pitch.height_in_octave.should == i
+      end
+    end
+    it "knows height" do
+      p = parse "C^^B,d_e''EF,',"
+      p.tunes[0].items[0].pitch.height.should == 0
+      p.tunes[0].items[1].pitch.height.should == -11
+      p.tunes[0].items[2].pitch.height.should == 14
+      p.tunes[0].items[3].pitch.height.should == 39
+      p.tunes[0].items[4].pitch.height.should == 4
+      p.tunes[0].items[5].pitch.height.should == -7
     end
   end
 

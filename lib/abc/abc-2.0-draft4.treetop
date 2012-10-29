@@ -70,7 +70,7 @@ grammar ABC do
   end
   
   rule tune_element do
-    tune_space / note_element / broken_rhythm / spacer / ignored_char
+    tune_space / note_element / broken_rhythm / spacer / bar_line / ignored_char
   end
 
   # "# $ * ; ? @
@@ -80,10 +80,10 @@ grammar ABC do
   # "Back quotes ` may be used freely between beamed notes to increase legibility. 
   #  They are ignored by computer programs."
   rule ignored_char do
-    "`" / "#" / "$" / "*" / "?" / "@"
+    "`" / "#" / "$" / "*" / "?" / "@" # TODO: issue warning?
   end
 
-  # need to keep track of this for the sake of beaming
+  # need to keep track of this to figure out beaming
   rule tune_space do
     space+ <TuneSpace>
   end
@@ -99,12 +99,7 @@ grammar ABC do
   end
 
   rule pitch do
-    accidental note_letter octave_shift <Pitch> {
-      def octave
-        shift = octave_shift.text_value
-        note_letter.octave + shift.count("'") - shift.count(",")
-      end
-    }
+    accidental note_letter octave_shift <Pitch>
   end
   
   # "The symbols '^', '=' and '_' are used (before a note) to notate respectively 
@@ -134,7 +129,11 @@ grammar ABC do
   # "Lower octaves are reached by using 2 commas, 3 commas and so on. 
   #  Higher octaves are written using 2 apostrophes, 3 apostrophes and so on."
   rule octave_shift do
-    ("'" / ",")*
+    ("'" / ",")* {
+      def value
+        text_value.count("'") - text_value.count(",")
+      end
+    }
   end
 
   rule rest do
@@ -181,6 +180,16 @@ grammar ABC do
 
   rule spacer do
     "y" <Spacer>
+  end
+
+
+  # BAR LINES
+
+  # "ABC parsers should be quite liberal in recognizing bar lines. In the wild, 
+  #  bar lines may have any shape, using a sequence of '|' (thin bar line), '[' or ']'
+  #  (thick bar line), and ':' (dots). Ex: '|[|', '[|:::'."
+  rule bar_line do
+    ("|" / "[" / "]" / ":")+
   end
 
   # BASICS
