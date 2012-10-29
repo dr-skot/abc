@@ -1,5 +1,5 @@
 require "abc/version"
 
-module Abc
+module ABC
   # Your code goes here...
 end
