@@ -94,14 +94,28 @@ describe "abc-2.0-draft4 PEG" do
       p = parse "K:Ebminor=e^c"
       p.tunes[0].key.extra_accidentals.should include 'E' => 0, 'C' => 1
     end
-=begin
-    it "delivers accidentals for key" do
+
+    it "delivers accidentals for major key" do
       p = parse "K:Eb"
       sig = p.tunes[0].key.signature
       sig.should include 'A' => -1, 'B' => -1, 'E' => -1
-      sig.should_not include 'C', 'D', 'E', 'F', 'G'
+      sig.should_not include 'C', 'D', 'F', 'G'
     end
-=end
+
+    it "delivers accidentals for key with mode" do
+      p = parse "K:A# Phr"
+      sig = p.tunes[0].key.signature
+      sig.should include 'C' => 1, 'D' => 1, 'E' => 1, 'F' => 1, 'G' => 1, 'A' => 1
+      sig.should_not include 'B'
+    end
+
+    it "delivers accidentals for key with extra accidentals" do
+      p = parse "K:F =b^C"
+      sig = p.tunes[0].key.signature
+      sig.should include 'C' => 1
+      sig.should_not include %w{D E F G A B}
+    end
+
   end
 
   describe "extended info fields" do

@@ -80,7 +80,11 @@ module ABC
   end
 
   # KEY
-  class Key < ABCNode
+  class KeyNode < ABCNode
+    def signature
+      @key ||= Key.new tonic, mode, extra_accidentals
+      @key.signature
+    end
   end
 
   # TUNE

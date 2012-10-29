@@ -50,7 +50,7 @@ grammar ABC do
   end
 
   rule key do
-    tonic:([A-G] [\#b]?) space* mode:[A-Za-z]* space* extras:key_accidental* <Key> {
+    tonic:([A-G] [\#b]?) space* mode:[A-Za-z]* space* extras:key_accidental* <KeyNode> {
       def tonic
         super.text_value if super
       end

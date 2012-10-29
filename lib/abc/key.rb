@@ -22,13 +22,13 @@ module ABC
     "Cb Abm Gbmix Dbdor Ebphr Fblyd Bbloc" => split_keys("C D E F G A B" => -1),
   )
 
-  class KeySignature
+  class Key
     attr_reader :tonic
     attr_reader :mode
     attr_reader :extra_accidentals
 
     def self.signature(tonic, mode="", extra_accidentals={})
-      KeySignature.new(tonic, mode, extra_accidentals).signature      
+      self.new(tonic, mode, extra_accidentals).signature      
     end
 
     def initialize(tonic, mode="", extra_accidentals={})
@@ -37,11 +37,18 @@ module ABC
       @extra_accidentals = extra_accidentals
     end
 
+    def base_signature
+      if !@base_signature
+        mode = @mode.downcase[0,3]
+        mode = "" if mode == "maj" || mode == "ion"
+        mode = "m" if mode == "min" || mode == "aeo"
+        @base_signature = SIGNATURES["#{tonic}#{mode}"] || {}
+      end
+      @base_signature
+    end
+    
     def signature
-      mode = @mode.downcase[0,3]
-      mode = "" if mode == "maj" || mode == "ion"
-      mode = "m" if mode == "min" || mode == "aeo"
-      SIGNATURES["#{tonic}#{mode}"] || {}
+      base_signature.merge(extra_accidentals).delete_if { |k,v| v == 0 }
     end
     
   end
