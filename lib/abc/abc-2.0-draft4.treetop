@@ -101,9 +101,8 @@ grammar ABC do
   rule pitch do
     accidental note_letter octave_shift <Pitch> {
       def octave
-        x = octave_shift.text_value.count("'") - octave_shift.text_value.count(",")
-        x += 1 if letter.text_value =~ /a-g/
-        x
+        shift = octave_shift.text_value
+        note_letter.octave + shift.count("'") - shift.count(",")
       end
     }
   end
@@ -111,21 +110,47 @@ grammar ABC do
   # "The symbols '^', '=' and '_' are used (before a note) to notate respectively 
   #  a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
   rule accidental do
-    ("^^" / "^" / "__" / "_" / "=")? '' <ABCNode>
+    ("^^" / "^" / "__" / "_" / "=")? '' {
+      def value
+        { "^^" => 2, "^" => 1, "=" => 0, "_" => -1, "__" => -2 }[text_value]
+      end
+    }
   end
 
   rule note_letter do
-    [A-Ga-g] <ABCNode>
+    [A-Ga-g] {
+      def octave
+        if text_value =~ /[AB]/
+          -1
+        elsif text_value =~ /[c-g]/
+          1
+        else
+          0
+        end
+      end
+    }
   end
 
   # "Lower octaves are reached by using 2 commas, 3 commas and so on. 
   #  Higher octaves are written using 2 apostrophes, 3 apostrophes and so on."
   rule octave_shift do
-    ("'" / ",")* '' <ABCNode>
+    ("'" / ",")*
   end
 
   rule rest do
-    ([xz] note_length / "Z" digit+) '' <Rest>
+    note_rest / measure_rest
+  end
+
+  rule note_rest do
+    [xz] note_length <Rest>
+  end
+  
+  rule measure_rest do
+    "Z" measure_count:digit+ <Rest> {
+      def measure_count
+        super.text_value.to_i
+      end
+    }
   end
   
   rule note_length do

@@ -123,30 +123,92 @@ describe "abc-2.0-draft4 PEG" do
     end
   end
 
-  it "accepts notes in various octaves" do
-    parse "ABC abc a,b'C,,D'' e,', f'', G,,,,,'''"
+  describe "pitch" do
+
+    it "accepts notes in various octaves" do
+      parse "ABC abc a,b'C,,D'' e,', f'', G,,,,,'''"
+    end
+
+    it "correctly calculates the octave for note letters" do
+      p = parse "CcAg"
+      p.tunes[0].items[0].pitch.octave.should == 0
+      p.tunes[0].items[1].pitch.octave.should == 1
+      p.tunes[0].items[2].pitch.octave.should == -1
+      p.tunes[0].items[3].pitch.octave.should == 1
+    end
+    
+    it "shifts the octave up with apostrophes" do
+      p = parse "C'c''"
+      p.tunes[0].items[0].pitch.octave.should == 1
+      p.tunes[0].items[1].pitch.octave.should == 3
+    end
+
+    it "shifts the octave down with commas" do
+      p = parse "C,,,,c,,"
+      p.tunes[0].items[0].pitch.octave.should == -4
+      p.tunes[0].items[1].pitch.octave.should == -1
+    end
+
+    it "handles combinations of commas and apostrophes" do
+      p = parse "C,',',,c,,'''',"
+      p.tunes[0].items[0].pitch.octave.should == -2
+      p.tunes[0].items[1].pitch.octave.should == 2
+    end
+
   end
 
-  it "accepts notes with accidentals" do
-    parse "^A ^^a2 _b/ __C =D"
+  describe "accidentals" do
+    
+    it "accepts notes with accidentals" do
+      parse "^A ^^a2 _b/ __C =D"
+    end
+
+    it "does not accept bizarro accidentals" do
+      fail_to_parse "^_A"
+      fail_to_parse "_^A"
+      fail_to_parse "^^^A"
+      fail_to_parse "=^A"
+      fail_to_parse "___A"
+      fail_to_parse "=_A"
+    end
+
+    it "values sharps and flats accurately" do
+      p = parse "^A^^a2_b/__C=DF"
+      p.tunes[0].items[0].pitch.accidental.value.should == 1
+      p.tunes[0].items[1].pitch.accidental.value.should == 2
+      p.tunes[0].items[2].pitch.accidental.value.should == -1
+      p.tunes[0].items[3].pitch.accidental.value.should == -2
+      p.tunes[0].items[4].pitch.accidental.value.should == 0
+      p.tunes[0].items[5].pitch.accidental.value.should == nil
+    end
   end
 
-  it "does not accept bizarro accidentals" do
-    fail_to_parse "^_A"
-    fail_to_parse "_^A"
-    fail_to_parse "^^^A"
-    fail_to_parse "=^A"
-    fail_to_parse "___A"
-    fail_to_parse "=_A"
-  end
+  describe "rests" do
 
-  it "accepts rests" do
-    parse "z3/2 x// x2 Z4"
-  end
+    it "accepts rests" do
+      parse "z3/2 x// x2 Z4"
+    end
+    
+    it "does not accept wierdo rest lengths" do
+      fail_to_parse "Z3/2"
+      fail_to_parse "z3//4"
+    end
 
-  it "does not accept wierdo rest lengths" do
-    fail_to_parse "Z3/2"
-    fail_to_parse "z3//4"
+    it "understands the note length of rests" do
+      p = parse "z3/2x//z4"
+      p.tunes[0].items[0].note_length.numerator.should == 3
+      p.tunes[0].items[0].note_length.denominator.should == 2
+      p.tunes[0].items[1].note_length.numerator.should == 1
+      p.tunes[0].items[1].note_length.denominator.should == 4
+      p.tunes[0].items[2].note_length.numerator.should == 4
+      p.tunes[0].items[2].note_length.denominator.should == 1
+    end
+
+    it "understands measure-count rests" do
+      p = parse "Z4"
+      p.tunes[0].items[0].measure_count.should == 4
+    end
+
   end
 
   it "accepts broken rhythm markers" do
