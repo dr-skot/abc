@@ -8,6 +8,11 @@ Gem::Specification.new do |gem|
   gem.summary       = %q{working with ABC music notation}
   gem.homepage      = ""
 
+  gem.add_dependency "treetop"
+  gem.add_dependency "polyglot"
+
+  gem.add_development_dependency "rspec"
+
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})

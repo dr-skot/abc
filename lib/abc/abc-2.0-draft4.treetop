@@ -1,0 +1,215 @@
+# based on
+# http://abc.sourceforge.net/standard/abc2-draft.html
+
+# TODO free text
+grammar ABC do
+  
+  # FILE
+  
+  # "An ABC file consists of one or more tune transcriptions."
+  # "The file may optionally start with a file header."
+  # ** We'll loosen this a little and allow 0 or more tunes, ie an empty tunebook is legal
+  rule file do
+    file_header? tune* <Tunebook> 
+  end
+  
+  # "The file header is a block of consecutive field lines, finished by a blank line."
+  # "Extended information fields...may appear in the file header"
+  rule file_header do
+    (info_field / file_field)+ end_of_section <FileHeader>
+  end
+  
+  # FIELDS
+
+  rule file_field do
+    [ABCDFGHIMmNORrSTUZ] ':' (!line_ender .)+ line_ender <Field>
+  end
+
+  rule header_field do
+    [ABCDFGHIKLMmNORQRrSTUVWXZ] ':' (!line_ender .)+ line_ender <Field>
+  end
+
+  rule body_field do
+    [IKLMmNRQRrTUVWw] ':' (!line_ender .)+ line_ender <Field>
+  end
+
+  # "3.3 Extended information fields"
+  # "They start with the characters %%, possibly followed by spaces, after which the name
+  #  of the field follows, followed by a space and the contents of the field."
+  rule info_field do
+    '%%' space* info_field_name space+ (!end_of_line .)+ end_of_line <InfoField>
+  end
+
+  # not specified in the draft, but seems to be alphanumeric plus hyphen
+  rule info_field_name do
+    # "abc-copyright" / "abc-version" / "abc-creator" / "abc-charset" / "abc-include" / "abc-edited-by" / "score"
+    [A-Za-z\-_]+
+  end
+
+  # TUNE
+  
+  # "It is legal to write a tune without a body."
+  # ** We'll also allow raw music with no header
+  rule tune do
+    (tune_header tune_body? / tune_body) '' <Tune>
+  end
+
+  # "Extended information fields...may appear in the tune header"
+  rule tune_header do
+    (info_field / header_field)+ <TuneHeader>
+  end
+
+  # TODO allow comment lines
+  # TODO tune fields on their own line or in square brackets
+  rule tune_body do
+    tune_line+ end_of_section
+  end
+
+  rule tune_line do
+    tune_element+ line_ender
+  end
+  
+  rule tune_element do
+    tune_space / note_element / broken_rhythm / spacer / ignored_char
+  end
+
+  # "# $ * ; ? @
+  #  To ensure forward compatibility, current software should ignore these characters
+  #  when they appear inside or between note groups, possibly giving a warning."
+  #
+  # "Back quotes ` may be used freely between beamed notes to increase legibility. 
+  #  They are ignored by computer programs."
+  rule ignored_char do
+    "`" / "#" / "$" / "*" / "?" / "@"
+  end
+
+  # need to keep track of this for the sake of beaming
+  rule tune_space do
+    space+ <TuneSpace>
+  end
+  
+  # NOTES AND RESTS
+
+  rule note_element do
+    (note / rest)
+  end
+
+  rule note do
+    pitch note_length <Note>
+  end
+
+  rule pitch do
+    accidental note_letter octave_shift <Pitch> {
+      def octave
+        x = octave_shift.text_value.count("'") - octave_shift.text_value.count(",")
+        x += 1 if letter.text_value =~ /a-g/
+        x
+      end
+    }
+  end
+  
+  # "The symbols '^', '=' and '_' are used (before a note) to notate respectively 
+  #  a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
+  rule accidental do
+    ("^^" / "^" / "__" / "_" / "=")? '' <ABCNode>
+  end
+
+  rule note_letter do
+    [A-Ga-g] <ABCNode>
+  end
+
+  # "Lower octaves are reached by using 2 commas, 3 commas and so on. 
+  #  Higher octaves are written using 2 apostrophes, 3 apostrophes and so on."
+  rule octave_shift do
+    ("'" / ",")* '' <ABCNode>
+  end
+
+  rule rest do
+    ([xz] note_length / "Z" digit+) '' <Rest>
+  end
+  
+  rule note_length do
+    #numerator:(digit*) denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
+    numerator fractional <NoteLength> {
+      def numerator
+        if !super || super.text_value == ''
+          1
+        else
+          super.text_value.to_i
+        end
+      end
+      def denominator
+        if !fractional           # no denominator at all: divide by 1
+          1
+        elsif !fractional.denominator # no numeral, only slashes: use 2 ** slash count
+          2 ** fractional.text_value.length
+        else                # numeral: divide by it
+          fractional.denominator.text_value.to_i
+        end  
+      end
+    }  
+  end
+
+  rule numerator do
+    digit* <ABCNode>
+  end
+  rule fractional do
+    ('/' denominator / '/'+)? <ABCNode>
+  end
+  rule denominator do
+    digit+ <ABCNode>
+  end
+
+  rule broken_rhythm do
+    ('>'+ / '<'+) &note <BrokenRhythm>
+  end
+
+  rule spacer do
+    "y" <Spacer>
+  end
+
+  # BASICS
+
+  # TODO does this work? or does it only do the lookahead on 1st char?
+  rule abc_string do
+    !line_ender
+    .* <ABCString>
+  end
+
+  rule blank_line do
+    space+ line_feed
+  end
+
+  rule line_ender do
+    space* comment? end_of_line
+  end
+
+  rule space do
+    !end_of_line [\s]
+  end
+  
+  rule comment do
+    '%' (!end_of_line .)+
+  end
+
+  rule end_of_line do
+    line_feed / end_of_file
+  end
+
+  rule line_feed do
+    ("\r"? "\n")
+  end
+
+  rule end_of_section do
+    blank_line / end_of_file
+  end
+
+  rule end_of_file do
+    !.
+  end
+
+  rule digit do
+    [0-9]
+  end
+
+end
