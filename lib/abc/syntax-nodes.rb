@@ -1,9 +1,33 @@
 require 'treetop'
 
 class Treetop::Runtime::SyntaxNode
-  def keep_children?
-    false
+
+  # returns the ABCNodes that are direct descendants of this node
+  # (direct descendant meaning there may be intervening SyntaxNodes, but they are not ABCNodes)
+  # or select from among these children by passing a subclass of ABCNode
+  def children(type=nil)
+    if type
+      children.select { |el| el.is_a? type }
+    else
+      if !elements
+        []
+      else
+        elements.map do |el|
+          if el.is_a? ABC::ABCNode
+            el
+          else
+            el.children
+          end
+        end.flatten
+      end
+    end
   end
+  
+  # returns the first child (of type, optionally) or nil if no children
+  def child(type=ABC::ABCNode)
+    c = children(type)[0]
+  end
+
 end
 
 module ABC
@@ -16,16 +40,12 @@ module ABC
       children = []
       if root.elements
         children = root.elements.reduce([]) do |result, node| 
-          if root.keep_children?
-            result << node
-          else
-            nodes = clean_tree node
-            result += nodes if nodes
-          end
+          nodes = clean_tree node
+          result += nodes if nodes
           result
         end
       end
-
+      
       if root.class.name == "Treetop::Runtime::SyntaxNode"
         # remove generic class, promoting children if any
         if children.size == 0
@@ -46,17 +66,9 @@ module ABC
     def clean
       ABCNode.clean_tree(self)
     end
-
-    def children(type)
-      elements.select { |e| e.is_a? type } if elements
-    end
-    def child(type)
-      c = children(type)
-      c[0] if c && c.count > 0
-    end
-
+    
   end
-
+  
   class Tunebook < ABCNode
     def header
       child(FileHeader)
@@ -65,7 +77,7 @@ module ABC
       children(Tune)
     end
   end
-
+  
   class Header < ABCNode
     def fields
       children(Field)
@@ -90,31 +102,31 @@ module ABC
       child(TuneHeader)
     end
     def items
-      children(ABCNode).select { |e| !e.is_a?(Header) } if elements 
+      children(MusicNode)
     end
   end
 
   class TuneHeader < Header
   end
 
-  class TuneSpace < ABCNode
+  class MusicNode < ABCNode
+  end
+  
+  class TuneSpace < MusicNode
   end
 
   # NOTES AND RESTS
   
-  class NoteElement < ABCNode
-  end
-  
-  class Note < NoteElement
+  class Note < MusicNode
   end
 
-  class Pitch < NoteElement
+  class Pitch < MusicNode
   end
 
-  class Rest < NoteElement
+  class Rest < MusicNode
   end
 
-  class NoteLength < ABCNode
+  class NoteLength < MusicNode
 =begin
     attr_reader :numerator
     attr_reader :denominator
@@ -134,10 +146,10 @@ module ABC
     end
   end
 
-  class BrokenRhythm < ABCNode
+  class BrokenRhythm < MusicNode
   end
 
-  class Spacer < ABCNode
+  class Spacer < MusicNode
   end
 
 
