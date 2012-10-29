@@ -22,15 +22,15 @@ grammar ABC do
   # FIELDS
 
   rule file_field do
-    [ABCDFGHIMmNORrSTUZ] ':' (!line_ender .)+ line_ender <Field>
+    label:[ABCDFGHIMmNORrSTUZ] ':' value:(!line_ender .)+ line_ender <Field>
   end
 
   rule header_field do
-    [ABCDFGHIKLMmNORQRrSTUVWXZ] ':' (!line_ender .)+ line_ender <Field>
+    label:[ABCDFGHIKLMmNORQRrSTUVWXZ] ':' value:(!line_ender .)+ line_ender <Field>
   end
 
   rule body_field do
-    [IKLMmNRQRrTUVWw] ':' (!line_ender .)+ line_ender <Field>
+    label:[IKLMmNRQRrTUVWw] ':' value:(!line_ender .)+ line_ender <Field>
   end
 
   # "3.3 Extended information fields"
@@ -51,7 +51,7 @@ grammar ABC do
   # "It is legal to write a tune without a body."
   # ** We'll also allow raw music with no header
   rule tune do
-    (tune_header tune_body? / tune_body) '' <Tune>
+    (tune_header tune_body? / tune_body) end_of_section <Tune>
   end
 
   # "Extended information fields...may appear in the tune header"
@@ -194,14 +194,12 @@ grammar ABC do
 
   # BASICS
 
-  # TODO does this work? or does it only do the lookahead on 1st char?
   rule abc_string do
-    !line_ender
-    .* <ABCString>
+    (!line_ender .)* <ABCString>
   end
 
   rule blank_line do
-    space+ line_feed
+    space* end_of_line
   end
 
   rule line_ender do
@@ -225,7 +223,7 @@ grammar ABC do
   end
 
   rule end_of_section do
-    blank_line / end_of_file
+    blank_line
   end
 
   rule end_of_file do

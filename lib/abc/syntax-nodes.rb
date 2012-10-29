@@ -35,11 +35,17 @@ module ABC
   # base class for ABC syntax nodes
   class ABCNode < Treetop::Runtime::SyntaxNode
   end
-  
-  class Tunebook < ABCNode
+
+  class HeaderHaver < ABCNode
     def header
-      child(FileHeader)
+      child(Header)
     end
+    def title
+      header.values(/T/).join("\n")
+    end
+  end
+  
+  class Tunebook < HeaderHaver
     def tunes
       children(Tune)
     end
@@ -48,6 +54,10 @@ module ABC
   class Header < ABCNode
     def fields
       children(Field)
+    end
+    # returns the values for all headers whose labels match regex
+    def values(regex)
+      fields.select { |f| f.label.text_value =~ regex }.map { |f| f.value.text_value }
     end
   end
 
@@ -64,10 +74,7 @@ module ABC
 
   # TUNE
 
-  class Tune < ABCNode
-    def header
-      child(TuneHeader)
-    end
+  class Tune < HeaderHaver
     def items
       children(MusicNode)
     end
@@ -95,12 +102,15 @@ module ABC
       note_letter.text_value.upcase
     end
     # half steps above C
-    def height_in_octave
-      height % 12
+    def height_in_octave(key={})
+      height(key) % 12
     end
     # half steps above middle C
-    def height
-      12 * octave + "C D EF G A B".index(note) + (accidental.value || 0)
+    # key is a hash that gives the sharps and flats of the key signature
+    #   eg 'C'=>1 if C is sharp, 'E'=>-1 if E is flat
+    def height(key={})
+      key[note] = accidental.value if accidental.value
+      12 * octave + "C D EF G A B".index(note) + (key[note] || 0)
     end
   end
 
