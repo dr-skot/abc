@@ -22,15 +22,57 @@ grammar ABC do
   # FIELDS
 
   rule file_field do
-    label:[ABCDFGHIMmNORrSTUZ] ':' value:(!line_ender .)+ line_ender <Field>
+    other_file_field
   end
 
   rule header_field do
-    label:[ABCDFGHIKLMmNORQRrSTUVWXZ] ':' value:(!line_ender .)+ line_ender <Field>
+    key_field / other_header_field
+  end
+  
+  rule body_field do
+    key_field / other_body_field
+  end
+  
+  rule other_file_field do
+    label:[ABCDFGHIMmNORrSTUZ] ':' value:(!line_ender .)+ line_ender <Field>
   end
 
-  rule body_field do
-    label:[IKLMmNRQRrTUVWw] ':' value:(!line_ender .)+ line_ender <Field>
+  rule other_header_field do
+    label:[ABCDFGHILMmNORQRrSTUVWXZ] ':' value:(!line_ender .)+ line_ender <Field>
+  end
+
+  rule other_body_field do
+    label:[ILMmNRQRrTUVWw] ':' value:(!line_ender .)+ line_ender <Field>
+  end
+
+  rule key_field do
+    label:'K' ':' value:key line_ender <Field>
+  end
+
+  rule key do
+    tonic:([A-G] [\#b]?) space* mode:[A-Za-z]* space* extras:key_accidental* <Key> {
+      def tonic
+        super.text_value if super
+      end
+      def mode
+        super.text_value if super
+      end
+      def extra_accidentals
+        result = {}
+        extras.elements.each do |acc|
+          result[acc.note_letter] = acc.accidental.value
+        end
+        result
+      end
+    }
+  end
+
+  rule key_accidental do
+    accidental note_letter space* {
+      def note_letter
+        super.text_value.upcase
+      end
+    }
   end
 
   # "3.3 Extended information fields"

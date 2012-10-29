@@ -43,6 +43,9 @@ module ABC
     def title
       header.values(/T/).join("\n")
     end
+    def key
+      header.fields(/K/)[-1].value
+    end
   end
   
   class Tunebook < HeaderHaver
@@ -52,12 +55,16 @@ module ABC
   end
   
   class Header < ABCNode
-    def fields
-      children(Field)
+    def fields(regex=nil)
+      if regex
+        children(Field).select { |f| f.label.text_value =~ regex }
+      else
+        children(Field)
+      end
     end
     # returns the values for all headers whose labels match regex
     def values(regex)
-      fields.select { |f| f.label.text_value =~ regex }.map { |f| f.value.text_value }
+      fields(regex).map { |f| f.value.text_value }
     end
   end
 
@@ -70,6 +77,10 @@ module ABC
   end
 
   class InfoField < Field
+  end
+
+  # KEY
+  class Key < ABCNode
   end
 
   # TUNE

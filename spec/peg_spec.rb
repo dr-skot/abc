@@ -79,6 +79,31 @@ describe "abc-2.0-draft4 PEG" do
     end
   end
 
+  describe "key" do
+    it "parses the tonic" do
+      p = parse "K:Ebminor=e^c"
+      p.tunes[0].key.tonic.should == "Eb"
+    end
+    it "parses the mode" do
+      p = parse "K:Ebminor=e^c"
+      p.tunes[0].key.mode.should == "minor"
+      p = parse "K:A Mixolydian"
+      p.tunes[0].key.mode.should == "Mixolydian"
+    end
+    it "parses the extra accidentals" do
+      p = parse "K:Ebminor=e^c"
+      p.tunes[0].key.extra_accidentals.should include 'E' => 0, 'C' => 1
+    end
+=begin
+    it "delivers accidentals for key" do
+      p = parse "K:Eb"
+      sig = p.tunes[0].key.signature
+      sig.should include 'A' => -1, 'B' => -1, 'E' => -1
+      sig.should_not include 'C', 'D', 'E', 'F', 'G'
+    end
+=end
+  end
+
   describe "extended info fields" do
 
     it "recognizes an info field" do
