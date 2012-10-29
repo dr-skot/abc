@@ -104,7 +104,7 @@ grammar ABC do
   # TODO allow comment lines
   # TODO tune fields on their own line or in square brackets
   rule tune_body do
-    tune_line+ end_of_section
+    tune_line+
   end
 
   rule tune_line do
@@ -265,7 +265,7 @@ grammar ABC do
   end
 
   rule end_of_section do
-    blank_line
+    blank_line (!end_of_file blank_line)*
   end
 
   rule end_of_file do

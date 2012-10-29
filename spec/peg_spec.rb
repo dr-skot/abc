@@ -17,6 +17,7 @@ describe "abc-2.0-draft4 PEG" do
   def parse(abc)
     p = @parser.parse abc
     p.should_not be(nil), @parser.failure_reason
+    # p.apply_key_signatures
     p
   end
   
@@ -69,6 +70,17 @@ describe "abc-2.0-draft4 PEG" do
     p = parse "X:1\n\nX:2"
     p.tunes.count.should == 2
   end
+
+  it "supports multiple tunes with music" do
+    p = parse "X:1\nABC\n\nX:2\nDEF"
+    p.tunes.count.should == 2
+  end
+
+  it "allows mulitple blank lines between tunes" do
+    p = parse "X:1\nABC\n\n\n\nX:2\nDEF"
+    p.tunes.count.should == 2
+  end
+
 
   describe "fields" do
     it "parses title fields" do
@@ -280,6 +292,7 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[4].pitch.height.should == 4
       p.tunes[0].items[5].pitch.height.should == -7
     end
+
     it "knows height given a key signature" do
       p = parse "CD=DEF^FG_G"
       key = { 'C'=>1, 'D'=>1, 'F'=>1, 'G'=>1 } # E maj
@@ -302,38 +315,43 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[6].pitch.height(key).should == 3
       p.tunes[0].items[7].pitch.height(key).should == 3
     end
-    it "alters the signature when you call height on an accidental" do
-      # (because an accidental on a note persists to the end of the measure)"
-      p = parse "A=AA^AAC_CC"
-      key = { 'A'=>-1, 'B'=>-1, 'E'=>-1 } # Eb maj
-      p.tunes[0].items[0].pitch.height(key).should == -4
-      p.tunes[0].items[1].pitch.height(key).should == -3
-      p.tunes[0].items[2].pitch.height(key).should == -3
-      p.tunes[0].items[3].pitch.height(key).should == -2
-      p.tunes[0].items[4].pitch.height(key).should == -2
-      p.tunes[0].items[5].pitch.height(key).should == 0
-      p.tunes[0].items[6].pitch.height(key).should == -1
-      p.tunes[0].items[7].pitch.height(key).should == -1
+
+  end
+
+  describe "key signatures" do
+
+    it "can apply the tune's key signature to a tune" do
+      p = parse "K:F\nB"
+      p.tunes[0].items[0].pitch.height.should == -1
+      p.tunes[0].apply_key_signatures
+      p.tunes[0].items[0].pitch.height.should == -2
     end
-=begin
-    it "applies the key signature from the tune header" do
-      p = parse "K:Eb\nA=A^AAC_CC"
+
+    it "retains accidentals within a measure when applying key signature" do
+      p = parse "K:F\nB=BB"
+      p.tunes[0].apply_key_signatures
+      p.tunes[0].items[0].pitch.height.should == -2
+      p.tunes[0].items[1].pitch.height.should == -1
+      p.tunes[0].items[2].pitch.height.should == -1
+    end
+
+    it "can apply key signatures to all tunes in tunebook" do
+      p = parse "K:Eb\nA=A^AA\n\nK:F\nB"
+      p.apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -4
       p.tunes[0].items[1].pitch.height.should == -3
-      p.tunes[0].items[2].pitch.height.should == -3
+      p.tunes[0].items[2].pitch.height.should == -2
       p.tunes[0].items[3].pitch.height.should == -2
-      p.tunes[0].items[4].pitch.height.should == -2
-      p.tunes[0].items[5].pitch.height.should == 0
-      p.tunes[0].items[6].pitch.height.should == -1
-      p.tunes[0].items[7].pitch.height.should == -1
+      p.tunes[1].items[0].pitch.height.should == -2
     end
 
     it "does not apply key signature from previous tune" do
       p = parse "X:1\nK:Eb\nA\n\n\nX:2\nA"
+      p.apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -4
       p.tunes[1].items[0].pitch.height.should == -3
     end
-=end
+
   end
 
   describe "rests" do

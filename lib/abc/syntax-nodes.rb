@@ -2,6 +2,8 @@ require 'treetop'
 
 class Treetop::Runtime::SyntaxNode
 
+  # TODO mother, descendants, left_sister, right_sister
+
   # returns the ABCNodes that are direct descendants of this node
   # (direct descendant meaning there may be intervening SyntaxNodes, but they are not ABCNodes)
   # or select from among these children by passing a subclass of ABCNode
@@ -36,7 +38,7 @@ module ABC
   class ABCNode < Treetop::Runtime::SyntaxNode
   end
 
-  class HeaderHaver < ABCNode
+  class NodeWithHeader < ABCNode
     def header
       child(Header)
     end
@@ -44,13 +46,24 @@ module ABC
       header.values(/T/).join("\n")
     end
     def key
-      header.fields(/K/)[-1].value
+      if !@key
+        field = header.fields(/K/)[-1]
+        if field
+          @key = field.value
+        else
+          @key = DefaultKeyNode.new
+        end
+      end
+      @key
     end
   end
   
-  class Tunebook < HeaderHaver
+  class Tunebook < NodeWithHeader
     def tunes
       children(Tune)
+    end
+    def apply_key_signatures
+      tunes.each { |tune| tune.apply_key_signatures }
     end
   end
   
@@ -87,11 +100,34 @@ module ABC
     end
   end
 
+  class DefaultKeyNode < KeyNode
+    attr_reader :tonic, :mode, :extra_accidentals
+    def initialize
+      @tonic = "C"
+      @mode = ""
+      @extra_accidentals = {}
+    end
+  end
+
   # TUNE
 
-  class Tune < HeaderHaver
+  class Tune < NodeWithHeader
     def items
       children(MusicNode)
+    end
+    def apply_key_signatures
+      base_signature = key.signature.dup
+      signature = base_signature
+      items.each do |item|
+        if item.is_a? Note
+          item.pitch.signature = signature
+          # note's accidental may have altered the signature so ask for it back
+          signature = item.pitch.signature
+        elsif item.is_a? BarLine
+          # reset to base signature at end of each measure
+          signature = base_signature
+        end
+      end
     end
   end
 
@@ -116,16 +152,28 @@ module ABC
     def note
       note_letter.text_value.upcase
     end
+
+    def signature
+      @signature ||= {}
+    end
+    # duplicates the signature if the note's accidental changes it
+    def signature=(sig)
+      if accidental.value && sig[note] != accidental.value
+        @signature = sig.dup
+        @signature[note] = accidental.value
+      else
+        @signature = sig
+      end
+      @signature
+    end
+
     # half steps above C
-    def height_in_octave(key={})
-      height(key) % 12
+    def height_in_octave(sig=signature)
+      height(sig) % 12
     end
     # half steps above middle C
-    # key is a hash that gives the sharps and flats of the key signature
-    #   eg 'C'=>1 if C is sharp, 'E'=>-1 if E is flat
-    def height(key={})
-      key[note] = accidental.value if accidental.value
-      12 * octave + "C D EF G A B".index(note) + (key[note] || 0)
+    def height(sig=signature)
+      12 * octave + "C D EF G A B".index(note) + (accidental.value || sig[note] || 0)
     end
   end
 

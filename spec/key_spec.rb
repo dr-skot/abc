@@ -6,8 +6,8 @@ include ABC
 
 describe "Key" do
   it "has a signatures constant" do
-    SIGNATURES.should include "Em"
-    SIGNATURES["Em"].should include "F" => 1
+    Key::SIGNATURES.should include "Em"
+    Key::SIGNATURES["Em"].should include "F" => 1
   end
 
   it "delivers no accidentals when appropriate" do
