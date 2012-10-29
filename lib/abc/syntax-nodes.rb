@@ -34,39 +34,6 @@ module ABC
 
   # base class for ABC syntax nodes
   class ABCNode < Treetop::Runtime::SyntaxNode
-    def self.clean_tree(root)
-      return nil unless root
-      # first get the clean children
-      children = []
-      if root.elements
-        children = root.elements.reduce([]) do |result, node| 
-          nodes = clean_tree node
-          result += nodes if nodes
-          result
-        end
-      end
-      
-      if root.class.name == "Treetop::Runtime::SyntaxNode"
-        # remove generic class, promoting children if any
-        if children.size == 0
-          nil
-        else
-          children
-        end
-      else
-        # use clean children as elements
-        if root.elements
-          root.elements.clear
-          root.elements.push *children
-        end
-        [root]
-      end
-    end
-
-    def clean
-      ABCNode.clean_tree(self)
-    end
-    
   end
   
   class Tunebook < ABCNode
@@ -127,20 +94,6 @@ module ABC
   end
 
   class NoteLength < MusicNode
-=begin
-    attr_reader :numerator
-    attr_reader :denominator
-    def initialize(input, interval=(0..input.length-1), elements = nil)
-      super(input, interval, elements)
-      @numerator = 1
-      @denominator = 1
-      m = text_value.match(/(\d*)(\/*)(\d*)/)
-      num, slashes, den = m[1], m[2], m[3]
-      @numerator = num.to_i if num != ""
-      @denominator = den.to_i if den != ""
-      @denominator *= 2**slashes.length if slashes.length > 0 && den == ""
-    end
-=end
     def multiplier
       1.0 * self.numerator / self.denominator
     end

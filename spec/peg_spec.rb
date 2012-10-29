@@ -17,7 +17,7 @@ describe "abc-2.0-draft4 PEG" do
   def parse(abc)
     p = @parser.parse abc
     p.should_not be(nil), @parser.failure_reason
-    p.clean
+    # p.clean
     p
   end
   
@@ -99,10 +99,22 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[0].note_length.denominator.should == 1
     end
 
-    it "correctly reads a simple note length multiplier" do
+    it "correctly reads a note length integer" do
       p = parse "a3"
       p.tunes[0].items[0].note_length.numerator.should == 3
       p.tunes[0].items[0].note_length.denominator.should == 1
+    end
+
+    it "correctly reads a note length fraction" do
+      p = parse "a10/2"
+      p.tunes[0].items[0].note_length.numerator.should == 10
+      p.tunes[0].items[0].note_length.denominator.should == 2
+    end
+
+    it "correctly interprets note length slashes" do
+      p = parse "a///"
+      p.tunes[0].items[0].note_length.numerator.should == 1
+      p.tunes[0].items[0].note_length.denominator.should == 8
     end
 
     it "does not accept weirdo note lengths" do

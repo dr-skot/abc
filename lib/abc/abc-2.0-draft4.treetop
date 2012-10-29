@@ -129,36 +129,26 @@ grammar ABC do
   end
   
   rule note_length do
-    #numerator:(digit*) denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
-    numerator fractional <NoteLength> {
+    numerator:digit* denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
       def numerator
-        if !super || super.text_value == ''
+        if !super || super.empty?
           1
         else
           super.text_value.to_i
         end
       end
       def denominator
-        if !fractional           # no denominator at all: divide by 1
+        if !super || super.empty?         # no denominator: use 1
           1
-        elsif !fractional.denominator # no numeral, only slashes: use 2 ** slash count
-          2 ** fractional.text_value.length
-        else                # numeral: divide by it
-          fractional.denominator.text_value.to_i
+        elsif !super.respond_to? :digits  # no numeral, only slashes: use 2 ** slash count
+          2 ** super.text_value.length
+        else                              # numeral: use it
+          super.digits.text_value.to_i
         end  
       end
     }  
   end
 
-  rule numerator do
-    digit* <ABCNode>
-  end
-  rule fractional do
-    ('/' denominator / '/'+)? <ABCNode>
-  end
-  rule denominator do
-    digit+ <ABCNode>
-  end
 
   rule broken_rhythm do
     ('>'+ / '<'+) &note <BrokenRhythm>
