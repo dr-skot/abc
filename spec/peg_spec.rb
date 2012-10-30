@@ -40,7 +40,7 @@ describe "abc-2.0-draft4 PEG" do
     it "accepts a file header field" do
       p = parse "A:Beethoven\n"
       p.header.fields.count.should == 1
-      p.header.fields[0].text_value.should == "A:Beethoven\n"
+      p.header.fields[0].text_value.should == "A:Beethoven"
     end
     
     it "accepts a single tune field" do
@@ -53,7 +53,7 @@ describe "abc-2.0-draft4 PEG" do
     
     it "separates fields" do
       p = parse "X:1\nT:Love Me Do"
-      p.tunes[0].header.fields[0].text_value.should == "X:1\n"
+      p.tunes[0].header.fields[0].text_value.should == "X:1"
       p.tunes[0].header.fields[1].text_value.should == "T:Love Me Do"
     end
     
@@ -62,6 +62,10 @@ describe "abc-2.0-draft4 PEG" do
       p.header.should_not == nil
       p.tunes.count.should == 1
       p.tunes[0].header.should_not == nil
+    end
+    
+    it "supports inline fields in the tune body" do
+      p = parse "X:1\nK:C\nabc[K:A]abc"
     end
 
   end
@@ -354,6 +358,20 @@ describe "abc-2.0-draft4 PEG" do
 
     it "allows K:none" do
       parse "K:none"
+    end
+
+    it "changes key signature when inline K: field found in tune body" do
+      p = parse "X:1\nK:C\nC[K:A]C"
+      p.apply_key_signatures
+      p.tunes[0].items[0].pitch.height.should == 0
+      p.tunes[0].items[2].pitch.height.should == 1
+    end
+
+    it "changes key signature when standalone K: field found in tune body" do
+      p = parse "X:1\nK:C\nC\nK:A\nC"
+      p.apply_key_signatures
+      p.tunes[0].items[0].pitch.height.should == 0
+      p.tunes[0].items[2].pitch.height.should == 1
     end
 
   end

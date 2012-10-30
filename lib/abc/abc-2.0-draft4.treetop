@@ -22,14 +22,18 @@ grammar ABC do
   # FIELDS
 
   rule file_field do
-    other_file_field
+    other_file_field line_ender
   end
 
   rule header_field do
-    key_field / other_header_field
+    (key_field / other_header_field) line_ender
   end
   
-  rule body_field do
+  rule inline_body_field do
+    "[" raw_body_field "]"
+  end
+
+  rule raw_body_field do
     key_field / other_body_field
   end
 
@@ -37,19 +41,19 @@ grammar ABC do
   # but enforce fields not allowed in one or other section...
 
   rule other_file_field do
-    label:[ABCDFGHIMmNORrSTUZ] ':' value:(!line_ender .)+ line_ender <Field>
+    label:[ABCDFGHIMmNORrSTUZ] ':' value:(!line_ender .)+ <Field>
   end
 
   rule other_header_field do
-    label:[ABCDFGHILMmNORQRrSTUVWXZ] ':' value:(!line_ender .)+ line_ender <Field>
+    label:[ABCDFGHILMmNORQRrSTUVWXZ] ':' value:(!line_ender .)+ <Field>
   end
 
   rule other_body_field do
-    label:[ILMmNRQRrTUVWw] ':' value:(!line_ender .)+ line_ender <Field>
+    label:[ILMmNRQRrTUVWw] ':' value:(!(line_ender/"]") .)+ <Field>
   end
 
   rule key_field do
-    label:'K' ':' value:(key/"none") line_ender <Field> {
+    label:'K' ':' value:(key/"none") <Field> {
       def value
         if super == "none"
           NO_KEY
@@ -119,11 +123,13 @@ grammar ABC do
   end
 
   rule tune_line do
-    tune_element+ line_ender
+    (tune_element+ / raw_body_field) line_ender
   end
   
   rule tune_element do
-    tune_space / note_element / broken_rhythm / spacer / bar_line / ignored_char
+    inline_body_field /
+    tune_space / note_element / broken_rhythm / spacer / bar_line /
+    ignored_char
   end
 
   # "# $ * ; ? @

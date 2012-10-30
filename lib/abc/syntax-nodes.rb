@@ -115,7 +115,7 @@ module ABC
 
   class Tune < NodeWithHeader
     def items
-      children(MusicNode)
+      children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) }
     end
     def apply_key_signatures
       base_signature = key.signature.dup
@@ -127,6 +127,10 @@ module ABC
           signature = item.pitch.signature
         elsif item.is_a? BarLine
           # reset to base signature at end of each measure
+          signature = base_signature
+        elsif item.is_a?(Field) && item.label.text_value == "K"
+          # key change
+          base_signature = item.value.signature.dup
           signature = base_signature
         end
       end
@@ -192,6 +196,10 @@ module ABC
   end
 
   class Spacer < MusicNode
+  end
+
+  # BAR LINES
+  class BarLine < MusicNode
   end
 
 
