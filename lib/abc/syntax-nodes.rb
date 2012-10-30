@@ -100,16 +100,16 @@ module ABC
     end
   end
 
-  class DefaultKeyNode < KeyNode
+  class DummyKeyNode < KeyNode
     attr_reader :tonic, :mode, :extra_accidentals
     def initialize
-      @tonic = "C"
+      @tonic = ""
       @mode = ""
       @extra_accidentals = {}
     end
   end
 
-  NO_KEY = DefaultKeyNode.new
+  NO_KEY = DummyKeyNode.new
 
   # TUNE
 

@@ -55,7 +55,7 @@ grammar ABC do
   rule key_field do
     label:'K' ':' value:(key/"none") <Field> {
       def value
-        if super == "none"
+        if super.text_value == "none"
           NO_KEY
         else
           super

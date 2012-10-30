@@ -132,6 +132,13 @@ describe "abc-2.0-draft4 PEG" do
       sig.should_not include %w{D E F G A B}
     end
 
+    it "allows K:none" do
+      p = parse "K:none"
+      p.tunes[0].key.tonic.should == ""
+      p.tunes[0].key.mode.should == ""
+      p.tunes[0].key.signature.should == {}
+    end
+
   end
 
   describe "extended info fields" do
@@ -354,10 +361,6 @@ describe "abc-2.0-draft4 PEG" do
       p.apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -4
       p.tunes[1].items[0].pitch.height.should == -3
-    end
-
-    it "allows K:none" do
-      parse "K:none"
     end
 
     it "changes key signature when inline K: field found in tune body" do
