@@ -236,8 +236,17 @@ describe "Key" do
   end
 
   it "applies extra accidentals" do
-    Key.signature("C", "", { 'D'=> -1 }).should include 'D' => -1
-    Key.signature("F", "", { 'B' => 0 }).should == {}
+    Key.signature("C", "", { 'D'=> -1 }).should == { 'D' => -1 }
+    Key.signature("F", "", { 'B' => 0 }).should == { 'B' => 0 }
+  end
+
+  it "supports mode='exp' for explicit accidentals" do
+    Key.signature('Gb', 'exp', { 'F' => 1 }).should == { 'F' => 1 }
+  end
+
+  it "supports highland pipes" do
+    Key.signature("HP").should == {}
+    Key.signature("Hp").should == { 'C' => 0, 'F' => 1, 'G' => 1 }
   end
 
 end

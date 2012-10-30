@@ -32,7 +32,10 @@ grammar ABC do
   rule body_field do
     key_field / other_body_field
   end
-  
+
+  # TODO: don't fail to parse unrecognized fields
+  # but enforce fields not allowed in one or other section...
+
   rule other_file_field do
     label:[ABCDFGHIMmNORrSTUZ] ':' value:(!line_ender .)+ line_ender <Field>
   end

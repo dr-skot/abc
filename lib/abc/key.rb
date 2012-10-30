@@ -29,6 +29,7 @@ module ABC
       "Db Bbm Abmix Ebdor Fphr Gblyd Cloc" => split_keys("D E G A B" => -1),
       "Gb Ebm Dbmix Abdor Bbphr Cblyd Floc" => split_keys("C D E G A B" => -1),
       "Cb Abm Gbmix Dbdor Ebphr Fblyd Bbloc" => split_keys("C D E F G A B" => -1),
+      "Hp" => { 'C' => 0, 'F' => 1, 'G' => 1 },
     )
 
     # static method for convenience
@@ -57,7 +58,7 @@ module ABC
     end
     
     def signature
-      base_signature.merge(extra_accidentals).delete_if { |k,v| v == 0 }
+      base_signature.merge(extra_accidentals)
     end
     
   end

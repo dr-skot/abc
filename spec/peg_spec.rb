@@ -122,7 +122,7 @@ describe "abc-2.0-draft4 PEG" do
     end
 
     it "delivers accidentals for key with extra accidentals" do
-      p = parse "K:F =b^C"
+      p = parse "K:F =b ^C"
       sig = p.tunes[0].key.signature
       sig.should include 'C' => 1
       sig.should_not include %w{D E F G A B}
