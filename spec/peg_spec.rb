@@ -352,6 +352,10 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[1].items[0].pitch.height.should == -3
     end
 
+    it "allows K:none" do
+      parse "K:none"
+    end
+
   end
 
   describe "rests" do

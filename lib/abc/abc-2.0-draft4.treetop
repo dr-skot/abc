@@ -46,7 +46,15 @@ grammar ABC do
   end
 
   rule key_field do
-    label:'K' ':' value:key line_ender <Field>
+    label:'K' ':' value:(key/"none") line_ender <Field> {
+      def value
+        if super == "none"
+          NO_KEY
+        else
+          super
+        end
+      end
+    }
   end
 
   rule key do

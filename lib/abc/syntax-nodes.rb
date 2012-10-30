@@ -51,7 +51,7 @@ module ABC
         if field
           @key = field.value
         else
-          @key = DefaultKeyNode.new
+          @key = NO_KEY
         end
       end
       @key
@@ -108,6 +108,8 @@ module ABC
       @extra_accidentals = {}
     end
   end
+
+  NO_KEY = DefaultKeyNode.new
 
   # TUNE
 
