@@ -45,6 +45,12 @@ module ABC
     def title
       header.values(/T/).join("\n")
     end
+    def meter
+      if !@meter && header && (field = header.field(/M/))
+        @meter = field.meter
+      end
+      @meter ||= Meter.new :free
+    end
   end
   
   class Tunebook < NodeWithHeader
@@ -58,7 +64,7 @@ module ABC
       tunes.each { |tune| tune.apply_broken_rhythms }
     end
     def apply_meter
-      tunes.each { |tune| tune.apply_meter }
+      tunes.each { |tune| tune.apply_meter(meter) }
     end
     def apply_key_signatures
       tunes.each { |tune| tune.apply_key_signatures }
@@ -120,12 +126,6 @@ module ABC
     def items
       children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) }
     end
-    def meter
-      if !@meter && header && (field = header.field(/M/))
-        @meter = field.meter
-      end
-      @meter ||= Meter.new :free
-    end
     def unit_note_length
       if !@unit_note_length && header && (field = header.field(/L/))
         @unit_note_length = field.value
@@ -159,13 +159,16 @@ module ABC
         end
       end
     end
-    def apply_meter
-      measure_length = meter.measure_length
-      items.each do |item|
-        if item.is_a? MeasureRest
-          item.measure_length = measure_length
-        elsif item.is_a?(Field) && item.label.text_value == "M"
-          measure_length = item.meter.measure_length
+    def apply_meter(tunebook_meter=nil)
+      # puts "applying meter #{tunebook_meter}"
+      @meter = tunebook_meter if tunebook_meter && (!header || !header.field(/M/))
+      if measure_length = meter.measure_length
+        items.each do |item|
+          if item.is_a? MeasureRest
+            item.measure_length = measure_length
+          elsif item.is_a?(Field) && item.label.text_value == "M"
+            measure_length = item.meter.measure_length
+          end
         end
       end
     end

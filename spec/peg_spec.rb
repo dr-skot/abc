@@ -70,6 +70,7 @@ describe "abc-2.0-draft4 PEG" do
 
   end
 
+
   it "supports multiple tunes" do
     p = parse "X:1\n\nX:2"
     p.tunes.count.should == 2
@@ -93,6 +94,12 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].title.should == "Godsavethequeen"
       p.tunes[1].title.should == "Hailtothechief"
     end
+
+    it "allows a meter field for entire tunebook" do
+      p = parse "M:3/4"
+      p.meter.measure_length.should == Rational(3, 4)
+    end
+
   end
 
   describe "key" do
@@ -487,6 +494,23 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[2].note_length.should == Rational(6, 4)
     end
 
+    it "applies the tunebook's meter to all tunes" do
+      p = parse "M:C\n\nX:1\n\nX:2"
+      p.meter.symbol.should == :common
+      p.tunes[0].meter.symbol.should == :free
+      p.tunes[0].meter.symbol.should == :free
+      p.apply_meter
+      p.tunes[0].meter.symbol.should == :common
+      p.tunes[1].meter.symbol.should == :common
+    end
+    
+    it "overrides the tunebook's meter with tune's meter" do
+      p = parse "M:C\n\nX:1\nM:C|"
+      p.meter.symbol.should == :common
+      p.tunes[0].meter.symbol.should == :cut
+      p.apply_meter
+      p.tunes[0].meter.symbol.should == :cut
+    end
   end
 
   describe "broken rhythm" do

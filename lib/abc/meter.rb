@@ -42,7 +42,7 @@ module ABC
     end
 
     def default_unit_note_length
-      if symbol == :free || Rational(numerator, denominator) >= Rational(3, 4)
+      if symbol == :free || measure_length >= Rational(3, 4)
         Rational(1, 8)
       else
         Rational(1, 16)
