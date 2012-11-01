@@ -89,12 +89,17 @@ grammar ABC do
 
   # UNIT LENGTH FIELD
   rule unit_length_field do
-    label:'L' ':' value:(num:digit+ "/" denom:digit+) <Field> {
+    label:'L' ':' value:((num:digit+ "/" denom:digit+) / digit+) <Field> {
       def value
-        Rational(super.num.text_value.to_i, super.denom.text_value.to_i)
+        if super.respond_to? :num
+          Rational(super.num.text_value.to_i, super.denom.text_value.to_i)
+        else
+          Rational(super.text_value.to_i, 1)
+        end
       end    
     }
   end
+
 
   # KEY
 

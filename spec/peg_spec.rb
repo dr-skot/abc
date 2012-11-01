@@ -215,6 +215,10 @@ describe "abc-2.0-draft4 PEG" do
       p = parse "abc"
       p.tunes[0].unit_note_length.should == Rational(1, 8)
     end
+    it "accepts whole numbers" do
+      p = parse "L:1\nabc"
+      p.tunes[0].unit_note_length.should == 1
+    end
   end
   
   describe "note lengths" do
