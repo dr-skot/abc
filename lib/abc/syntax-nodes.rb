@@ -54,6 +54,9 @@ module ABC
     def apply_key_signatures
       tunes.each { |tune| tune.apply_key_signatures }
     end
+    def apply_note_lengths
+      tunes.each { |tune| tune.apply_note_lengths }
+    end
   end
   
   class Header < ABCNode
@@ -123,6 +126,16 @@ module ABC
       end
       @unit_note_length ||= meter.default_unit_note_length
     end
+    def apply_note_lengths
+      len = unit_note_length
+      items.each do |item|
+        if item.is_a? NoteOrRest
+          item.unit_note_length = len
+        elsif item.is_a?(Field) && item.label.text_value == "L"
+          len = item.value
+        end
+      end
+    end
     def tempo
       if !@tempo
         @tempo = Tempo.new
@@ -170,8 +183,19 @@ module ABC
   end
 
   # NOTES AND RESTS
+
+  # TODO rename this?
+  class NoteOrRest < MusicNode
+    attr_accessor :unit_note_length
+    def unit_note_length
+      @unit_note_length || 1
+    end
+    def note_length
+      note_length_node.value * unit_note_length
+    end
+  end
   
-  class Note < MusicNode
+  class Note < NoteOrRest
   end
 
   class Pitch < MusicNode
@@ -206,7 +230,7 @@ module ABC
     end
   end
 
-  class Rest < MusicNode
+  class Rest < NoteOrRest
   end
 
   class NoteLength < MusicNode

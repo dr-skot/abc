@@ -232,27 +232,61 @@ describe "abc-2.0-draft4 PEG" do
     end
 
     it "uses multiplier of 1 for empty note length" do
-      p = parse "L:1/1\na"
-      p.tunes[0].items[0].note_length.numerator.should == 1
-      p.tunes[0].items[0].note_length.denominator.should == 1
+      p = parse "a"
+      p.tunes[0].items[0].note_length.should == 1
     end
 
     it "correctly reads a note length integer" do
       p = parse "a3"
-      p.tunes[0].items[0].note_length.numerator.should == 3
-      p.tunes[0].items[0].note_length.denominator.should == 1
+      p.tunes[0].items[0].note_length.should == 3
     end
 
     it "correctly reads a note length fraction" do
-      p = parse "a10/2"
-      p.tunes[0].items[0].note_length.numerator.should == 10
-      p.tunes[0].items[0].note_length.denominator.should == 2
+      p = parse "a3/2"
+      p.tunes[0].items[0].note_length.should == Rational(3,2)
     end
 
     it "correctly interprets note length slashes" do
       p = parse "a///"
-      p.tunes[0].items[0].note_length.numerator.should == 1
-      p.tunes[0].items[0].note_length.denominator.should == 8
+      p.tunes[0].items[0].note_length.should == Rational(1, 8)
+    end
+
+    it "applies the default unit note length" do
+      p = parse "ab2c3/2d3/e/"
+      p.apply_note_lengths
+      tune = p.tunes[0]
+      tune.items[0].note_length.should == Rational(1, 8)
+      tune.items[1].note_length.should == Rational(1, 4)
+      tune.items[2].note_length.should == Rational(3, 16)
+      tune.items[3].note_length.should == Rational(3, 16)
+      tune.items[4].note_length.should == Rational(1, 16)
+    end
+
+    it "applies an explicit unit note length" do
+      p = parse "L:1/2\nab2c3/2d3/e/"
+      p.apply_note_lengths
+      tune = p.tunes[0]
+      tune.items[0].note_length.should == Rational(1, 2)
+      tune.items[1].note_length.should == 1
+      tune.items[2].note_length.should == Rational(3, 4)
+      tune.items[3].note_length.should == Rational(3, 4)
+      tune.items[4].note_length.should == Rational(1, 4)
+    end
+
+    it "can change unit note length with an inline L: field" do
+      p = parse "L:1/2\na4[L:1/4]a4"
+      p.apply_note_lengths
+      tune = p.tunes[0]
+      tune.items[0].note_length.should == 2
+      tune.items[2].note_length.should == 1
+    end
+
+    it "can change unit note length with a standalone L: field" do
+      p = parse "L:1/2\na4\nL:1/4\na4"
+      p.apply_note_lengths
+      tune = p.tunes[0]
+      tune.items[0].note_length.should == 2
+      tune.items[2].note_length.should == 1
     end
 
   end

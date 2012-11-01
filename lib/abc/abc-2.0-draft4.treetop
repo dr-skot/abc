@@ -205,7 +205,7 @@ grammar ABC do
   end
 
   rule note do
-    pitch note_length <Note>
+    pitch note_length_node <Note>
   end
 
   rule pitch do
@@ -251,7 +251,7 @@ grammar ABC do
   end
 
   rule note_rest do
-    [xz] note_length <Rest>
+    [xz] note_length_node <Rest>
   end
   
   rule measure_rest do
@@ -262,7 +262,7 @@ grammar ABC do
     }
   end
   
-  rule note_length do
+  rule note_length_node do
     numerator:digit* denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
       def numerator
         if !super || super.empty?
@@ -278,7 +278,10 @@ grammar ABC do
           2 ** super.text_value.length
         else                              # numeral: use it
           super.digits.text_value.to_i
-        end  
+        end
+      end
+      def value
+        Rational numerator, denominator
       end
     }  
   end
