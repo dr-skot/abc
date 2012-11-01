@@ -51,11 +51,14 @@ module ABC
     def tunes
       children(Tune)
     end
-    def apply_key_signatures
-      tunes.each { |tune| tune.apply_key_signatures }
-    end
     def apply_note_lengths
       tunes.each { |tune| tune.apply_note_lengths }
+    end
+    def apply_broken_rhythms
+      tunes.each { |tune| tune.apply_broken_rhythms }
+    end
+    def apply_key_signatures
+      tunes.each { |tune| tune.apply_key_signatures }
     end
   end
   
@@ -136,6 +139,23 @@ module ABC
         end
       end
     end
+    def apply_broken_rhythms
+      last_note = nil
+      change = nil
+      items.each do |item|
+        if item.is_a? BrokenRhythm
+          # TODO throw an error if no last note?
+          last_note.broken_rhythm *= item.change('<') if last_note
+          change = item.change('>') # will apply this to next note
+        elsif item.is_a? NoteOrRest
+          if change
+            item.broken_rhythm *= change
+            change = nil
+          end 
+          last_note = item
+        end
+      end
+    end
     def tempo
       if !@tempo
         @tempo = Tempo.new
@@ -187,11 +207,15 @@ module ABC
   # TODO rename this?
   class NoteOrRest < MusicNode
     attr_accessor :unit_note_length
+    attr_accessor :broken_rhythm
     def unit_note_length
       @unit_note_length || 1
     end
+    def broken_rhythm
+      @broken_rhythm || 1
+    end
     def note_length
-      note_length_node.value * unit_note_length
+      note_length_node.value * unit_note_length * broken_rhythm
     end
   end
   

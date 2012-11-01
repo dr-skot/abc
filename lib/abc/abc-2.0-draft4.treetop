@@ -287,8 +287,19 @@ grammar ABC do
   end
 
 
-  rule broken_rhythm do
-    ('>'+ / '<'+) &note <BrokenRhythm>
+  rule broken_rhythm do 
+    # TODO: instead of lookahead do postparse check
+    ('>'+ / '<'+) &(space* note) <BrokenRhythm> {
+      # direction = '<' or '>'; which note's timing are you changing?
+      def change(direction) 
+        x = Rational 1, 2 ** text_value.length
+        if text_value[0] == direction
+          x
+        else 
+          2 - x # ie 1 + 1-x; adding time left after shortening the other note
+        end
+      end
+    }
   end
 
   rule spacer do

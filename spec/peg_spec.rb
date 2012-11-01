@@ -317,7 +317,7 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[1].pitch.octave.should == -1
     end
 
-    it "handles combinations of commas and apostrophes" do
+    it "handles combinations of up octave and down octave" do
       p = parse "C,',',,c,,'''',"
       p.tunes[0].items[0].pitch.octave.should == -2
       p.tunes[0].items[1].pitch.octave.should == 2
@@ -469,12 +469,9 @@ describe "abc-2.0-draft4 PEG" do
 
     it "understands the note length of rests" do
       p = parse "z3/2x//z4"
-      p.tunes[0].items[0].note_length.numerator.should == 3
-      p.tunes[0].items[0].note_length.denominator.should == 2
-      p.tunes[0].items[1].note_length.numerator.should == 1
-      p.tunes[0].items[1].note_length.denominator.should == 4
-      p.tunes[0].items[2].note_length.numerator.should == 4
-      p.tunes[0].items[2].note_length.denominator.should == 1
+      p.tunes[0].items[0].note_length.should == Rational(3, 2)
+      p.tunes[0].items[1].note_length.should == Rational(1, 4)
+      p.tunes[0].items[2].note_length.should == 4
     end
 
     it "understands measure-count rests" do
@@ -484,15 +481,49 @@ describe "abc-2.0-draft4 PEG" do
 
   end
 
-  it "accepts broken rhythm markers" do
-    parse "a>b c<d a>>b c2<<d2"
-  end
+  describe "broken rhythm" do
 
-  it "does not accept broken rhythm weirdness" do
-    fail_to_parse "a<>b"
-    fail_to_parse "a><b"
-  end
+    it "accepts broken rhythm markers" do
+      parse "a>b c<d a>>b c2<<d2"
+    end
+    
+    it "does not accept broken rhythm weirdness" do
+      fail_to_parse "a<>b"
+      fail_to_parse "a><b"
+    end
 
+    it "adjusts note lengths appropriately" do
+      p = parse "a>b c<d e<<f g>>>a"
+      tune = p.tunes[0]
+      tune.items[0].note_length.should == 1
+      tune.items[2].note_length.should == 1
+      tune.items[4].note_length.should == 1
+      tune.items[6].note_length.should == 1
+      tune.items[8].note_length.should == 1
+      tune.items[10].note_length.should == 1
+      tune.items[12].note_length.should == 1
+      tune.items[14].note_length.should == 1
+      p.apply_broken_rhythms
+      tune.items[0].note_length.should == Rational(3, 2)
+      tune.items[2].note_length.should == Rational(1, 2)
+      tune.items[4].note_length.should == Rational(1, 2)
+      tune.items[6].note_length.should == Rational(3, 2)
+      tune.items[8].note_length.should == Rational(1, 4)
+      tune.items[10].note_length.should == Rational(7, 4)
+      tune.items[12].note_length.should == Rational(15, 8)
+      tune.items[14].note_length.should == Rational(1, 8)
+    end
+    
+    it "works in tandem with unit note length and note length markers" do
+      p = parse "L:1/8\na2>b2"
+      p.apply_broken_rhythms
+      p.apply_note_lengths
+      p.tunes[0].items[0].note_length.should == Rational(3, 8)
+      p.tunes[0].items[2].note_length.should == Rational(1, 8)
+    end
+
+  end
+  
   it "accepts spacers" do
     parse "ab y de"
   end
