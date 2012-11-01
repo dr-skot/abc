@@ -45,17 +45,6 @@ module ABC
     def title
       header.values(/T/).join("\n")
     end
-    def key
-      if !@key
-        field = header.fields(/K/)[-1]
-        if field
-          @key = field.value
-        else
-          @key = NO_KEY
-        end
-      end
-      @key
-    end
   end
   
   class Tunebook < NodeWithHeader
@@ -68,12 +57,17 @@ module ABC
   end
   
   class Header < ABCNode
+    # returns all header fields whose labels match regex
     def fields(regex=nil)
       if regex
         children(Field).select { |f| f.label.text_value =~ regex }
       else
         children(Field)
       end
+    end
+    #returns the last header field whose label matches
+    def field(regex=nil)
+      fields(regex)[-1]
     end
     # returns the values for all headers whose labels match regex
     def values(regex)
@@ -116,6 +110,35 @@ module ABC
   class Tune < NodeWithHeader
     def items
       children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) }
+    end
+    def meter
+      if !@meter && header && (field = header.field(/M/))
+        @meter = field.meter
+      end
+      @meter ||= Meter.new :free
+    end
+    def unit_note_length
+      if !@unit_note_length && header && (field = header.field(/L/))
+        @unit_note_length = field.value
+      end
+      @unit_note_length ||= meter.default_unit_note_length
+    end
+    def tempo
+      if !@tempo
+        @tempo = Tempo.new
+      end
+      @tempo
+    end
+    def key
+      if !@key
+        field = header.fields(/K/)[-1]
+        if field
+          @key = field.value
+        else
+          @key = NO_KEY
+        end
+      end
+      @key
     end
     def apply_key_signatures
       base_signature = key.signature.dup

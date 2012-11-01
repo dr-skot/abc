@@ -22,11 +22,11 @@ grammar ABC do
   # FIELDS
 
   rule file_field do
-    other_file_field line_ender
+    (meter_field / other_file_field) line_ender
   end
 
   rule header_field do
-    (key_field / other_header_field) line_ender
+    (meter_field / key_field / unit_length_field / other_header_field) line_ender
   end
   
   rule inline_body_field do
@@ -34,23 +34,69 @@ grammar ABC do
   end
 
   rule raw_body_field do
-    key_field / other_body_field
+    key_field / meter_field / unit_length_field / other_body_field
   end
 
   # TODO: don't fail to parse unrecognized fields
   # but enforce fields not allowed in one or other section...
 
   rule other_file_field do
-    label:[ABCDFGHIMmNORrSTUZ] ':' value:(!line_ender .)+ <Field>
+    # M already found by earlier rule
+    label:[ABCDFGHImNORrSTUZ] ':' value:(!line_ender .)+ <Field>
   end
 
   rule other_header_field do
-    label:[ABCDFGHILMmNORQRrSTUVWXZ] ':' value:(!line_ender .)+ <Field>
+    # KM already found by earlier rule
+    label:[ABCDFGHImNORQRrSTUVWXZ] ':' value:(!line_ender .)+ <Field>
   end
 
   rule other_body_field do
-    label:[ILMmNRQRrTUVWw] ':' value:(!(line_ender/"]") .)+ <Field>
+    # KM already found by earlier rule
+    label:[ImNRQRrTUVWw] ':' value:(!(line_ender/"]") .)+ <Field>
   end
+
+  # METER FIELD
+  rule meter_field do
+    label:'M' ':' value:(fractional_meter / named_meter) <Field> {
+      def meter
+        value.meter
+      end
+    }
+  end
+
+  rule fractional_meter do
+    num:digit+ "/" denom:digit+ {
+      def meter
+        @meter ||= Meter.new num.text_value.to_i, denom.text_value.to_i
+      end
+    }
+  end
+
+  rule named_meter do
+    ("C|" / "C" / "none") {
+      def meter
+        return @meter if @meter
+        if text_value == "C"
+          @meter = Meter.new :common
+        elsif text_value == "C|"
+          @meter = Meter.new :cut
+        else
+          @meter = Meter.new :free
+        end
+      end
+    }
+  end
+
+  # UNIT LENGTH FIELD
+  rule unit_length_field do
+    label:'L' ':' value:(num:digit+ "/" denom:digit+) <Field> {
+      def value
+        Rational(super.num.text_value.to_i, super.denom.text_value.to_i)
+      end    
+    }
+  end
+
+  # KEY
 
   rule key_field do
     label:'K' ':' value:(key/"none") <Field> {

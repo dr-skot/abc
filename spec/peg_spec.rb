@@ -178,6 +178,45 @@ describe "abc-2.0-draft4 PEG" do
     parse "abc"
   end
 
+  describe "M: (meter) field" do
+    it "defaults to free meter" do
+      p = parse "abc"
+      p.tunes[0].meter.symbol.should == :free
+    end
+    it "can be explicitly defined as none" do
+      p = parse "M:none\nabc"
+      p.tunes[0].meter.symbol.should == :free
+    end
+    it "can be defined with numerator and denominator" do
+      p = parse "M:6/8\nabc"
+      p.tunes[0].meter.numerator.should == 6
+      p.tunes[0].meter.denominator.should == 8
+    end
+    it "interprets common time" do
+      p = parse "M:C\nabc"
+      p.tunes[0].meter.numerator.should == 4
+      p.tunes[0].meter.denominator.should == 4
+      p.tunes[0].meter.symbol.should == :common
+    end
+    it "interprets cut time" do
+      p = parse "M:C|\nabc"
+      p.tunes[0].meter.numerator.should == 2
+      p.tunes[0].meter.denominator.should == 4
+      p.tunes[0].meter.symbol.should == :cut
+    end
+  end
+
+  describe "L: field" do
+    it "knows its value" do
+      p = parse "L:1/4"
+      p.tunes[0].unit_note_length.should == Rational(1, 4)
+    end
+    it "defaults to 1/8" do
+      p = parse "abc"
+      p.tunes[0].unit_note_length.should == Rational(1, 8)
+    end
+  end
+  
   describe "note lengths" do
     it "accepts short and long notes" do
       parse "a2 b3/2 c3/ d/ d/2e//"
@@ -189,7 +228,7 @@ describe "abc-2.0-draft4 PEG" do
     end
 
     it "uses multiplier of 1 for empty note length" do
-      p = parse "a"
+      p = parse "L:1/1\na"
       p.tunes[0].items[0].note_length.numerator.should == 1
       p.tunes[0].items[0].note_length.denominator.should == 1
     end
