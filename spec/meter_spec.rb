@@ -47,6 +47,10 @@ describe "Meter" do
     m.numerator.should == nil
     m.denominator.should == nil
   end
+  it "defaults to free with no arguments" do
+    m = Meter.new
+    m.symbol.should == :free
+  end
   it "gives the correct default unit note length" do
     Meter.new(:free).default_unit_note_length.should == Rational(1, 8)
     Meter.new(:cut).default_unit_note_length.should == Rational(1, 16)
@@ -55,5 +59,14 @@ describe "Meter" do
     Meter.new(5 ,8).default_unit_note_length.should == Rational(1, 16)
     Meter.new([3, 2, 3], 8).default_unit_note_length.should == Rational(1, 8)
     Meter.new([2, 1, 2], 8).default_unit_note_length.should == Rational(1, 16)
+  end
+  it "raises error for bad arguments" do
+    expect { Meter.new :free, 0 }.to raise_error
+    expect { Meter.new :common, 4 }.to raise_error
+    expect { Meter.new :cut, 4 }.to raise_error
+    expect { Meter.new :blah }.to raise_error
+    expect { Meter.new 4 }.to raise_error
+    expect { Meter.new 0.5, 4 }.to raise_error
+    expect { Meter.new [1, 0.5, 1], 4 }.to raise_error
   end
 end
