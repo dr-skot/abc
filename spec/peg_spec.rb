@@ -479,6 +479,14 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[0].measure_count.should == 4
     end
 
+    it "knows the note length of measure-count rests after applying meter" do
+      p = parse "M:C\nZ4[M:3/4]Z2\n"
+      p.tunes[0].items[0].note_length.should == nil
+      p.apply_meter
+      p.tunes[0].items[0].note_length.should == 4
+      p.tunes[0].items[2].note_length.should == Rational(6, 4)
+    end
+
   end
 
   describe "broken rhythm" do

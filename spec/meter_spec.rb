@@ -69,4 +69,13 @@ describe "Meter" do
     expect { Meter.new 0.5, 4 }.to raise_error
     expect { Meter.new [1, 0.5, 1], 4 }.to raise_error
   end
+  it "knows its measure " do
+    Meter.new(:free).measure_length.should == nil
+    Meter.new(:cut).measure_length.should == Rational(1, 2)
+    Meter.new(:common).measure_length.should == 1
+    Meter.new(6 ,8).measure_length.should == Rational(3, 4)
+    Meter.new(5 ,8).measure_length.should == Rational(5, 8)
+    Meter.new([3, 2, 3], 8).measure_length.should == 1
+    Meter.new([2, 1, 2], 8).measure_length.should == Rational(5, 8)
+  end
 end

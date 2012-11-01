@@ -48,6 +48,10 @@ module ABC
         Rational(1, 16)
       end
     end
+
+    def measure_length
+      Rational(numerator, denominator) unless symbol == :free
+    end
   end
 
 end

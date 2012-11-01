@@ -255,9 +255,13 @@ grammar ABC do
   end
   
   rule measure_rest do
-    "Z" measure_count:digit+ <Rest> {
+    "Z" measure_count:digit+ <MeasureRest> {
+      attr_accessor :measure_length
       def measure_count
         super.text_value.to_i
+      end
+      def note_length
+        measure_length * measure_count if measure_length
       end
     }
   end

@@ -57,6 +57,9 @@ module ABC
     def apply_broken_rhythms
       tunes.each { |tune| tune.apply_broken_rhythms }
     end
+    def apply_meter
+      tunes.each { |tune| tune.apply_meter }
+    end
     def apply_key_signatures
       tunes.each { |tune| tune.apply_key_signatures }
     end
@@ -153,6 +156,16 @@ module ABC
             change = nil
           end 
           last_note = item
+        end
+      end
+    end
+    def apply_meter
+      measure_length = meter.measure_length
+      items.each do |item|
+        if item.is_a? MeasureRest
+          item.measure_length = measure_length
+        elsif item.is_a?(Field) && item.label.text_value == "M"
+          measure_length = item.meter.measure_length
         end
       end
     end
@@ -255,6 +268,9 @@ module ABC
   end
 
   class Rest < NoteOrRest
+  end
+
+  class MeasureRest < Rest
   end
 
   class NoteLength < MusicNode
