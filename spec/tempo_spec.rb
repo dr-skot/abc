@@ -50,15 +50,15 @@ describe "Tempo" do
   end
 
   it "gives a default beat length equal to unit note length" do
-    @tempo.sum_of_beats.to_s.should == "1/8"
+    @tempo.beat_length.to_s.should == "1/8"
     @tempo.unit_length = Rational 1, 4
-    @tempo.sum_of_beats.to_s.should == "1/4"
+    @tempo.beat_length.to_s.should == "1/4"
   end
 
   it "calculates note duration" do
     @tempo.bpm = 60
     @tempo.unit_length = Rational 1, 4
-    @tempo.sum_of_beats.to_s.should == "1/4"
+    @tempo.beat_length.to_s.should == "1/4"
     @tempo.note_duration(2, 1).should == 2
   end
 

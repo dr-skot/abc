@@ -39,7 +39,7 @@ module ABC
   class Tempo
     attr_accessor :meter
     attr_accessor :unit_length
-    attr_accessor :beats
+    attr_accessor :beat_parts
     attr_accessor :bpm
     attr_accessor :label
     
@@ -57,15 +57,15 @@ module ABC
       Rational(num, den) * unit_length
     end
 
-    def beats
-      @beats || [unit_length]
+    def beat_parts
+      @beat_parts || [unit_length]
     end
 
-    def sum_of_beats
-      if beats.is_a?(Array)
-        beats.reduce(:+)
+    def beat_length
+      if beat_parts.is_a?(Array)
+        beat_parts.reduce(:+)
       else
-        beats
+        beat_parts
       end
     end
     
@@ -79,7 +79,7 @@ module ABC
 
     # in seconds
     def note_duration(num, den)
-      Rational(num, den) * unit_length / sum_of_beats / bps
+      Rational(num, den) * unit_length / beat_length / bps
     end
     
   end

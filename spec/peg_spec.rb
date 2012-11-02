@@ -100,7 +100,12 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].refnum.should == 1
       p.tune(1).should = p.tunes[0]
     end
-    # TODO: if many songs no X field, should reject ABC file
+    # TODO: if more than one song, all songs must have an X field
+    # or should it see the new song as plaintext??
+    # it "requires the X field if more than one song" do
+      # fail_to_parse("X:1\nabc\n\nK:Em\nefg")
+    # end
+
     it "knows the string fields" do
       %w{Aauthor Bbook Ccomposer Ddisc Furl Ggroup Hhistory Nnotes Oorigin 
          Rrhythm rremark Ssource Ttitle Ztranscriber}.each do |field|
@@ -225,7 +230,7 @@ describe "abc-2.0-draft4 PEG" do
     end
   end
 
-  describe "L: field" do
+  describe "L: (unit note length) field" do
     it "knows its value" do
       p = parse "L:1/4"
       p.tunes[0].unit_note_length.should == Rational(1, 4)
@@ -238,6 +243,35 @@ describe "abc-2.0-draft4 PEG" do
       p = parse "L:1\nabc"
       p.tunes[0].unit_note_length.should == 1
     end
+  end
+
+  describe "Q: (tempo) field" do
+    it "can be of the simple form beat=bpm" do
+      p = parse "X:1\nQ:1/4=120"
+      p.tunes[0].tempo.beat_length.should == Rational(1, 4)
+      p.tunes[0].tempo.beat_parts.should == [Rational(1, 4)]
+      p.tunes[0].tempo.bpm.should == 120
+    end
+
+    it "can divide the beat into parts" do
+      p = parse "X:1\nQ:1/4 3/8 1/4 3/8=40"
+      p.tunes[0].tempo.beat_length.should == Rational(5, 4)
+      p.tunes[0].tempo.beat_parts.should == 
+        [Rational(1, 4), Rational(3, 8), Rational(1, 4), Rational(3, 8)]
+      p.tunes[0].tempo.bpm.should == 40
+    end
+
+    it "can take a label at the front or the back" do
+      p = parse "X:1\nQ:\"Allegro\" 1/4=120"
+      p.tunes[0].tempo.label.should == "Allegro"
+      p = parse "X:1\nQ:3/8=50 \"Slowly\""
+      p.tunes[0].tempo.label.should == "Slowly"
+      # TODO disallow label at front AND back
+    end
+
+    # TODO support Q:120
+    # TODO support Q:C=120 ? but what does it mean?
+    
   end
   
   describe "note lengths" do

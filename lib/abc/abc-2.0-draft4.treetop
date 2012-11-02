@@ -26,7 +26,7 @@ grammar ABC do
   end
 
   rule header_field do
-    (meter_field / key_field / unit_length_field / other_header_field) line_ender
+    (meter_field / tempo_field/ unit_length_field / key_field / other_header_field) line_ender
   end
   
   rule inline_body_field do
@@ -34,7 +34,7 @@ grammar ABC do
   end
 
   rule raw_body_field do
-    key_field / meter_field / unit_length_field / other_body_field
+     meter_field / tempo_field / unit_length_field / key_field / other_body_field
   end
 
   # TODO: don't fail to parse unrecognized fields
@@ -46,13 +46,13 @@ grammar ABC do
   end
 
   rule other_header_field do
-    # KM already found by earlier rule
-    label:[ABCDFGHImNORQRrSTUVWXZ] ':' value:(!line_ender .)+ <Field>
+    # KMLQ already found by earlier rule
+    label:[ABCDFGHImNORRrSTUVWXZ] ':' value:(!line_ender .)+ <Field>
   end
 
   rule other_body_field do
-    # KM already found by earlier rule
-    label:[ImNRQRrTUVWw] ':' value:(!(line_ender/"]") .)+ <Field>
+    # KMLQ already found by earlier rule
+    label:[ImNRRrTUVWw] ':' value:(!(line_ender/"]") .)+ <Field>
   end
 
   # METER FIELD
@@ -88,6 +88,7 @@ grammar ABC do
   end
 
   # UNIT LENGTH FIELD
+
   rule unit_length_field do
     label:'L' ':' value:((num:digit+ "/" denom:digit+) / digit+) <Field> {
       def value
@@ -97,6 +98,77 @@ grammar ABC do
           Rational(super.text_value.to_i, 1)
         end
       end    
+    }
+  end
+
+ 
+  # TEMPO FIELD
+
+  rule tempo_field do
+    label:'Q' ':' value_node:tempo_field_value <Field> {
+      def value
+        v = Tempo.new
+        v.beat_parts = value_node.beat.value
+        v.bpm = value_node.bpm.value
+        v.label = value_node.label
+        v
+      end
+    }
+  end
+  
+  rule tempo_field_value do
+    label1:(label:quoted_string space+)? 
+    beat:rationals space* '=' space* bpm:integer 
+    label2:(space+ label:quoted_string)? 
+    {
+      def label
+        if !label2.empty?
+          label2.label.value
+        elsif !label1.empty?
+          label1.label.value
+        end
+      end
+    }
+  end
+
+  # TODO: deal with escaped " ?
+  rule quoted_string do
+    '"' value_node:(!'"' .)* '"' {
+      def value
+        value_node.text_value
+      end
+    }
+  end
+
+  rule rationals do
+    all_but_last:(rational:rational space+)* last:rational {
+      def value
+        v = all_but_last.elements.map { |el| el.rational.value }
+        v << last.value
+        v
+      end
+    }
+  end
+  
+  rule rational do
+    numerator:digit+ "/" denominator:digit+ {
+      def numerator
+        super.text_value.to_i
+      end
+      def denominator
+        super.text_value.to_i
+      end
+      def value
+        Rational(numerator, denominator)
+      end
+    }
+  end
+  
+  rule integer do
+    digit+ {
+      def value
+        text_value.to_i
+      end
     }
   end
 

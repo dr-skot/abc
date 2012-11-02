@@ -234,10 +234,9 @@ module ABC
       end
     end
     def tempo
-      if !@tempo
-        @tempo = Tempo.new
+      if field = header.field(/Q/)
+          field.value
       end
-      @tempo
     end
     def key
       if !@key
