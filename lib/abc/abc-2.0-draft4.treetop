@@ -108,8 +108,8 @@ grammar ABC do
     label:'Q' ':' value_node:tempo_field_value <Field> {
       def value
         v = Tempo.new
-        v.beat_parts = value_node.beat.value
-        v.bpm = value_node.bpm.value
+        v.beat_parts = value_node.beat_parts
+        v.bpm = value_node.bpm
         v.label = value_node.label
         v
       end
@@ -118,7 +118,7 @@ grammar ABC do
   
   rule tempo_field_value do
     label1:(label:quoted_string space+)? 
-    beat:rationals space* '=' space* bpm:integer 
+    beat_node:((rationals/'C') '=')? bpm_node:integer 
     label2:(space+ label:quoted_string)? 
     {
       def label
@@ -127,6 +127,21 @@ grammar ABC do
         elsif !label1.empty?
           label1.label.value
         end
+      end
+      def beat_parts
+        if beat_node.empty?
+          nil
+        else        
+          b = beat_node.elements[0]
+          if b.text_value == 'C'
+            [ Rational(1, 4) ]
+          else
+            b.value
+          end
+        end
+      end
+      def bpm
+        bpm_node.value
       end
     }
   end

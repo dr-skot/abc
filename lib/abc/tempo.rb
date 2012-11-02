@@ -37,20 +37,13 @@ module ABC
   end
 
   class Tempo
-    attr_accessor :meter
     attr_accessor :unit_length
     attr_accessor :beat_parts
     attr_accessor :bpm
     attr_accessor :label
     
     def unit_length
-      if @unit_length
-        @unit_length
-      elsif @meter && @meter.to_f < 0.75
-        Rational 1, 16
-      else
-        Rational 1, 8
-      end
+      @unit_length || 1
     end
 
     def note_length(num, den)

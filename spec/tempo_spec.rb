@@ -10,19 +10,10 @@ describe "Tempo" do
   end
   
   describe "unit length" do
-    it "defaults to 1/8" do
-      @tempo.unit_length.to_s.should == "1/8"
-    end
-    it "is 1/16 if meter is < 0.75" do
-      @tempo.meter = Fraction.new 2, 4
-      @tempo.unit_length.to_s.should == "1/16"
-    end
-    it "is 1/8 if meter is >= 0.75" do
-      @tempo.meter = Fraction.new 3, 4
-      @tempo.unit_length.to_s.should == "1/8"
+    it "defaults to 1" do
+      @tempo.unit_length.should == 1
     end
     it "can be set explicitly" do
-      @tempo.meter = Fraction.new 2, 4
       @tempo.unit_length = Rational 1, 32
       @tempo.unit_length.to_s.should == "1/32"
     end
@@ -30,10 +21,8 @@ describe "Tempo" do
 
   describe "note length" do
     it "multiplies correctly" do
-      @tempo.note_length(2, 1).to_s.should == "1/4"
-      @tempo.note_length(1, 2).to_s.should == "1/16"
-      @tempo.meter = Fraction.new 2, 4
-      @tempo.note_length(2, 1).to_s.should == "1/8"
+      @tempo.note_length(2, 1).to_s.should == "2/1"
+      @tempo.note_length(1, 2).to_s.should == "1/2"
       @tempo.unit_length = Rational 1, 4
       @tempo.note_length(3, 2).to_s.should == "3/8"
     end
@@ -49,8 +38,11 @@ describe "Tempo" do
     @tempo.bps.should == 2
   end
 
-  it "gives a default beat length equal to unit note length" do
-    @tempo.beat_length.to_s.should == "1/8"
+  it "gives a default beat length of 1" do
+    @tempo.beat_length.should == 1
+  end
+
+  it "gives beat length equal to unit note length if unit note length given" do
     @tempo.unit_length = Rational 1, 4
     @tempo.beat_length.to_s.should == "1/4"
   end

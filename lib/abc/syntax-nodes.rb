@@ -196,6 +196,9 @@ module ABC
     end
     def apply_note_lengths
       len = unit_note_length
+      if tempo
+        tempo.unit_length = len
+      end
       items.each do |item|
         if item.is_a? NoteOrRest
           item.unit_note_length = len
@@ -234,9 +237,14 @@ module ABC
       end
     end
     def tempo
-      if field = header.field(/Q/)
-          field.value
+      if !@tempo
+        if header && (field = header.field(/Q/))
+          @tempo = field.value
+        else
+          @tempo = nil # TODO NO_TEMPO
+        end
       end
+      @tempo
     end
     def key
       if !@key

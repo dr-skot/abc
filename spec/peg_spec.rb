@@ -269,8 +269,21 @@ describe "abc-2.0-draft4 PEG" do
       # TODO disallow label at front AND back
     end
 
-    # TODO support Q:120
+    # TODO support Q:60
+    it "can handle Q:60" do
+      p = parse "X:1\nQ:60"
+      p.tunes[0].tempo.bpm.should == 60
+      p.tunes[0].tempo.beat_length.should == 1
+      p.apply_note_lengths
+      p.tunes[0].tempo.beat_length.should == Rational(1, 8)
+    end
+
     # TODO support Q:C=120 ? but what does it mean?
+    it "can handle Q:C=50" do
+      p = parse "X:1\nQ:C=50"
+      p.tunes[0].tempo.bpm.should == 50
+      p.tunes[0].tempo.beat_length.should == Rational(1, 4)
+    end
     
   end
   
