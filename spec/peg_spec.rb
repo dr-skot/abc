@@ -716,7 +716,32 @@ describe "abc-2.0-draft4 PEG" do
     
   end
 
+  describe "ties" do
+    it "accepts ties" do
+      p = parse "a-a"
+      p.tunes[0].items[1].is_a?(Tie).should == true
+    end
+    it "accepts ties that are really slurs" do
+      p = parse "a-b"
+      p.tunes[0].items[1].is_a?(Tie).should == true
+    end
+  end
 
+  describe "slurs" do
+    it "accepts slurs" do
+      p = parse "d(ab^c)d"
+      p.tunes[0].items[1].is_a?(Slur).should == true
+      p.tunes[0].items[1].start_slur.should == true
+      p.tunes[0].items[5].end_slur.should == true
+    end
+    it "can nest slurs" do
+      p = parse "d(a(b^c)d)"
+      p.tunes[0].items[1].start_slur.should == true
+      p.tunes[0].items[3].start_slur.should == true
+      p.tunes[0].items[6].end_slur.should == true
+      p.tunes[0].items[8].end_slur.should == true
+    end
+  end
 
 
   it "accepts spacers" do

@@ -353,6 +353,14 @@ module ABC
   class BrokenRhythm < MusicNode
   end
 
+  # TIES AND SLURS
+
+  class Tie < MusicNode
+  end
+
+  class Slur < MusicNode
+  end
+
   class Spacer < MusicNode
   end
 

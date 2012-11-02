@@ -272,7 +272,7 @@ grammar ABC do
   
   rule tune_element do
     inline_body_field /
-    tune_space / note_element / broken_rhythm / spacer / bar_line /
+    tune_space / slur / note / rest / broken_rhythm / tie / spacer / bar_line /
     ignored_char
   end
 
@@ -292,10 +292,6 @@ grammar ABC do
   end
   
   # NOTES AND RESTS
-
-  rule note_element do
-    (note / rest)
-  end
 
   rule note do
     pitch note_length_node <Note>
@@ -384,6 +380,8 @@ grammar ABC do
   end
 
 
+  # BROKEN RHYTHM MARKERS
+
   rule broken_rhythm do 
     # TODO: instead of lookahead do postparse check
     ('>'+ / '<'+) &(space* note) <BrokenRhythm> {
@@ -395,6 +393,24 @@ grammar ABC do
         else 
           2 - x # ie 1 + 1-x; adding time left after shortening the other note
         end
+      end
+    }
+  end
+
+
+  # TIES AND SLURS
+
+  rule tie do
+    '-' <Tie>
+  end
+
+  rule slur do
+    ('(' / ')') '' <Slur> {
+      def start_slur
+        text_value == '('
+      end
+      def end_slur
+        text_value == ')'
       end
     }
   end
