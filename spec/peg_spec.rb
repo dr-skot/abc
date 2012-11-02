@@ -88,6 +88,19 @@ describe "abc-2.0-draft4 PEG" do
 
 
   describe "fields" do
+    it "knows the refnum field" do
+      p = parse "X:2\nabc\n\nX:37\nABC"
+      p.tunes[0].refnum.should == 2
+      p.tunes[1].refnum.should == 37
+      p.tune(2).should == p.tunes[0]
+      p.tune(37).should == p.tunes[1]
+    end
+    it "defaults to 1" do
+      p = parse "ABC"
+      p.tunes[0].refnum.should == 1
+      p.tune(1).should = p.tunes[0]
+    end
+    # TODO: if many songs no X field, should reject ABC file
     it "knows the string fields" do
       %w{Aauthor Bbook Ccomposer Ddisc Furl Ggroup Hhistory Nnotes Oorigin 
          Rrhythm rremark Ssource Ttitle Ztranscriber}.each do |field|

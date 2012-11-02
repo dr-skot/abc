@@ -1,5 +1,11 @@
 require 'treetop'
 
+class Object
+  def try(method, *args)
+    send method, args if respond_to? method
+  end
+end
+
 class Treetop::Runtime::SyntaxNode
 
   # TODO mother, descendants, left_sister, right_sister
@@ -64,7 +70,7 @@ module ABC
     def info(label)
       fields = header.children(InfoField).select { |f| f.label == label } if header
       if fields && fields.count > 0
-        fields[-1].value
+        fields.last.value
       else
         master_node.info(label) if master_node
       end
@@ -92,6 +98,9 @@ module ABC
   class Tunebook < NodeWithHeader
     def tunes
       children(Tune)
+    end
+    def tune(refnum)
+      tunes.select { |f| f.refnum == refnum }.last
     end
     def propagate_tunebook_header
       tunes.each { |tune| tune.master_node = self } if header
@@ -126,6 +135,13 @@ module ABC
     # returns the values for all headers whose labels match regex
     def values(regex)
       fields(regex).map { |f| f.value.text_value }
+    end
+    def value(regex)
+      if (f = field(regex))
+        f.value.text_value
+      else
+        nil
+      end
     end
   end
 
@@ -162,6 +178,13 @@ module ABC
   # TUNE
 
   class Tune < NodeWithHeader
+    def refnum
+      if header && (value = header.value(/X/))
+        value.to_i
+      else
+        1
+      end
+    end
     def items
       children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) }
     end
@@ -218,7 +241,7 @@ module ABC
     end
     def key
       if !@key
-        field = header.fields(/K/)[-1]
+        field = header.field(/K/)
         if field
           @key = field.value
         else
