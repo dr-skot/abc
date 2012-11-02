@@ -145,7 +145,14 @@ grammar ABC do
   # "They start with the characters %%, possibly followed by spaces, after which the name
   #  of the field follows, followed by a space and the contents of the field."
   rule info_field do
-    '%%' space* info_field_name space+ (!end_of_line .)+ end_of_line <InfoField>
+    '%%' space* label:info_field_name space+ value:(!end_of_line .)+ end_of_line <InfoField> {
+      def label
+        super.text_value
+      end
+      def value
+        super.text_value
+      end
+    }
   end
 
   # not specified in the draft, but seems to be alphanumeric plus hyphen

@@ -101,7 +101,7 @@ describe "abc-2.0-draft4 PEG" do
       end
     end
 
-    it "allows a meter field for entire tunebook" do
+    it "allows meter fields in the file header" do
       p = parse "M:3/4"
       p.meter.measure_length.should == Rational(3, 4)
     end
@@ -156,25 +156,18 @@ describe "abc-2.0-draft4 PEG" do
 
   describe "extended info fields" do
 
-    it "recognizes an info field" do
-      p = parse "%%abc-copyright (c) ASCAP"
-      p.header.fields.count.should == 1
-      p.header.fields[0].is_a?(ABC::InfoField).should == true
-      p.header.fields[0].text_value.should == "%%abc-copyright (c) ASCAP"
+    it "recognizes an info field in the title header" do
+      p = parse "%%abc-copyright (c) ASCAP\n\nX:1"
+      p.info('abc-copyright').should == "(c) ASCAP"
+      p.tunes[0].info('abc-copyright').should == nil
+      p.propagate_tunebook_header
+      p.tunes[0].info('abc-copyright').should == "(c) ASCAP"
     end
 
-    it "recognizes info fields in the file header" do
-      p = parse "T:Title\n%%abc-copyright (c) ASCAP\nA:Author"
-      p.header.fields.count.should == 3
-      p.header.fields[1].is_a?(ABC::InfoField).should == true
-      p.header.fields[1].text_value.should == "%%abc-copyright (c) ASCAP\n"
-    end
-    
     it "recognizes info fields in the tune header" do
       p = parse "X:1\n%%abc-copyright (c) ASCAP\nA:Author"
-      p.tunes[0].header.fields.count.should == 3
-      p.tunes[0].header.fields[1].is_a?(ABC::InfoField).should == true
-      p.tunes[0].header.fields[1].text_value.should == "%%abc-copyright (c) ASCAP\n"
+      p.info('abc-copyright').should == nil
+      p.tunes[0].info('abc-copyright').should == "(c) ASCAP"
     end
     
     it "does not recognize info fields in the tune body" do

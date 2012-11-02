@@ -34,6 +34,7 @@ end
 
 module ABC
 
+  # these fields have unprocessed string values
   STRING_FIELDS = {
     :author => /A/,
     :book => /B/,
@@ -56,19 +57,30 @@ module ABC
   end
 
   class NodeWithHeader < ABCNode
-    attr_accessor :fallback_header
+    attr_accessor :master_node
     def header
       child(Header)
     end
+    def info(label)
+      fields = header.children(InfoField).select { |f| f.label == label } if header
+      if fields && fields.count > 0
+        fields[-1].value
+      else
+        master_node.info(label) if master_node
+      end
+    end
+    
     def method_missing(meth, *args, &block)
       if STRING_FIELDS[meth]
         values = header.values(STRING_FIELDS[meth])
-        if values.count == 0
-          values = fallback_header.values(STRING_FIELDS[meth])
+        if values.count > 0 
+          values.join("\n")
+        else
+          master_node.send(meth) if master_node
         end
-        values.join("\n")
       end
     end
+
     def meter
       if !@meter && header && (field = header.field(/M/))
         @meter = field.meter
@@ -82,7 +94,7 @@ module ABC
       children(Tune)
     end
     def propagate_tunebook_header
-      tunes.each { |tune| tune.fallback_header = header } if header
+      tunes.each { |tune| tune.master_node = self } if header
     end
     def apply_note_lengths
       tunes.each { |tune| tune.apply_note_lengths }
