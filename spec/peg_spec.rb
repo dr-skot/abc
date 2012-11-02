@@ -489,6 +489,22 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[2].pitch.height.should == -1
     end
 
+    it "resets accidentals at end of measure" do
+      p = parse "K:F\nB=B|B"
+      p.tunes[0].apply_key_signatures
+      p.tunes[0].items[0].pitch.height.should == -2
+      p.tunes[0].items[1].pitch.height.should == -1
+      p.tunes[0].items[3].pitch.height.should == -2
+    end
+
+    it "does not reset accidentals at dotted bar line" do
+      p = parse "K:F\nB=B.|B"
+      p.tunes[0].apply_key_signatures
+      p.tunes[0].items[0].pitch.height.should == -2
+      p.tunes[0].items[1].pitch.height.should == -1
+      p.tunes[0].items[3].pitch.height.should == -1
+    end
+
     it "can apply key signatures to all tunes in tunebook" do
       p = parse "K:Eb\nA=A^AA\n\nK:F\nB"
       p.apply_key_signatures

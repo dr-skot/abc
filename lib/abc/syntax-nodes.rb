@@ -261,11 +261,11 @@ module ABC
       base_signature = key.signature.dup
       signature = base_signature
       items.each do |item|
-        if item.is_a? Note
+        if item.is_a?(Note)
           item.pitch.signature = signature
           # note's accidental may have altered the signature so ask for it back
           signature = item.pitch.signature
-        elsif item.is_a? BarLine
+        elsif item.is_a?(BarLine) && item.type != :dotted
           # reset to base signature at end of each measure
           signature = base_signature
         elsif item.is_a?(Field) && item.label.text_value == "K"
