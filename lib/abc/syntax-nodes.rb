@@ -34,16 +34,40 @@ end
 
 module ABC
 
+  STRING_FIELDS = {
+    :author => /A/,
+    :book => /B/,
+    :composer => /C/,
+    :disc => /D/,
+    :url => /F/, # (think F for file url)
+    :group => /G/,
+    :history => /H/,
+    :notes => /N/,
+    :origin => /O/,
+    :rhythm => /R/,
+    :remark => /r/,
+    :source => /S/,
+    :title => /T/,
+    :transcriber => /Z/,
+  }
+
   # base class for ABC syntax nodes
   class ABCNode < Treetop::Runtime::SyntaxNode
   end
 
   class NodeWithHeader < ABCNode
+    attr_accessor :fallback_header
     def header
       child(Header)
     end
-    def title
-      header.values(/T/).join("\n")
+    def method_missing(meth, *args, &block)
+      if STRING_FIELDS[meth]
+        values = header.values(STRING_FIELDS[meth])
+        if values.count == 0
+          values = fallback_header.values(STRING_FIELDS[meth])
+        end
+        values.join("\n")
+      end
     end
     def meter
       if !@meter && header && (field = header.field(/M/))
@@ -56,6 +80,9 @@ module ABC
   class Tunebook < NodeWithHeader
     def tunes
       children(Tune)
+    end
+    def propagate_tunebook_header
+      tunes.each { |tune| tune.fallback_header = header } if header
     end
     def apply_note_lengths
       tunes.each { |tune| tune.apply_note_lengths }
@@ -160,7 +187,6 @@ module ABC
       end
     end
     def apply_meter(tunebook_meter=nil)
-      # puts "applying meter #{tunebook_meter}"
       @meter = tunebook_meter if tunebook_meter && (!header || !header.field(/M/))
       if measure_length = meter.measure_length
         items.each do |item|

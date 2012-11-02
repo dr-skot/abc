@@ -88,11 +88,17 @@ describe "abc-2.0-draft4 PEG" do
 
 
   describe "fields" do
-    it "parses title fields" do
-      p = parse "T:File\nT:Subtitle\n\nX:1\nT:Godsavethequeen\n\nX:2\nT:Hailtothechief"
-      p.title.should == "File\nSubtitle"
-      p.tunes[0].title.should == "Godsavethequeen"
-      p.tunes[1].title.should == "Hailtothechief"
+    it "knows the string fields" do
+      %w{Aauthor Bbook Ccomposer Ddisc Furl Ggroup Hhistory Nnotes Oorigin 
+         Rrhythm rremark Ssource Ttitle Ztranscriber}.each do |field|
+        label = field[0]
+        name = field[1..-1]
+        p = parse "#{label}:File Header\n\nX:1\n\nX:2\n#{label}:Tune Header\n#{label}:again"
+        p.propagate_tunebook_header
+        p.send(name).should == "File Header"
+        p.tunes[0].send(name).should == "File Header"
+        p.tunes[1].send(name).should == "Tune Header\nagain"
+      end
     end
 
     it "allows a meter field for entire tunebook" do
