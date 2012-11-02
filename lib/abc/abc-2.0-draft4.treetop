@@ -262,7 +262,6 @@ grammar ABC do
   end
 
   # TODO allow comment lines
-  # TODO tune fields on their own line or in square brackets
   rule tune_body do
     tune_line+
   end
@@ -410,8 +409,45 @@ grammar ABC do
   # "ABC parsers should be quite liberal in recognizing bar lines. In the wild, 
   #  bar lines may have any shape, using a sequence of '|' (thin bar line), '[' or ']'
   #  (thick bar line), and ':' (dots). Ex: '|[|', '[|:::'."
-  rule bar_line do
-    ("|" / "[" / "]" / ":")+
+  rule bar_line
+    repeat_before:(':'*) bar repeat_after:(':'*) <BarLine> {
+      def type
+        bar.type
+      end
+      def repeat_before
+        super.text_value.length
+      end
+      def repeat_after
+        super.text_value.length
+      end
+    } /
+    '::' {
+      def type
+        :thin
+      end
+      def repeat_before
+        1
+      end
+      def repeat_after
+        1
+      end
+    }
+  end
+  
+  rule bar do
+    ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
+      def type
+        bar_types = { 
+          '[|]' => :invisible,
+          '.|' => :dotted,
+          '||' => :double,
+          '[|' => :thick_thin,
+          '|]' => :thin_thick,
+          '|' => :thin,
+        }
+        bar_types[text_value]
+      end
+    }
   end
 
   # BASICS

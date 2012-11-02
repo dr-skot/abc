@@ -615,6 +615,94 @@ describe "abc-2.0-draft4 PEG" do
 
   end
   
+  describe "bar lines" do
+
+    it "recognizes simple bar lines" do
+      p = parse "a|b"
+      bar = p.tunes[0].items[1]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :thin
+    end
+
+    it "recognizes double bar lines" do
+      p = parse "a||b"
+      p.tunes[0].items.count.should == 3
+      bar = p.tunes[0].items[1]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :double
+    end
+
+    it "recognizes thin-thick bar lines" do
+      p = parse "a|]"
+      p.tunes[0].items.count.should == 2
+      bar = p.tunes[0].items.last
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :thin_thick
+    end
+
+    it "recognizes thick-thin bar lines" do
+      p = parse "[|C"
+      p.tunes[0].items.count.should == 2
+      bar = p.tunes[0].items[0]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :thick_thin
+    end
+
+    it "recognizes dotted bar lines" do
+      p = parse "a.|b"
+      p.tunes[0].items.count.should == 3
+      bar = p.tunes[0].items[1]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :dotted
+    end
+
+    it "recognizes invisible bar lines" do
+      p = parse "a[|]b"
+      p.tunes[0].items.count.should == 3
+      bar = p.tunes[0].items[1]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :invisible
+    end
+
+    it "knows the left repeat sign" do
+      p = parse "|:"
+      p.tunes[0].items[0].type.should == :thin
+      p.tunes[0].items[0].repeat_before.should == 0
+      p.tunes[0].items[0].repeat_after.should == 1
+    end
+
+    it "knows the right repeat sign" do
+      p = parse ":|"
+      p.tunes[0].items[0].type.should == :thin
+      p.tunes[0].items[0].repeat_before.should == 1
+      p.tunes[0].items[0].repeat_after.should == 0
+    end
+    
+    it "can handle repeats on thin-thick bars" do
+      p = parse ":|]"
+      p.tunes[0].items[0].type.should == :thin_thick
+      p.tunes[0].items[0].repeat_before.should == 1
+      p.tunes[0].items[0].repeat_after.should == 0
+    end
+
+    it "can handle repeats on thick-thin bars" do
+      p = parse "[|:"
+      p.tunes[0].items[0].type.should == :thick_thin
+      p.tunes[0].items[0].repeat_before.should == 0
+      p.tunes[0].items[0].repeat_after.should == 1
+    end
+
+    it "can handle multiple repeats" do
+      p = parse "::|"
+      p.tunes[0].items[0].repeat_before.should == 2
+      p.tunes[0].items[0].repeat_after.should == 0
+    end
+    
+  end
+
+
+
+
   it "accepts spacers" do
     parse "ab y de"
   end
