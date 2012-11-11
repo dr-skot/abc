@@ -272,7 +272,7 @@ grammar ABC do
   
   rule tune_element do
     inline_body_field /
-    tune_space / slur / notelike_thing / rest / broken_rhythm / tie / spacer / bar_line /
+    tune_space / tuplet_symbol / slur / notelike_thing / rest / broken_rhythm / tie / spacer / bar_line /
     ignored_char
   end
 
@@ -441,9 +441,47 @@ grammar ABC do
 
   # DUPLETS, TRIPLETS, QUADRUPLETS, ETC.
   
-  ## These can be simply coded with the notation (2ab for a duplet, (3abc for a triplet or (4abcd for a quadruplet, etc, up to (9.
+  ## These can be simply coded with the notation (2ab for a duplet, (3abc for a triplet or (4abcd for a quadruplet, etc, up to (9. The musical meanings are:
+  ## (2  2 notes in the time of 3
+  ## (3  3 notes in the time of 2
+  ## (4  4 notes in the time of 3
+  ## (5  5 notes in the time of n
+  ## (6  6 notes in the time of 2
+  ## (7  7 notes in the time of n
+  ## (8  8 notes in the time of 3
+  ## (9  9 notes in the time of n
+  ## If the time signature is compound (6/8, 9/8, 12/8) then n is three, otherwise n is two.
+  ## More general tuplets can be specified using the syntax (p:q:r which means 'put p notes into the time of q for the next r notes'. If q is not given, it defaults as above. If r is not given, it defaults to p. 
 
-
+  rule tuplet_symbol do
+    '(' p:integer extra:(':' q:integer? extra:(':' r:integer?)?)? <TupletMarker> {
+      attr_accessor :compound_meter
+      def ratio
+        pval = p.value
+        if !extra.empty? && !extra.q.empty?
+          qval = extra.q.value
+        else
+          # TODO raise error unless p is 2-9
+          qval = "  323n2n3n"[pval]
+          if qval != 'n'
+            qval = qval.to_i
+          elsif compound_meter
+            qval = 3
+          else
+            qval = 2
+          end
+        end
+        Rational(qval, pval);
+      end
+      def num_notes
+        if !extra.empty? && !extra.extra.empty? && !extra.extra.r.empty?
+          extra.extra.r.value
+        else
+          p.value
+        end
+      end
+    }
+  end
 
   # BAR LINES
 

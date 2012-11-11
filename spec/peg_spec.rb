@@ -764,6 +764,97 @@ describe "abc-2.0-draft4 PEG" do
 
   end
 
+  describe "tuplets" do
+    it "parses simple tuplets" do
+      p = parse "(2 ab"
+      p.tunes[0].items[0].is_a?(ABC::TupletMarker).should == true
+      p.tunes[0].items[0].ratio.should == Rational(3, 2)
+      p.tunes[0].items[0].num_notes.should == 2
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 2)
+      
+      p = parse "(3 abc"
+      p.tunes[0].items[0].ratio.should == Rational(2, 3)
+      p.tunes[0].items[0].num_notes.should == 3
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(2, 3)
+
+      p = parse "(4 abcd"
+      p.tunes[0].items[0].ratio.should == Rational(3, 4)
+      p.tunes[0].items[0].num_notes.should == 4
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 4)
+
+      p = parse "(5 abcde"
+      p.tunes[0].items[0].ratio.should == Rational(2, 5)
+      p.tunes[0].items[0].num_notes.should == 5
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 5)
+
+      p = parse "(6 abc abc"
+      p.tunes[0].items[0].ratio.should == Rational(2, 6)
+      p.tunes[0].items[0].num_notes.should == 6
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(2, 6)
+
+      p = parse "(7 abcd abc"
+      p.tunes[0].items[0].ratio.should == Rational(2, 7)
+      p.tunes[0].items[0].num_notes.should == 7
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 7)
+
+      p = parse "(8 abcd abcd"
+      p.tunes[0].items[0].ratio.should == Rational(3, 8)
+      p.tunes[0].items[0].num_notes.should == 8
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 8)
+
+      p = parse "(9 abc abc abc"
+      p.tunes[0].items[0].ratio.should == Rational(2, 9)
+      p.tunes[0].items[0].num_notes.should == 9
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 9)
+
+    end
+
+    it "parses complex tuplets" do
+      p = parse "(3:4:6 abc abc"
+      p.tunes[0].items[0].ratio.should == Rational(4, 3)
+      p.tunes[0].items[0].num_notes.should == 6
+    end
+
+    it "parses complex tuplets with third element missing" do
+      p = parse "(3:4 abc"
+      p.tunes[0].items[0].ratio.should == Rational(4, 3)
+      p.tunes[0].items[0].num_notes.should == 3
+      p = parse "(3:4: abc"
+      p.tunes[0].items[0].ratio.should == Rational(4, 3)
+      p.tunes[0].items[0].num_notes.should == 3
+    end
+
+    it "parses complex tuplets with second element missing" do
+      p = parse "(5::10 abcde abcde"
+      p.tunes[0].items[0].ratio.should == Rational(2, 5)
+      p.tunes[0].items[0].num_notes.should == 10
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 5)
+    end
+
+    it "parses complex tuplets with second and third elements missing" do
+      p = parse "(7:: abcd abc"
+      p.tunes[0].items[0].ratio.should == Rational(2, 7)
+      p.tunes[0].items[0].num_notes.should == 7
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 7)
+      p = parse "(7: abcd abc" # also works with only one :
+      p.tunes[0].items[0].ratio.should == Rational(2, 7)
+      p.tunes[0].items[0].num_notes.should == 7
+      p.tunes[0].items[0].compound_meter = true
+      p.tunes[0].items[0].ratio.should == Rational(3, 7)
+    end
+
+  end
+
 
   it "accepts spacers" do
     parse "ab y de"

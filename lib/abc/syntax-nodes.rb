@@ -368,6 +368,10 @@ module ABC
   class BarLine < MusicNode
   end
 
+  # TUPLET MARKERS
+  class TupletMarker < MusicNode
+    
+  end
 
   # BASICS
 
