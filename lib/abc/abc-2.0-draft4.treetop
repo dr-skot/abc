@@ -272,7 +272,7 @@ grammar ABC do
   
   rule tune_element do
     inline_body_field /
-    tune_space / slur / note / rest / broken_rhythm / tie / spacer / bar_line /
+    tune_space / slur / notelike_thing / rest / broken_rhythm / tie / spacer / bar_line /
     ignored_char
   end
 
@@ -292,6 +292,10 @@ grammar ABC do
   end
   
   # NOTES AND RESTS
+
+  rule notelike_thing
+    grace_note? note
+  end
 
   rule note do
     pitch note_length_node <Note>
@@ -384,7 +388,7 @@ grammar ABC do
 
   rule broken_rhythm do 
     # TODO: instead of lookahead do postparse check
-    ('>'+ / '<'+) &(space* note) <BrokenRhythm> {
+    ('>'+ / '<'+) &(space* notelike_thing) <BrokenRhythm> {
       # direction = '<' or '>'; which note's timing are you changing?
       def change(direction) 
         x = Rational 1, 2 ** text_value.length
@@ -418,6 +422,27 @@ grammar ABC do
   rule spacer do
     "y" <Spacer>
   end
+
+
+  # GRACE NOTES
+  
+  ## Grace notes can be written by enclosing them in curly braces, '{}'. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some packages may ignore them. The unit duration to use for gracenotes is not specified by the ABC file, but by the package, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
+
+  ## To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
+
+  rule grace_note do
+    '{' '/'? note (broken_rhythm? note)* '}'
+  end
+
+  # TODO implement this:
+  ## The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
+
+
+
+  # DUPLETS, TRIPLETS, QUADRUPLETS, ETC.
+  
+  ## These can be simply coded with the notation (2ab for a duplet, (3abc for a triplet or (4abcd for a quadruplet, etc, up to (9.
+
 
 
   # BAR LINES

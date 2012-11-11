@@ -743,6 +743,27 @@ describe "abc-2.0-draft4 PEG" do
     end
   end
 
+  describe "gracenotes" do
+    it "parses gracenotes" do
+      p = parse "{gege}B"
+      p = parse "{/ge4d}B"
+    end
+    
+    it "allows broken rhythm symbols inside gracenotes" do
+      p = parse "{a>b}A"
+    end
+
+    it "allows broken rhythm symbols before gracenote" do
+      p = parse "B>{ab}A"
+    end
+
+    # TODO make this work
+    #it "allows broken rhythm symbols after gracenote" do
+    #  p = parse "B{ab}>A"
+    #end
+
+  end
+
 
   it "accepts spacers" do
     parse "ab y de"
