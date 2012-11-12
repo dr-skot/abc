@@ -294,7 +294,11 @@ grammar ABC do
   # NOTES AND RESTS
 
   rule notelike_thing
-    grace_note? note
+    grace_note? space* decoration_nodes:decoration* space* pitch note_length_node <Note> {
+     def decorations
+       decoration_nodes.elements.map {|n| n.symbol }
+     end
+   }
   end
 
   rule note do
@@ -305,8 +309,7 @@ grammar ABC do
     accidental note_letter octave_shift <Pitch>
   end
   
-  # "The symbols '^', '=' and '_' are used (before a note) to notate respectively 
-  #  a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
+  ## "The symbols '^', '=' and '_' are used (before a note) to notate respectively a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
   rule accidental do
     ("^^" / "^" / "__" / "_" / "=")? '' {
       def value
@@ -437,6 +440,8 @@ grammar ABC do
   # TODO implement this:
   ## The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
 
+  # TODO allow broken rhythm notation inside gracenote brackets eg {a>b}
+
 
 
   # DUPLETS, TRIPLETS, QUADRUPLETS, ETC.
@@ -479,6 +484,28 @@ grammar ABC do
         else
           p.value
         end
+      end
+    }
+  end
+
+  # DECORATIONS
+
+  ## Staccato marks (a small dot above or below the note head) can be notated by a dot before the note, i.e. a staccato triplet is written as (3.a.b.c
+  ## For fiddlers, the letters u and v can be used to denote up-bow and down-bow, e.g. vAuBvA
+  ## Other common symbols are available such as
+  ##   ~       Irish roll
+  ##   T       trill
+  ##   H       fermata
+  ##   L       accent or emphasis
+  ##   M       lowermordent
+  ##   P       uppermordent
+  ##   S       segno
+  ##   O       coda
+  ## However these characters (~.uvTHLMPSO) are just short cuts for commonly used decorations and can even be redefined (see section Redefinable symbols). More generally, symbols can be entered using the syntax +symbol+, e.g. +trill+A4 for a trill symbol (tr).
+  rule decoration do
+    '+' label:[^+]+ '+' {
+      def symbol
+        label.text_value
       end
     }
   end

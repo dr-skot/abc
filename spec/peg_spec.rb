@@ -855,6 +855,13 @@ describe "abc-2.0-draft4 PEG" do
 
   end
 
+  describe "decorations" do
+    it "recognizes +symbol+ decorations" do
+      p = parse "+trill+ A"
+      p.tunes[0].items[0].decorations[0].should == "trill";
+    end
+  end
+
 
   it "accepts spacers" do
     parse "ab y de"
