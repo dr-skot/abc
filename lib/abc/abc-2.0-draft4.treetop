@@ -292,13 +292,26 @@ grammar ABC do
   end
   
   # NOTES AND RESTS
-
-  rule notelike_thing
-    grace_note? space* decoration_nodes:decoration* space* pitch note_length_node <Note> {
-     def decorations
-       decoration_nodes.elements.map {|n| n.symbol }
-     end
-   }
+    
+  rule notelike_thing do
+    grace_note? space* decoration_nodes:decoration* space* stroke:stroke <NoteOrRest> {
+       def decorations
+         decoration_nodes.elements.map {|n| n.symbol }
+       end
+       def pitch
+         stroke.pitch if stroke.respond_to? :pitch
+       end
+       def note_length_node
+         stroke.note_length_node if stroke.respond_to? :note_length_node
+       end
+       def notes
+         stroke.notes if stroke.respond_to? :notes
+       end
+    }
+  end
+ 
+  rule stroke do
+     chord / note
   end
 
   rule note do
@@ -509,6 +522,31 @@ grammar ABC do
       end
     }
   end
+
+  ## 4.17. Chords and unisons
+  ## Chords (i.e. more than one note head on a single stem) can be coded with [] symbols around the notes, e.g.
+  ## [CEGc]
+  ## produces the chord of C major. They can be grouped in beams, e.g.
+  ## [d2f2][ce][df]
+  ## but there should be no spaces within a chord. See the tune 'Kitchen Girl' in the file Reels.abc for a simple example.
+  ## All the notes within a chord should have the same length. More complicated chords can be transcribed with the & operator, see section Voice overlay.
+  ## Some packages allow chords with notes of different lengths. However, currenly the semantics of such chords are not well-defined and differ from package to package.
+  ## The chord forms a syntactic grouping, to which the same prefixes and postfixes can be attached as to an ordinary note, except for accidentals. In particular, the following notation is legal:
+  ## ( "^I" +f+ [CEG]- > [CEG] "^IV" [F=AC]3/2"^V"[GBD]/  H[CEG]2 )
+  ## When both inside and outside the chord length modifiers are used, they should be multiplied. I.e. [C2E2G2]3 has the same meaning as [CEG]6.
+  ## If the chord contains two notes both of the same length and pitch, such as
+  ## [DD]
+  ## then it is a unison (e.g. a note played on two strings of a violin simultaneously) and is shown with one stem and two note-heads:
+
+  rule chord do
+    '[' notes_node:note+ ']' note_length_node <Chord> {
+      def notes
+        notes_node.elements
+      end
+    }
+  end
+
+
 
   # BAR LINES
 

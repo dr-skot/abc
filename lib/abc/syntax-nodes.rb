@@ -111,6 +111,9 @@ module ABC
     def apply_broken_rhythms
       tunes.each { |tune| tune.apply_broken_rhythms }
     end
+    def apply_chord_lengths
+      tunes.each { |tune| tune.apply_chord_lengths }
+    end
     def apply_meter
       tunes.each { |tune| tune.apply_meter(meter) }
     end
@@ -224,6 +227,15 @@ module ABC
         end
       end
     end
+    def apply_chord_lengths
+      items.each do |item|
+        if item.respond_to?(:stroke) and item.stroke.is_a?(Chord)
+          item.notes.each do |note|
+            note.chord_length = item.note_length
+          end
+        end
+      end
+    end
     def apply_meter(tunebook_meter=nil)
       @meter = tunebook_meter if tunebook_meter && (!header || !header.field(/M/))
       if measure_length = meter.measure_length
@@ -248,12 +260,10 @@ module ABC
     end
     def key
       if !@key
-        field = header.field(/K/)
-        if field
+        @key = NO_KEY
+        if header && (field = header.field(/K/))
           @key = field.value
-        else
-          @key = NO_KEY
-        end
+        end 
       end
       @key
     end
@@ -261,10 +271,15 @@ module ABC
       base_signature = key.signature.dup
       signature = base_signature
       items.each do |item|
-        if item.is_a?(Note)
+        if item.respond_to?(:pitch) && item.pitch
           item.pitch.signature = signature
           # note's accidental may have altered the signature so ask for it back
           signature = item.pitch.signature
+        elsif item.respond_to?(:notes)
+          item.notes.each do |note|
+            note.pitch.signature = signature
+            signature = note.pitch.signature
+          end
         elsif item.is_a?(BarLine) && item.type != :dotted
           # reset to base signature at end of each measure
           signature = base_signature
@@ -292,14 +307,18 @@ module ABC
   class NoteOrRest < MusicNode
     attr_accessor :unit_note_length
     attr_accessor :broken_rhythm
+    attr_accessor :chord_length
     def unit_note_length
       @unit_note_length || 1
     end
     def broken_rhythm
       @broken_rhythm || 1
     end
+    def chord_length
+      @chord_length || 1
+    end
     def note_length
-      note_length_node.value * unit_note_length * broken_rhythm
+      note_length_node.value * unit_note_length * broken_rhythm * chord_length
     end
   end
   
@@ -364,13 +383,16 @@ module ABC
   class Spacer < MusicNode
   end
 
-  # BAR LINES
-  class BarLine < MusicNode
+  # TUPLET MARKERS
+  class TupletMarker < MusicNode    
   end
 
-  # TUPLET MARKERS
-  class TupletMarker < MusicNode
-    
+  # CHORDS
+  class Chord < NoteOrRest
+  end
+
+  # BAR LINES
+  class BarLine < MusicNode
   end
 
   # BASICS

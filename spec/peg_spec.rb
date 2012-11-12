@@ -860,8 +860,52 @@ describe "abc-2.0-draft4 PEG" do
       p = parse "+trill+ A"
       p.tunes[0].items[0].decorations[0].should == "trill";
     end
+    # TODO shortcut decorations & annotations
   end
 
+  describe "chords" do
+    it "recognizes chords" do
+      p = parse "[CEG]"
+      p.tunes[0].items[0].stroke.is_a?(Chord).should == true
+      p.tunes[0].items[0].notes.count.should == 3
+      p.tunes[0].items[0].notes[0].is_a?(Note).should == true
+      p.tunes[0].items[0].notes[0].pitch.height.should == 0
+    end
+    it "allows length modifier on chords" do
+      p = parse "[CEG]3/2"
+      p.tunes[0].items[0].note_length.should == Rational(3, 2)
+    end
+    it "allows length modifiers inside chords" do
+      p = parse "[C2E2G2]"
+      p.tunes[0].items[0].notes[0].note_length.should == 2
+    end
+    it "multiplies inner length modifiers by outer" do
+      p = parse "[C2E2G2]3/"
+      p.tunes[0].items[0].notes[0].note_length.should == 2
+      p.apply_chord_lengths
+      p.tunes[0].items[0].notes[0].note_length.should == 3
+    end
+    it "applies key signatures to chord pitches" do
+      p = parse "K:D\n[DFA]"
+      p.tunes[0].items[0].notes[1].pitch.height.should == 5
+      p.apply_key_signatures
+      p.tunes[0].items[0].notes[1].pitch.height.should == 6      
+    end
+    it "applies measure accidentals to chord pitches" do
+      p = parse "^F[DFA]|[DFA]"
+      p.tunes[0].items[1].notes[1].pitch.height.should == 5
+      p.apply_key_signatures
+      p.tunes[0].items[1].notes[1].pitch.height.should == 6      
+      p.tunes[0].items[3].notes[1].pitch.height.should == 5      
+    end
+    it "creates measure accidentals from chord pitches" do
+      p = parse "[D^FA]F|F"
+      p.tunes[0].items[1].pitch.height.should == 5
+      p.apply_key_signatures
+      p.tunes[0].items[1].pitch.height.should == 6      
+      p.tunes[0].items[3].pitch.height.should == 5
+    end
+  end
 
   it "accepts spacers" do
     parse "ab y de"
