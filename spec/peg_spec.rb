@@ -907,6 +907,47 @@ describe "abc-2.0-draft4 PEG" do
     end
   end
 
+  describe "chord symbols" do
+    it "can attach a chord symbol to a note" do
+      p = parse '"Am7"A2D2'
+      p.tunes[0].items[0].chord_symbol.should == "Am7"
+    end
+    it "can handle bass notes" do
+      p = parse '"C/E"G'
+      p.tunes[0].items[0].chord_symbol.should == "C/E"
+    end
+    it "can handle alternate chords" do
+      p = parse '"G(Em/G)"G'
+      p.tunes[0].items[0].chord_symbol.should == "G(Em/G)"
+    end
+    # TODO parse the chord symbols for note, type, bassnote etc
+  end
+
+  describe "annotations" do
+    it "can place text above a note" do
+      p = parse '"^above"c'
+      p.tunes[0].items[0].annotations[0].placement.should == :above
+      p.tunes[0].items[0].annotations[0].text.should == "above"
+    end
+    it "can place text below a note" do
+      p = parse '"_below"c'
+      p.tunes[0].items[0].annotations[0].placement.should == :below
+      p.tunes[0].items[0].annotations[0].text.should == "below"
+    end
+    it "can place text to the left and right of a note" do
+      p = parse '"<(" ">)" c'
+      p.tunes[0].items[0].annotations[0].placement.should == :left
+      p.tunes[0].items[0].annotations[0].text.should == "("
+      p.tunes[0].items[0].annotations[1].placement.should == :right
+      p.tunes[0].items[0].annotations[1].text.should == ")"
+    end
+    it "can handle annotations with unspecified placement" do
+      p = parse '"@wherever"c'
+      p.tunes[0].items[0].annotations[0].placement.should == :unspecified
+      p.tunes[0].items[0].annotations[0].text.should == "wherever"
+    end
+  end
+
   it "accepts spacers" do
     parse "ab y de"
   end

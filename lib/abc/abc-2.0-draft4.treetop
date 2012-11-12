@@ -292,11 +292,19 @@ grammar ABC do
   end
   
   # NOTES AND RESTS
-    
+
+    # TODO annotations and decorations can be interspersed
+    # TODO these things can be separated by spaces
   rule notelike_thing do
-    grace_note? space* decoration_nodes:decoration* space* stroke:stroke <NoteOrRest> {
+    grace_note? space* chord_annotation:chord_annotation? annotation_nodes:annotation* decoration_nodes:decoration* space* stroke:stroke <NoteOrRest> {
        def decorations
          decoration_nodes.elements.map {|n| n.symbol }
+       end
+       def annotations
+         annotation_nodes.elements
+       end
+       def chord_symbol
+         chord_annotation.symbol if !chord_annotation.empty?
        end
        def pitch
          stroke.pitch if stroke.respond_to? :pitch
@@ -516,14 +524,14 @@ grammar ABC do
   ##   O       coda
   ## However these characters (~.uvTHLMPSO) are just short cuts for commonly used decorations and can even be redefined (see section Redefinable symbols). More generally, symbols can be entered using the syntax +symbol+, e.g. +trill+A4 for a trill symbol (tr).
   rule decoration do
-    '+' label:[^+]+ '+' {
+    '+' label:[^+]+ '+' space* {
       def symbol
         label.text_value
       end
     }
   end
 
-  ## 4.17. Chords and unisons
+  ## 4.17. CHORDS AND UNISONS
   ## Chords (i.e. more than one note head on a single stem) can be coded with [] symbols around the notes, e.g.
   ## [CEGc]
   ## produces the chord of C major. They can be grouped in beams, e.g.
@@ -546,6 +554,54 @@ grammar ABC do
     }
   end
 
+
+  ## 4.18. CHORD SYMBOLS
+  ## Chord symbols (e.g. chords/bass notes) can be put in under the melody line (or above, depending on the package) using double-quotation marks placed to the left of the note it is sounded with, e.g. "Am7"A2D2.
+  ## The chord has the format <note><accidental><type></bass>, where <note> can be A-G, the optional <accidental> can be b, #, the optional <type> is one or more of
+  ##   m or min        minor
+  ##   maj             major
+  ##   dim             diminished
+  ##   aug or +        augmented
+  ##   sus             sustained
+  ##   7, 9 ...        7th, 9th, etc.
+  ## and </bass> is an optional bass note.
+  ## A slash after the chord type is used only if the optional bass note is also used, e.g., "C/E". If the bass note is a regular part of the chord, it indicates the inversion, i.e., which note of the chord is lowest in pitch. If the bass note is not a regular part of the chord, it indicates an additional note that should be sounded with the chord, below it in pitch. The bass note can be any letter (A-G or a-g), with or without a trailing accidental sign (b or #). The case of the letter used for the bass note does not affect the pitch.
+  ## Alternate chords can be indicated for printing purposes (but not for playback) by enclosing them in parentheses inside the double-quotation marks after the regular chord, e.g., "G(Em)".
+  ## Programs should treat chord symbols quite liberally.
+
+  rule chord_annotation do
+    '"' symbol:(chord_symbol space* ('(' chord_symbol ')')?) '"' {
+      def symbol
+        super.text_value
+      end
+    }
+  end
+
+  rule chord_symbol do
+    [A-G] 
+    ('b' / '#')? 
+    ('m' / 'min' / 'maj' / 'dim' / 'aug' / '+' / 'sus' / integer / space)*
+    ('/' [A-Ga-g])?
+  end
+
+
+  ##  4.19. ANNOTATIONS
+  ##  General text annotations can be added above, below or on the staff in a similar way to chord symbols. In this case, the string within double quotes is preceded by one of five symbols '^', '_', '<', '>' or '@' which controls where the annotation is to be placed; above, below, to the left or right respectively of the following note, rest or bar line. Using the '@' symbol leaves the exact placing of the string to the discretion of the interpreting program. These placement specifiers distinguish annotations from chord symbols, and should prevent programs from attempting to play or transpose them. All text that follows the placement specifier is treated as an ABC string.
+  ## Where two or more annotations with the same placement specifier are placed consecutively, e.g. for fingerings, the notation program should draw them on separate lines, with the first listed at the top.
+  ## Example:
+  ## "<(" ">)" C
+  ## Places the note between parentheses.
+
+  rule annotation do
+    '"' placement_specifier:('^' / '_' / '<' / '>' / '@') text:(!'"' .)* '"' space* {
+      def placement
+        { '^' => :above, '_' => :below, '<' => :left, '>' => :right, '@' => :unspecified }[placement_specifier.text_value]
+      end
+      def text
+        super.text_value
+      end
+    }
+  end
 
 
   # BAR LINES
