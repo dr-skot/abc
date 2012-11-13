@@ -187,6 +187,17 @@ grammar ABC do
     }
   end
 
+  rule range do
+    first:integer '-' last:integer {
+      def first
+        super.value
+      end
+      def last
+        super.value
+      end
+    }
+  end
+
 
   # KEY
 
@@ -272,7 +283,7 @@ grammar ABC do
   
   rule tune_element do
     inline_body_field /
-    tune_space / tuplet_symbol / slur / notelike_thing / rest / broken_rhythm / tie / spacer / bar_line /
+    tune_space / tuplet_symbol / slur / variant_ending / notelike_thing / rest / broken_rhythm / tie / spacer / bar_line /
     ignored_char
   end
 
@@ -294,9 +305,8 @@ grammar ABC do
   # NOTES AND RESTS
 
     # TODO annotations and decorations can be interspersed
-    # TODO these things can be separated by spaces
   rule notelike_thing do
-    grace_note? space* chord_annotation:chord_annotation? annotation_nodes:annotation* decoration_nodes:decoration* space* stroke:stroke <NoteOrRest> {
+    grace_note? space* chord_annotation:chord_annotation? annotation_nodes:annotation* decoration_nodes:decoration* stroke:stroke <NoteOrRest> {
        def decorations
          decoration_nodes.elements.map {|n| n.symbol }
        end
@@ -426,7 +436,107 @@ grammar ABC do
   end
 
 
-  # TIES AND SLURS
+  ## 4.8. REPEAT/BAR SYMBOLS
+  ## Bar line symbols are notated as follows:
+  ##   |  bar line
+  ##   |] thin-thick double bar line
+  ##   || thin-thin double bar line
+  ##   [| thick-thin double bar line
+  ##   |: start of repeated section
+  ##   :| end of repeated section
+  ##   :: start & end of two repeated sections
+  ## If an 'end of repeated section' is found without a previous 'start of repeated section', the music restarts from the beginning of the tune, or from the latest double bar line or end of repeated section.
+  ## Note that the notation :: is short for :| followed by |:. The variants ::, :|: and :||: are all equivalent.
+  ## By extension, |:: and ::| mean the start and end of a section that is to be repeated three times, and so on.
+  ## A dotted bar line can be notated by preceding it with a dot, e.g. '.|'. This may be useful for notating editorial bar lines in music with very long measures. An invisible bar line may be notated by putting the bar line in brackets, e.g. '[|]'. This may be useful for e.g. notating Voice overlay in meter free music.
+  ## ABC parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of '|' (thin bar line), '[' or ']' (thick bar line), and ':' (dots). Ex: '|[|', '[|:::'.
+
+  rule bar_line
+    repeat_before:':'* bar repeat_after:':'* variant_number:integer? <BarLine> {
+      def type
+        bar.type
+      end
+      def repeat_before
+        super.text_value.length
+      end
+      def repeat_after
+        super.text_value.length
+      end
+      def variant_number
+        super.value if !super.empty?
+      end
+    } /
+    '::' <BarLine> {
+      def type
+        :thin
+      end
+      def repeat_before
+        1
+      end
+      def repeat_after
+        1
+      end
+    }
+  end
+  
+  rule bar do
+    ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
+      def type
+        bar_types = { 
+          '[|]' => :invisible,
+          '.|' => :dotted,
+          '||' => :double,
+          '[|' => :thick_thin,
+          '|]' => :thin_thick,
+          '|' => :thin,
+        }
+        bar_types[text_value]
+      end
+    }
+  end
+
+
+  ## 4.9. FIRST AND SECOND REPEATS
+  ## First and second repeats can be notated with the symbols [1 and [2, e.g.
+  ##   faf gfe|[1 dfe dBA:|[2 d2e dcB|].
+  ## When adjacent to bar lines, these can be shortened to |1 and :|2, but with regard to spaces
+  ##   | [1
+  ## is legal, while
+  ##   | 1
+  ## is not.
+  ## Thus, a tune with different ending for the first and second repeats has the general form:
+  ##   |:  common body of tune  |1  first ending  :|2  second ending  ||
+  ## Again, note that in many ABC files the |: will not be present.
+
+  # ** This is implemented by the repeat_number feature of bar_line, above, and by variant_ending, below
+
+
+  ## 4.10. VARIANT ENDINGS
+  ## In combination with P part notation, it is possible to notate more than two variant endings for a section that is to be repeated a number of times.
+  ## For example, if the header of the tune contains P:A4.B4 then parts A and B will each be played 4 times. To play a different ending each time, you could write in the tune:
+  ##    P:A
+  ##    <notes> | [1  <notes>  || [2 <notes> || [3 <notes> || [4 <notes> ||
+  ## The Nth ending starts with [N and ends with one of '||', ':|' '|]' or '[|'. You can also mark a section as being used for more than one ending e.g.
+  ##    [1,3 <notes> ||
+  ## plays on the 1st and 3rd endings and
+  ##    [1-3 <notes> ||
+  ## plays on endings 1, 2 and 3. In general, '[' can be followed by any list of numbers and ranges as long as it contains no spaces e.g.
+  ##    [1,3,5-7  <notes>  || [2,4,8 <notes> ||
+
+  # TODO implement variant endings
+  rule variant_ending do
+    '[' (range / integer) (',' (range / integer))* space+
+  end
+
+  ## 4.11. TIES AND SLURS
+  ## You can tie two notes together either across or within a bar with a '-' symbol, e.g. abc-|cba or abc-cba. More general slurs can be put in with () symbols. Thus (DEFG) puts a slur over the four notes. Spaces within a slur are OK, e.g. ( D E F G ) .
+  ## Slurs may be nested:
+  ##   (c (d e f) g a)
+  ## and they may also start and end on the same note:
+  ##   (c d (e) f g a)
+  ## An unnested slur on a singe note, e.g. |c d (e) f g a| is legal, but will be ignored.
+  ## A dotted slur may be notated by preceding the opening brace with a dot, e.g. .(cde); it is optional to dot the closing brace. Likewise, a dotted tie can be transcribed by preceding it with a dot, e.g. C.-C. This is especially useful in parts with multiple verses: some verses may require a slur, some may not.
+  ## It should be noted that although the tie '-' and slur '()' produce similar symbols in staff notation they have completely different meanings to player programs and should not be interchanged. Ties connect two successive notes of the same pitch, causing them to be played as a single note, while slurs connect the first and last note of any series of notes, and may be used to indicate phrasing, or that the group should be played legato. Both ties and slurs may be used into, out of and between chords, and in this case the distinction between them is particularly important.
 
   rule tie do
     '-' <Tie>
@@ -443,23 +553,15 @@ grammar ABC do
     }
   end
 
-  rule spacer do
-    "y" <Spacer>
-  end
-
-
-  # GRACE NOTES
-  
+  ## 4.12. GRACE NOTES  
   ## Grace notes can be written by enclosing them in curly braces, '{}'. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some packages may ignore them. The unit duration to use for gracenotes is not specified by the ABC file, but by the package, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
-
   ## To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
+  # TODO implement this:
+  ## The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
 
   rule grace_note do
     '{' '/'? note (broken_rhythm? note)* '}'
   end
-
-  # TODO implement this:
-  ## The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
 
   # TODO allow broken rhythm notation inside gracenote brackets eg {a>b}
 
@@ -604,51 +706,11 @@ grammar ABC do
   end
 
 
-  # BAR LINES
+  # TODO find a better place for this
+  rule spacer do
+    "y" <Spacer>
+  end
 
-  # "ABC parsers should be quite liberal in recognizing bar lines. In the wild, 
-  #  bar lines may have any shape, using a sequence of '|' (thin bar line), '[' or ']'
-  #  (thick bar line), and ':' (dots). Ex: '|[|', '[|:::'."
-  rule bar_line
-    repeat_before:(':'*) bar repeat_after:(':'*) <BarLine> {
-      def type
-        bar.type
-      end
-      def repeat_before
-        super.text_value.length
-      end
-      def repeat_after
-        super.text_value.length
-      end
-    } /
-    '::' {
-      def type
-        :thin
-      end
-      def repeat_before
-        1
-      end
-      def repeat_after
-        1
-      end
-    }
-  end
-  
-  rule bar do
-    ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
-      def type
-        bar_types = { 
-          '[|]' => :invisible,
-          '.|' => :dotted,
-          '||' => :double,
-          '[|' => :thick_thin,
-          '|]' => :thin_thick,
-          '|' => :thin,
-        }
-        bar_types[text_value]
-      end
-    }
-  end
 
   # BASICS
 

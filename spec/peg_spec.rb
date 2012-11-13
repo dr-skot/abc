@@ -713,7 +713,18 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[0].repeat_before.should == 2
       p.tunes[0].items[0].repeat_after.should == 0
     end
-    
+  end
+
+  describe "variant endings" do
+    it "can parse first and second repeats" do
+      p = parse "[1 abc :|[2 def ||"
+      p = parse "abc|1 abc:|2 def ||"
+      p.tunes[0].items[3].variant_number.should == 1
+      p.tunes[0].items[8].variant_number.should == 2
+    end
+    it "can parse complex variants" do
+      p = parse "[1,3,5-7 abc || [2,4,8 def ||"
+    end
   end
 
   describe "ties" do
@@ -942,7 +953,7 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[0].annotations[1].text.should == ")"
     end
     it "can handle annotations with unspecified placement" do
-      p = parse '"@wherever"c'
+      p = parse '"@wherever" c'
       p.tunes[0].items[0].annotations[0].placement.should == :unspecified
       p.tunes[0].items[0].annotations[0].text.should == "wherever"
     end
