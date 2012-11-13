@@ -278,15 +278,31 @@ grammar ABC do
   end
 
   rule tune_line do
-    (tune_element+ / raw_body_field) line_ender
+    (tune_element+ / raw_body_field) tune_line_ender
   end
-  
+
+  rule tune_line_ender do
+     '' line_ender <TuneLineBreak> {
+       def hard?
+         false
+       end
+     } / '\\' line_ender
+  end
+
   rule tune_element do
     inline_body_field /
-    tune_space / tuplet_symbol / slur / variant_ending / notelike_thing / rest / broken_rhythm / tie / spacer / bar_line /
+    tune_space / tuplet_symbol / slur / variant_ending / notelike_thing / rest / broken_rhythm / tie / spacer / bar_line / tune_hard_linebreak /
     ignored_char
   end
 
+  rule tune_hard_linebreak do
+    '!' <TuneLineBreak> {
+       def hard?
+         true
+       end
+    }
+  end
+  
   # "# $ * ; ? @
   #  To ensure forward compatibility, current software should ignore these characters
   #  when they appear inside or between note groups, possibly giving a warning."

@@ -6,6 +6,16 @@ class Object
   end
 end
 
+class Array
+  # http://stackoverflow.com/questions/4800337/split-array-into-sub-arrays-based-on-value
+  def split
+    result = [a=[]]
+    each{ |o| yield(o) ? (result << a=[]) : (a << o) }
+    result.pop if a.empty?
+    result
+  end
+end
+
 class Treetop::Runtime::SyntaxNode
 
   # TODO mother, descendants, left_sister, right_sister
@@ -188,6 +198,24 @@ module ABC
         1
       end
     end
+    def lines
+      if !@lines
+        @lines = []
+        a = []
+        is_hard_break = false
+        all_items = children.select { |c| c.is_a?(MusicNode) || c.is_a?(Field) || c.is_a?(TuneLineBreak) }
+        all_items.each do |it|
+          if it.is_a?(TuneLineBreak)
+            @lines << TuneLine.new(a, is_hard_break)
+            is_hard_break = it.hard?
+            a = []
+          else
+            a << it
+          end
+        end
+      end
+      @lines
+    end
     def items
       children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) }
     end
@@ -292,6 +320,17 @@ module ABC
     end
   end
 
+  class TuneLine
+    attr_reader :items
+    def initialize(items, is_hard_break=false)
+      @items = items
+      @is_hard_break = is_hard_break
+    end
+    def hard_break?
+      @is_hard_break
+    end
+  end
+
   class TuneHeader < Header
   end
 
@@ -299,6 +338,9 @@ module ABC
   end
   
   class TuneSpace < MusicNode
+  end
+
+  class TuneLineBreak < ABCNode
   end
 
   # NOTES AND RESTS
