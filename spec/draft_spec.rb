@@ -19,8 +19,8 @@ describe "abc 2.0 draft 4" do
   describe "remarks support" do
     it "ignores remarks in music lines" do
       p = parse "abc %remark\ndef %remark\n"
-      p.tunes[0].items[3].is_a?(TuneSpace).should == true
-      p.tunes[0].items[4].is_a?(NoteOrRest).should == true
+      p.tunes[0].items[2].pitch.height.should == 12 # c
+      p.tunes[0].items[3].pitch.height.should == 14 # d
     end
     it "ignores remarks in header lines" do
       p = parse "T:Jingle Bells % jingle all the way y'all!\n"
@@ -28,9 +28,9 @@ describe "abc 2.0 draft 4" do
     end
     it "allows [r: remarks] in music" do
       p = parse "def [r: remarks] abc"
-      p.tunes[0].items[3].is_a?(TuneSpace).should == true
-      p.tunes[0].items[4].is_a?(Field).should == true
-      p.tunes[0].items[5].is_a?(TuneSpace).should == true
+      p.tunes[0].items[2].pitch.height.should == 17 # f
+      p.tunes[0].items[3].is_a?(Field).should == true
+      p.tunes[0].items[4].pitch.height.should == 9 # a
     end
   end
 
@@ -51,6 +51,10 @@ describe "abc 2.0 draft 4" do
       p = parse "abc\\\ndef"
       p.tunes[0].lines.count.should == 1
       p.tunes[0].lines[0].items.count.should == 6
+    end
+    it "allows space and comments after backslash" do
+      p = parse "abc \\ % remark \n def"
+      p.tunes[0].lines.count.should == 1
     end
   end
 

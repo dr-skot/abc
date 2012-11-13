@@ -604,21 +604,21 @@ describe "abc-2.0-draft4 PEG" do
       tune = p.tunes[0]
       tune.items[0].note_length.should == 1
       tune.items[2].note_length.should == 1
-      tune.items[4].note_length.should == 1
+      tune.items[3].note_length.should == 1
+      tune.items[5].note_length.should == 1
       tune.items[6].note_length.should == 1
       tune.items[8].note_length.should == 1
-      tune.items[10].note_length.should == 1
-      tune.items[12].note_length.should == 1
-      tune.items[14].note_length.should == 1
+      tune.items[9].note_length.should == 1
+      tune.items[11].note_length.should == 1
       p.apply_broken_rhythms
       tune.items[0].note_length.should == Rational(3, 2)
       tune.items[2].note_length.should == Rational(1, 2)
-      tune.items[4].note_length.should == Rational(1, 2)
-      tune.items[6].note_length.should == Rational(3, 2)
-      tune.items[8].note_length.should == Rational(1, 4)
-      tune.items[10].note_length.should == Rational(7, 4)
-      tune.items[12].note_length.should == Rational(15, 8)
-      tune.items[14].note_length.should == Rational(1, 8)
+      tune.items[3].note_length.should == Rational(1, 2)
+      tune.items[5].note_length.should == Rational(3, 2)
+      tune.items[6].note_length.should == Rational(1, 4)
+      tune.items[8].note_length.should == Rational(7, 4)
+      tune.items[9].note_length.should == Rational(15, 8)
+      tune.items[11].note_length.should == Rational(1, 8)
     end
     
     it "works in tandem with unit note length and note length markers" do
@@ -720,7 +720,7 @@ describe "abc-2.0-draft4 PEG" do
       p = parse "[1 abc :|[2 def ||"
       p = parse "abc|1 abc:|2 def ||"
       p.tunes[0].items[3].variant_number.should == 1
-      p.tunes[0].items[8].variant_number.should == 2
+      p.tunes[0].items[7].variant_number.should == 2
     end
     it "can parse complex variants" do
       p = parse "[1,3,5-7 abc || [2,4,8 def ||"
@@ -963,17 +963,24 @@ describe "abc-2.0-draft4 PEG" do
     parse "ab y de"
   end
   
-  it "recognizes spaces as significant in music" do 
-    p = parse "ab"
-    p.tunes[0].items.count.should == 2
-    p = parse "a   b"
-    p.tunes[0].items.count.should == 3
-    p.tunes[0].items[1].is_a?(ABC::TuneSpace).should == true
-  end
-
-  it "ignores backticks in tune body" do
-    p = parse "a``b c3/`^d"
-    p.tunes[0].items.map { |item| item.text_value }.join(',').should == 'a,b, ,c3/,^d'
+  describe "beaming support" do
+    it "beams adjacent notes" do
+      p = parse "abc d e"
+      p.apply_beams
+      p.tunes[0].items[0].beam.should == :start
+      p.tunes[0].items[1].beam.should == :middle
+      p.tunes[0].items[2].beam.should == :end
+      p.tunes[0].items[3].beam.should == nil
+      p.tunes[0].items[4].beam.should == nil
+    end
+    it "can stretch beam with backticks" do
+      p = parse "a``b c3/`^d"
+      p.apply_beams
+      p.tunes[0].items[0].beam.should == :start
+      p.tunes[0].items[1].beam.should == :end
+      p.tunes[0].items[2].beam.should == :start
+      p.tunes[0].items[3].beam.should == :end
+    end
   end
 
 end

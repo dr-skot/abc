@@ -130,6 +130,9 @@ module ABC
     def apply_key_signatures
       tunes.each { |tune| tune.apply_key_signatures }
     end
+    def apply_beams
+      tunes.each { |tune| tune.apply_beams }
+    end
   end
   
   class Header < ABCNode
@@ -318,6 +321,23 @@ module ABC
         end
       end
     end
+    def apply_beams
+      beam = :start
+      last_note = nil
+      children.each do |item|
+        if item.is_a?(TuneSpace) || item.is_a?(BarLine) || item.is_a?(TuneLineBreak)
+          beam = :start
+          if last_note
+            last_note.beam = nil if last_note.beam == :start
+            last_note.beam = :end if last_note.beam == :middle
+          end
+        elsif item.is_a?(NoteOrRest)
+          item.beam = beam
+          beam = :middle
+          last_note = item
+        end
+      end
+    end
   end
 
   class TuneLine
@@ -337,7 +357,7 @@ module ABC
   class MusicNode < ABCNode
   end
   
-  class TuneSpace < MusicNode
+  class TuneSpace < ABCNode
   end
 
   class TuneLineBreak < ABCNode
@@ -350,6 +370,7 @@ module ABC
     attr_accessor :unit_note_length
     attr_accessor :broken_rhythm
     attr_accessor :chord_length
+    attr_accessor :beam
     def unit_note_length
       @unit_note_length || 1
     end
