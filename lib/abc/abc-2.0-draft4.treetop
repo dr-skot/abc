@@ -52,7 +52,21 @@ grammar ABC do
 
   rule other_body_field do
     # KMLQ already found by earlier rule
-    label:[ImNRRrTUVWw] ':' value:(!(line_ender/"]") .)+ <Field>
+    label:[ImNRRrTUVWw] ':' space* value:rest_of_tune_field <Field> {
+      def value
+        super.value
+      end
+    }
+  end
+
+  rule rest_of_tune_field do
+    line:(!(line_ender/']'/'\\') .)+ extra:('\\' line_ender recursive:rest_of_tune_field)? {
+      def value
+        result = line.text_value
+        result += extra.recursive.value unless extra.empty?
+        result
+      end
+    }
   end
 
   # METER FIELD

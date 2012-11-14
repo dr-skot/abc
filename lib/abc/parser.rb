@@ -19,6 +19,10 @@ module ABC
       end
       p
     end
+
+    def base_parser
+      @parser
+    end
   end
 
 end

@@ -56,6 +56,16 @@ describe "abc 2.0 draft 4" do
       p = parse "abc \\ % remark \n def"
       p.tunes[0].lines.count.should == 1
     end
+    it "allows continuation in a field" do
+      p = parse(["gf|e2dc B2A2|B2G2 E2D2|G2G2 \\  % continuation",
+                 "GABc|d4 B2",
+                 "w: Sa-ys my au-l' wan to your aul' wan\\",
+                 "   Will~ye come to the Wa-x-ies dar-gle?"].join("\n"))
+      p.should_not be(nil), @parser.base_parser.failure_reason
+      p.tunes[0].lines.count.should == 2
+      p.tunes[0].lines[1].items[0].is_a?(Field).should == true
+      p.tunes[0].lines[1].items[0].value.should == "Sa-ys my au-l' wan to your aul' wan   Will~ye come to the Wa-x-ies dar-gle?"
+    end
   end
 
   ## 2.3. Line breaking
