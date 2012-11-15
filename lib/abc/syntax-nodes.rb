@@ -50,6 +50,17 @@ end
 
 module ABC
 
+  class Decoration
+    attr_reader :symbol
+    def initialize(symbol)
+      @symbol = symbol
+    end
+    def type
+      :decoration
+    end
+  end
+
+
   # these fields have unprocessed string values
   STRING_FIELDS = {
     :author => /A/,
@@ -66,6 +77,20 @@ module ABC
     :source => /S/,
     :title => /T/,
     :transcriber => /Z/,
+  }
+
+  DEFAULT_USER_DEFINED_SYMBOLS = {
+    '.' => Decoration.new('staccato'),
+    '~' => Decoration.new('roll'),
+    'T' => Decoration.new('trill'),
+    'H' => Decoration.new('fermata'),
+    'L' => Decoration.new('emphasis'),
+    'M' => Decoration.new('lowermordent'),
+    'P' => Decoration.new('uppermordent'),
+    'S' => Decoration.new('segno'),
+    'O' => Decoration.new('coda'),
+    'u' => Decoration.new('upbow'),
+    'v' => Decoration.new('downbow'),
   }
 
   # base class for ABC syntax nodes
@@ -243,19 +268,13 @@ module ABC
     end
     def apply_broken_rhythms
       last_note = nil
-      change = nil
-      items.each do |item|
-        if item.is_a? BrokenRhythm
+      children(NoteOrRest).each do |item|
+        if (br = item.broken_rhythm_marker)
           # TODO throw an error if no last note?
-          last_note.broken_rhythm *= item.change('<') if last_note
-          change = item.change('>') # will apply this to next note
-        elsif item.is_a? NoteOrRest
-          if change
-            item.broken_rhythm *= change
-            change = nil
-          end 
-          last_note = item
+          last_note.broken_rhythm *= br.change('<') if last_note
+          item.broken_rhythm *= br.change('>')
         end
+        last_note = item
       end
     end
     def apply_chord_lengths

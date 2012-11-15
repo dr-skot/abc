@@ -305,7 +305,7 @@ grammar ABC do
 
   rule tune_element do
     inline_body_field /
-    tune_space / tuplet_symbol / slur / variant_ending / notelike_thing / rest / broken_rhythm / tie / spacer / bar_line / tune_hard_linebreak /
+    tune_space / tuplet_symbol / slur / variant_ending / notelike_thing / rest / tie / spacer / bar_line / tune_hard_linebreak /
     ignored_char
   end
 
@@ -336,12 +336,15 @@ grammar ABC do
 
     # TODO annotations and decorations can be interspersed
   rule notelike_thing do
-    grace_note? space* chord_annotation:chord_annotation? annotation_nodes:annotation* decoration_nodes:decoration* stroke:stroke <NoteOrRest> {
+    grace_note_and_or_broken_rhythm? space* chord_annotation:chord_annotation? space* modifiers:(node:(annotation / decoration) space*)* stroke:stroke <NoteOrRest> {
+       def broken_rhythm_marker
+         child(BrokenRhythm)
+       end
        def decorations
-         decoration_nodes.elements.map {|n| n.symbol }
+         modifiers.elements.inject([]) { |result, el| result << el.node.symbol if el.node.type == :decoration }
        end
        def annotations
-         annotation_nodes.elements
+         modifiers.elements.inject([]) { |result, el| result << el.node if el.node.type == :annotation }
        end
        def chord_symbol
          chord_annotation.symbol if !chord_annotation.empty?
@@ -357,6 +360,10 @@ grammar ABC do
        end
     }
   end
+
+   rule grace_note_and_or_broken_rhythm do
+     grace_note space* broken_rhythm? / broken_rhythm space* grace_note?
+   end
  
   rule stroke do
      chord / note
@@ -656,9 +663,28 @@ grammar ABC do
   ##   O       coda
   ## However these characters (~.uvTHLMPSO) are just short cuts for commonly used decorations and can even be redefined (see section Redefinable symbols). More generally, symbols can be entered using the syntax +symbol+, e.g. +trill+A4 for a trill symbol (tr).
   rule decoration do
-    '+' label:[^+]+ '+' space* {
+    '+' label:[^+]+ '+' {
+      def type
+        :decoration
+      end
       def symbol
         label.text_value
+      end
+    }
+    /
+    [.~H-Wh-w] {
+      attr_accessor :user_defined_symbols
+      def user_defined_symbols
+        @user_defined_symbols || ABC::DEFAULT_USER_DEFINED_SYMBOLS
+      end
+      def type
+        user_defined_symbols[text_value].type if user_defined_symbols[text_value]
+      end
+      def symbol
+        user_defined_symbols[text_value].symbol if type == :decoration
+      end
+      def text
+        user_defined_symbols[text_value].text if type == :annotation
       end
     }
   end
@@ -726,6 +752,9 @@ grammar ABC do
 
   rule annotation do
     '"' placement_specifier:('^' / '_' / '<' / '>' / '@') text:(!'"' .)* '"' space* {
+      def type
+        :annotation
+      end
       def placement
         { '^' => :above, '_' => :below, '<' => :left, '>' => :right, '@' => :unspecified }[placement_specifier.text_value]
       end

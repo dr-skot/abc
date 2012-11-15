@@ -57,7 +57,7 @@ describe "abc 2.0 draft 4" do
       p.tunes[0].lines.count.should == 1
     end
     it "allows continuation in a field" do
-      p = parse(["gf|e2dc B2A2|B2G2 E2D2|G2G2 \\  % continuation",
+      p = parse(["gf|e2dc B2A2|B2G2 E2D2|.G2.G2 \\  % continuation",
                  "GABc|d4 B2",
                  "w: Sa-ys my au-l' wan to your aul' wan\\",
                  "   Will~ye come to the Wa-x-ies dar-gle?"].join("\n"))

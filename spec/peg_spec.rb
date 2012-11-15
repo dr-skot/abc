@@ -599,26 +599,32 @@ describe "abc-2.0-draft4 PEG" do
       fail_to_parse "a><b"
     end
 
+    it "applies broken rhythm marker to following note" do
+      p = parse "a>b"
+      p.tunes[0].items[0].broken_rhythm_marker.should == nil
+      p.tunes[0].items[1].broken_rhythm_marker.change('>').should == Rational(1, 2)
+    end
+
     it "adjusts note lengths appropriately" do
       p = parse "a>b c<d e<<f g>>>a"
       tune = p.tunes[0]
       tune.items[0].note_length.should == 1
+      tune.items[1].note_length.should == 1
       tune.items[2].note_length.should == 1
       tune.items[3].note_length.should == 1
+      tune.items[4].note_length.should == 1
       tune.items[5].note_length.should == 1
       tune.items[6].note_length.should == 1
-      tune.items[8].note_length.should == 1
-      tune.items[9].note_length.should == 1
-      tune.items[11].note_length.should == 1
+      tune.items[7].note_length.should == 1
       p.apply_broken_rhythms
       tune.items[0].note_length.should == Rational(3, 2)
+      tune.items[1].note_length.should == Rational(1, 2)
       tune.items[2].note_length.should == Rational(1, 2)
-      tune.items[3].note_length.should == Rational(1, 2)
-      tune.items[5].note_length.should == Rational(3, 2)
-      tune.items[6].note_length.should == Rational(1, 4)
-      tune.items[8].note_length.should == Rational(7, 4)
-      tune.items[9].note_length.should == Rational(15, 8)
-      tune.items[11].note_length.should == Rational(1, 8)
+      tune.items[3].note_length.should == Rational(3, 2)
+      tune.items[4].note_length.should == Rational(1, 4)
+      tune.items[5].note_length.should == Rational(7, 4)
+      tune.items[6].note_length.should == Rational(15, 8)
+      tune.items[7].note_length.should == Rational(1, 8)
     end
     
     it "works in tandem with unit note length and note length markers" do
@@ -626,7 +632,7 @@ describe "abc-2.0-draft4 PEG" do
       p.apply_broken_rhythms
       p.apply_note_lengths
       p.tunes[0].items[0].note_length.should == Rational(3, 8)
-      p.tunes[0].items[2].note_length.should == Rational(1, 8)
+      p.tunes[0].items[1].note_length.should == Rational(1, 8)
     end
 
   end
@@ -871,7 +877,13 @@ describe "abc-2.0-draft4 PEG" do
       p = parse "+trill+ A"
       p.tunes[0].items[0].decorations[0].should == "trill";
     end
-    # TODO shortcut decorations & annotations
+    it "recognizes shortcut decorations" do
+      p = parse ".A~BuC"
+      p.tunes[0].items[0].decorations[0].should == "staccato";
+      p.tunes[0].items[1].decorations[0].should == "roll";
+      p.tunes[0].items[2].decorations[0].should == "upbow";
+    end
+
   end
 
   describe "chords" do
