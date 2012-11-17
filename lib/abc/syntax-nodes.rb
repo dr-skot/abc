@@ -70,7 +70,7 @@ module ABC
     :url => /F/, # (think F for file url)
     :group => /G/,
     :history => /H/,
-    :notes => /N/,
+    :comments => /N/,
     :origin => /O/,
     :rhythm => /R/,
     :remark => /r/,
@@ -157,6 +157,9 @@ module ABC
     end
     def apply_beams
       tunes.each { |tune| tune.apply_beams }
+    end
+    def apply_lyrics
+      tunes.each { |tune| tune.apply_lyrics }
     end
   end
   
@@ -246,6 +249,9 @@ module ABC
     end
     def items
       children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) }
+    end
+    def notes
+      items.select { |item| item.is_a?(NoteOrRest) }
     end
     def unit_note_length
       if !@unit_note_length && header && (field = header.field(/L/))
@@ -357,6 +363,24 @@ module ABC
         end
       end
     end
+    def apply_lyrics
+      last_line = nil
+      note_count = 0
+      lines.each do |line|
+        if line.items[0].is_a?(Field) && line.items[0].label.text_value == 'w' && last_line
+          units = line.items[0].units
+          notes = last_line.items.select { |item| item.is_a?(NoteOrRest) }
+          i = 0
+          units.each do |lyric|
+            break if i >= notes.count
+            notes[i].lyric = lyric
+            i += lyric.note_count
+          end
+          # TODO propagate extra lyrics to next line?
+        end
+        last_line = line
+      end
+    end
   end
 
   class TuneLine
@@ -367,6 +391,9 @@ module ABC
     end
     def hard_break?
       @is_hard_break
+    end
+    def notes
+      items.select { |item| item.is_a?(NoteOrRest) }
     end
   end
 
@@ -390,6 +417,7 @@ module ABC
     attr_accessor :broken_rhythm
     attr_accessor :chord_length
     attr_accessor :beam
+    attr_accessor :lyric
     def unit_note_length
       @unit_note_length || 1
     end
@@ -475,6 +503,10 @@ module ABC
 
   # BAR LINES
   class BarLine < MusicNode
+  end
+
+  # LYRICS
+  class LyricUnit < ABCNode
   end
 
   # BASICS

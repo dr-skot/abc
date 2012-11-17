@@ -107,7 +107,7 @@ describe "abc-2.0-draft4 PEG" do
     # end
 
     it "knows the string fields" do
-      %w{Aauthor Bbook Ccomposer Ddisc Furl Ggroup Hhistory Nnotes Oorigin 
+      %w{Aauthor Bbook Ccomposer Ddisc Furl Ggroup Hhistory Ncomments Oorigin 
          Rrhythm rremark Ssource Ttitle Ztranscriber}.each do |field|
         label = field[0]
         name = field[1..-1]
@@ -992,6 +992,18 @@ describe "abc-2.0-draft4 PEG" do
       p.tunes[0].items[1].beam.should == :end
       p.tunes[0].items[2].beam.should == :start
       p.tunes[0].items[3].beam.should == :end
+    end
+  end
+
+  describe "lyrics support" do
+    it "pares whole word lyrics" do
+      p = parse "gcea\nw:my dog has fleas"
+      # items[4] is the lyrics field
+      p.tunes[0].items[4].units.count.should == 4
+      p.tunes[0].items[4].units[0].text.should == "my"
+      p.tunes[0].items[4].units[1].text.should == "dog"
+      p.tunes[0].items[4].units[2].text.should == "has"
+      p.tunes[0].items[4].units[3].text.should == "fleas"
     end
   end
 

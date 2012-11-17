@@ -34,7 +34,7 @@ grammar ABC do
   end
 
   rule raw_body_field do
-     meter_field / tempo_field / unit_length_field / key_field / other_body_field
+     meter_field / tempo_field / unit_length_field / key_field / lyrics_field / other_body_field
   end
 
   # TODO: don't fail to parse unrecognized fields
@@ -51,7 +51,7 @@ grammar ABC do
   end
 
   rule other_body_field do
-    # KMLQ already found by earlier rule
+    # KMLQw already found by earlier rule
     label:[ImNRRrTUVWw] ':' space* value:rest_of_tune_field <Field> {
       def value
         super.value
@@ -764,6 +764,39 @@ grammar ABC do
     }
   end
 
+
+  # LYRICS
+
+  rule lyrics_field do
+    label:'w' ':' space* lyrics <Field> {
+      def units
+        children(LyricUnit)
+      end
+    }
+  end
+
+  rule lyrics do
+    (lyric_unit lyric_divider)+
+  end
+
+  rule lyric_unit do
+    word:("\\-" / [A-Za-z])+ stretch:'_'*  <LyricUnit> {
+      def text
+        word.text_value
+      end
+      def note_count
+        if stretch
+          1 + stretch.text_value.length
+        else
+          1
+        end
+      end
+    }
+  end
+
+  rule lyric_divider do
+    space+ / line_ender
+  end
 
   # TODO find a better place for this
   rule spacer do

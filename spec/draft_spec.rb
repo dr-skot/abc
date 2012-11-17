@@ -102,4 +102,77 @@ describe "abc 2.0 draft 4" do
   end
 
 
+  ## 5. Lyrics
+  ## The W field (uppercase W) can be used for lyrics to be printed separately below the tune.
+  ## The w field (lowercase w) in the body, supplies a line of lyrics to be aligned syllable by syllable below the previous line of notes. Syllables are not aligned on grace notes and tied notes are treated as two separate notes; slurred or beamed notes are also treated as separate notes in this context. Note that lyrics are always aligned to the beginning of the preceding music line.
+  ## It is possible for a music line to be followed by several w fields. This can be used together with the part notation to create verses. The first w field is used the first time that part is played, then the second and so on.
+  ## The lyrics lines are treated as an ABC string. Within the lyrics, the words should be separated by one or more spaces and to correctly align them the following symbols may be used:
+  ##   -  (hyphen) break between syllables within a word
+  ##   _  (underscore) last syllable is to be held for an extra note
+  ##   *  one note is skipped (i.e. * is equivalent to a blank syllable)
+  ##   ~  appears as a space; aligns multiple words under one note
+  ##   \- appears as hyphen; aligns multiple syllables under one note
+  ##   |  advances to the next bar
+  ## Note that if '-' is preceded by a space or another hyphen, it is regarded as a separate syllable.
+  ## When an underscore is used next to a hyphen, the hyphen must always come first.
+  ## If there are not as many syllables as notes in a measure, typing a '|' automatically advances to the next bar; if there are enough syllables the '|' is just ignored.
+  ## Some examples:
+  ##   w: syll-a-ble    is aligned with three notes
+  ##   w: syll-a--ble   is aligned with four notes
+  ##   w: syll-a -ble   (equivalent to the previous line)
+  ##   w: time__        is aligned with three notes
+  ##   w: of~the~day    is treated as one syllable (i.e. aligned with one note)
+  ##                    but appears as three separate words
+  ##   gf|e2dc B2A2|B2G2 E2D2|.G2.G2 GABc|d4 B2
+  ##   w: Sa-ys my au-l' wan to your aul' wan\
+  ##      Will~ye come to the Wa-x-ies dar-gle?
+  ## Please see section Continuation of input lines for the meaning of the backslash (||) character.
+  ## If a word starts with a digit, this is interpreted as numbering of a stanza and is pushed forward a bit. In other words, use something like
+  ##   w: 1.~Three blind mice
+  ## to put a number before "Three".
+
+  describe "lyrics support" do
+
+    it "can set words to notes" do
+      p = parse "GCEA\nw:My dog has fleas"
+      p.apply_lyrics
+      # puts p.tunes[0].items[0].inspect
+      p.tunes[0].notes[0].lyric.text.should == "My"
+      p.tunes[0].notes[1].lyric.text.should == "dog"
+      p.tunes[0].notes[2].lyric.text.should == "has"
+      p.tunes[0].notes[3].lyric.text.should == "fleas"
+    end
+
+    it "can set words to notes" do
+      p = parse "GCEA\nw:My dog has fleas"
+      p.apply_lyrics
+      p.tunes[0].notes[0].lyric.text.should == "My"
+      p.tunes[0].notes[1].lyric.text.should == "dog"
+      p.tunes[0].notes[2].lyric.text.should == "has"
+      p.tunes[0].notes[3].lyric.text.should == "fleas"
+    end
+
+    it "can set one syllable to 2 notes" do
+      p = parse "fdB\nw:O_ say can you see"
+      p.apply_lyrics
+      p.tunes[0].notes[0].lyric.text.should == "O"
+      p.tunes[0].notes[0].lyric.note_count.should == 2
+      p.tunes[0].notes[1].lyric.should == nil
+      p.tunes[0].notes[2].lyric.text.should == "say"
+      p.tunes[0].notes[2].lyric.note_count.should == 1
+    end
+
+    it "can set one syllable to 3 notes" do
+      p = parse "fdDB\nw:O__ say can you see"
+      p.apply_lyrics
+      p.tunes[0].notes[0].lyric.text.should == "O"
+      p.tunes[0].notes[0].lyric.note_count.should == 3
+      p.tunes[0].notes[1].lyric.should == nil
+      p.tunes[0].notes[2].lyric.should == nil
+      p.tunes[0].notes[3].lyric.text.should == "say"
+      p.tunes[0].notes[3].lyric.note_count.should == 1
+    end
+
+  end
+
 end
