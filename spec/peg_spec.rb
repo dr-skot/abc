@@ -17,7 +17,6 @@ describe "abc-2.0-draft4 PEG" do
   def parse(abc)
     p = @parser.parse abc
     p.should_not be(nil), @parser.failure_reason
-    # p.apply_key_signatures
     p
   end
   
@@ -408,12 +407,12 @@ describe "abc-2.0-draft4 PEG" do
 
     it "values sharps and flats accurately" do
       p = parse "^A^^a2_b/__C=DF"
-      p.tunes[0].items[0].pitch.accidental.value.should == 1
-      p.tunes[0].items[1].pitch.accidental.value.should == 2
-      p.tunes[0].items[2].pitch.accidental.value.should == -1
-      p.tunes[0].items[3].pitch.accidental.value.should == -2
-      p.tunes[0].items[4].pitch.accidental.value.should == 0
-      p.tunes[0].items[5].pitch.accidental.value.should == nil
+      p.tunes[0].items[0].pitch.accidental.should == 1
+      p.tunes[0].items[1].pitch.accidental.should == 2
+      p.tunes[0].items[2].pitch.accidental.should == -1
+      p.tunes[0].items[3].pitch.accidental.should == -2
+      p.tunes[0].items[4].pitch.accidental.should == 0
+      p.tunes[0].items[5].pitch.accidental.should == nil
     end
   end
 

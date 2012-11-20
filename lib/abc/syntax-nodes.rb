@@ -365,16 +365,36 @@ module ABC
     end
     def apply_lyrics
       last_line = nil
-      note_count = 0
+      waiting_for_bar = false
       lines.each do |line|
         if line.items[0].is_a?(Field) && line.items[0].label.text_value == 'w' && last_line
           units = line.items[0].units
-          notes = last_line.items.select { |item| item.is_a?(NoteOrRest) }
+          items = last_line.items
           i = 0
           units.each do |lyric|
-            break if i >= notes.count
-            notes[i].lyric = lyric
-            i += lyric.note_count
+            break if i >= items.count
+            if lyric.skip == :note
+              # advance to next note, then skip it
+              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest);
+              i += 1
+            elsif lyric.skip == :bar
+              # advance to next (undotted) bar, then skip it
+              i += 1 until items.count <= i || items[i].is_a?(BarLine) && items[i].type != :dotted
+              i += 1
+            else
+              # find next note and set this lyric on it
+              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest);
+              items[i].lyric = lyric if i < items.count
+              # how many notes does it apply to?
+              note_count = lyric.note_count
+              # advance that many notes
+              while i < items.count && note_count > 1
+                note_count -= 1 if items[i].is_a?(NoteOrRest)
+                i += 1
+              end
+              # then advance to next item
+              i += 1
+            end
           end
           # TODO propagate extra lyrics to next line?
         end
@@ -448,9 +468,9 @@ module ABC
     end
     # duplicates the signature if the note's accidental changes it
     def signature=(sig)
-      if accidental.value && sig[note] != accidental.value
+      if accidental && sig[note] != accidental
         @signature = sig.dup
-        @signature[note] = accidental.value
+        @signature[note] = accidental
       else
         @signature = sig
       end
@@ -463,7 +483,21 @@ module ABC
     end
     # half steps above middle C
     def height(sig=signature)
-      12 * octave + "C D EF G A B".index(note) + (accidental.value || sig[note] || 0)
+      12 * octave + "C D EF G A B".index(note) + (accidental || sig[note] || 0)
+    end
+  end
+
+  # TODO work this out so pseudopitch inherits from pitch or something
+  class PseudoPitch
+    attr_reader :note
+    attr_reader :octave
+    attr_reader :accidental
+    def initialize(note, accidental=nil, octave=0)
+      @note = note
+      @octave = octave
+    end
+    def height
+      12 * octave + "C D EF G A B".index(note) + (accidental || 0)
     end
   end
 
@@ -507,6 +541,10 @@ module ABC
 
   # LYRICS
   class LyricUnit < ABCNode
+  end
+
+  # CLEFS
+  class Clef < ABCNode
   end
 
   # BASICS

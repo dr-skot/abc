@@ -132,7 +132,7 @@ grammar ABC do
   
   rule tempo_field_value do
     label1:(label:quoted_string space+)? 
-    beat_node:((rationals/'C') '=')? bpm_node:integer 
+    beat_node:((rationals/'C') '=')? bpm_node:wholenum 
     label2:(space+ label:quoted_string)? 
     {
       def label
@@ -192,8 +192,20 @@ grammar ABC do
       end
     }
   end
-  
+
   rule integer do
+    sign:('-'/'+')? wholenum {
+      def value
+        if (sign.text_value == '-')
+          - wholenum.value
+        else
+          wholenum.value
+        end
+      end
+    }   
+  end
+  
+  rule wholenum do
     digit+ {
       def value
         text_value.to_i
@@ -202,7 +214,7 @@ grammar ABC do
   end
 
   rule range do
-    first:integer '-' last:integer {
+    first:wholenum '-' last:wholenum {
       def first
         super.value
       end
@@ -228,21 +240,43 @@ grammar ABC do
   end
 
   rule key do
-    tonic:([A-G] [\#b]?) space* mode:[A-Za-z]* space* extras:key_accidental* <KeyNode> {
+    tonic:([A-G] [\#b]?) 
+    mode:(space* value:mode?) 
+    extra:(space* items:key_accidental*) 
+    clef:(space* node:clef?) <KeyNode> {
       def tonic
         super.text_value if super
       end
       def mode
-        super.text_value if super
+        super.value.text_value if super.value
       end
       def extra_accidentals
         result = {}
-        extras.elements.each do |acc|
+        extra.items.elements.each do |acc|
           result[acc.note_letter] = acc.accidental.value
         end
         result
       end
+      def clef
+        super.node
+      end
     }
+  end
+
+  # maj min m ion aeo mix dor phr lyd loc
+  # a bit ugly here because no case-insensitivity support in treetop
+  rule mode do
+    ( [mM] /
+      [mM] [aA] [jJ] /
+      [mM] [iI] [nN] /
+      [iI] [oO] [nN] /
+      [aA] [eE] [oO] /
+      [mM] [iI] [xX] /
+      [dD] [oO] [rR] /
+      [pP] [hH] [rR] /
+      [lL] [yY] [dD] /
+      [lL] [oO] [cC] )
+    [A-Za-z]*
   end
 
   rule key_accidental do
@@ -374,12 +408,16 @@ grammar ABC do
   end
 
   rule pitch do
-    accidental note_letter octave_shift <Pitch>
+     accidental:accidental? note_letter octave_shift <Pitch> {
+       def accidental
+         super.value if !super.empty?
+       end
+     } 
   end
   
   ## "The symbols '^', '=' and '_' are used (before a note) to notate respectively a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
   rule accidental do
-    ("^^" / "^" / "__" / "_" / "=")? '' {
+    ("^^" / "^" / "__" / "_" / "=") '' {
       def value
         { "^^" => 2, "^" => 1, "=" => 0, "_" => -1, "__" => -2 }[text_value]
       end
@@ -489,7 +527,7 @@ grammar ABC do
   ## ABC parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of '|' (thin bar line), '[' or ']' (thick bar line), and ':' (dots). Ex: '|[|', '[|:::'.
 
   rule bar_line
-    repeat_before:':'* bar repeat_after:':'* variant_number:integer? <BarLine> {
+    repeat_before:':'* bar repeat_after:':'* variant_number:wholenum? <BarLine> {
       def type
         bar.type
       end
@@ -562,7 +600,7 @@ grammar ABC do
 
   # TODO implement variant endings
   rule variant_ending do
-    '[' (range / integer) (',' (range / integer))* space+
+    '[' (range / wholenum) (',' (range / wholenum))* space+
   end
 
   ## 4.11. TIES AND SLURS
@@ -619,7 +657,7 @@ grammar ABC do
   ## More general tuplets can be specified using the syntax (p:q:r which means 'put p notes into the time of q for the next r notes'. If q is not given, it defaults as above. If r is not given, it defaults to p. 
 
   rule tuplet_symbol do
-    '(' p:integer extra:(':' q:integer? extra:(':' r:integer?)?)? <TupletMarker> {
+    '(' p:wholenum extra:(':' q:wholenum? extra:(':' r:wholenum?)?)? <TupletMarker> {
       attr_accessor :compound_meter
       def ratio
         pval = p.value
@@ -738,7 +776,7 @@ grammar ABC do
   rule chord_symbol do
     [A-G] 
     ('b' / '#')? 
-    ('m' / 'min' / 'maj' / 'dim' / 'aug' / '+' / 'sus' / integer / space)*
+    ('m' / 'min' / 'maj' / 'dim' / 'aug' / '+' / 'sus' / wholenum / space)*
     ('/' [A-Ga-g])?
   end
 
@@ -768,27 +806,48 @@ grammar ABC do
   # LYRICS
 
   rule lyrics_field do
-    label:'w' ':' space* lyrics <Field> {
+    label:'w' ':' space* rest_of_lyrics_field <Field> {
       def units
         children(LyricUnit)
+      end
+      def value
+        rest_of_lyrics_field.value
       end
     }
   end
 
-  rule lyrics do
-    (lyric_unit lyric_divider)+
+  rule rest_of_lyrics_field do
+    line:(!(line_ender / '\\' line_ender) lyric_unit)+ extra:('\\' line_ender recursive:rest_of_lyrics_field)? {
+      def value
+        result = line.text_value
+        result += extra.recursive.value unless extra.empty?
+        result
+      end
+    }
   end
 
   rule lyric_unit do
-    word:("\\-" / [A-Za-z])+ stretch:'_'*  <LyricUnit> {
+    word:("\\-" / [^ _\-\*\|])+ hyphen:(space? '-'+)? stretch:'_'* space* <LyricUnit> {
+      attr_reader :skip
       def text
-        word.text_value
+        word.text_value.gsub('\\-', '-').gsub('~', ' ')
       end
       def note_count
-        if stretch
-          1 + stretch.text_value.length
+        count = 1
+        count += stretch.text_value.length if stretch
+        count += hyphen.text_value.length - 1 if hyphen && hyphen.text_value.length > 1
+        count
+      end
+      def hyphen?
+        !hyphen.empty?
+      end
+    } /
+      ('*' / '|') space* <LyricUnit> {
+      def skip
+        if text_value[0] == '*'
+          :note
         else
-          1
+          :bar
         end
       end
     }
@@ -798,11 +857,65 @@ grammar ABC do
     space+ / line_ender
   end
 
+
+  ## 6. CLEFS
+  ## A clef line specification may be provided in K: and V: fields. The general syntax is:
+  ##   [clef=]<clef name>[<line number>][+8 | -8]
+  ##     [middle=<pitch>] [transpose=<semitones>]
+  ##     [stafflines=<lines>]
+
+  rule clef do
+    clef:('clef='? name:('treble'/'alto'/'tenor'/'bass'/'perc'/'none') line_number:wholenum?)?
+    octave:(space+ value:('+8'/'-8'))?
+    middle:(space+ ('middle'/'m') '=' value:pitch)?
+    transpose:(space+ ('transpose'/'t') '=' number:integer)?
+    stafflines:(space+ 'stafflines' '=' number:wholenum)?  <Clef> {
+      def name
+        clef.name.text_value
+      end
+      def line
+        if clef.empty?
+          nil
+        elsif clef.line_number.empty?
+          { 'treble' => 2, 'alto' => 3, 'tenor' => 4, 'bass' => 4 }[name]
+        else
+          clef.line_number.value
+        end
+      end
+      def octave_shift
+        if octave.empty?
+	  0
+	else
+          { '+8' => 1, '-8' => -1 }[octave.value.text_value]
+        end
+      end
+      def middle
+        if super.empty?
+          note = {'treble' => 'B', 'alto' => 'C', 'tenor' => 'A', 'bass' => 'D', 
+            'none' => 'B' }[name]
+          if name == 'bass' || name == 'tenor'
+            PseudoPitch.new(note, nil, -1)
+          else
+            PseudoPitch.new(note)
+          end
+        else
+          super.value
+        end
+      end
+      def transpose
+        super.number.value
+      end
+      def stafflines
+        super.number.value
+      end
+    }
+  end
+
+
   # TODO find a better place for this
   rule spacer do
     "y" <Spacer>
   end
-
 
   # BASICS
 
