@@ -1,6 +1,8 @@
 $LOAD_PATH << './'
 
+# TODO figure out the right way to deal with these dependencies
 require 'lib/abc/parser.rb'
+require 'lib/abc/voice.rb'
 
 describe "abc 2.0 draft 4" do
 
@@ -441,6 +443,7 @@ describe "abc 2.0 draft 4" do
   describe "multivoice support" do
     it "can parse a V: field in the header" do
       p = parse "V:T1"
+      p.tunes[0].voices['T1'].should_not == nil
     end
   end
 

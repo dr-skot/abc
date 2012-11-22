@@ -384,6 +384,17 @@ module ABC
         last_line = line
       end
     end
+    def voices
+      if !@voices
+        @voices = {}
+        if header
+          header.fields(/V/).each do |node|
+            @voices[node.voice.id] = node.voice
+          end
+        end
+      end
+      @voices
+    end
   end
 
   class TuneLine

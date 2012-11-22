@@ -26,7 +26,7 @@ grammar ABC do
   end
 
   rule header_field do
-    (meter_field / tempo_field/ unit_length_field / key_field / other_header_field) line_ender
+    (meter_field / tempo_field/ unit_length_field / key_field / voice_header_field / other_header_field) line_ender
   end
   
   rule inline_body_field do
@@ -46,13 +46,13 @@ grammar ABC do
   end
 
   rule other_header_field do
-    # KMLQ already found by earlier rule
-    label:[ABCDFGHImNORRrSTUVWXZ] ':' value:(!line_ender .)+ <Field>
+    # KMLQV already found by earlier rule
+    label:[ABCDFGHImNORRrSTUWXZ] ':' value:(!line_ender .)+ <Field>
   end
 
   rule other_body_field do
-    # KMLQw already found by earlier rule
-    label:[ImNRRrTUVWw] ':' space* value:rest_of_tune_field <Field> {
+    # KMLQVw already found by earlier rule
+    label:[ImNRRrTUWw] ':' space* value:rest_of_tune_field <Field> {
       def value
         super.value
       end
@@ -932,6 +932,38 @@ grammar ABC do
     }
   end
 
+  # MULTIPLE VOICES
+
+  rule voice_header_field do
+    label:'V' ':' id:alphanum+ specifiers:(space+ specifier:voice_specifier)* <Field> {
+      def id
+        super.text_value
+      end
+      def voice
+        Voice.new(id)
+      end
+    }
+  end
+
+  rule voice_specifiers do
+    first:voice_specifier extras:(space+ specifier:voice_specifier)* {
+      def array
+        result = []
+        result << first
+        extras.elements.each do |node|
+          result << node.specifier
+        end
+        result
+      end
+    }
+  end
+
+  rule voice_specifier do
+    clef_specifier /
+    ('name' / 'nm') '=' name:quoted_string /
+    ('subname' / 'snm') '=' subname:quoted_string /
+    'stem' '=' ('up' / 'down')    
+  end
 
   # TODO find a better place for this
 
