@@ -455,7 +455,7 @@ module ABC
   class Note < NoteOrRest
   end
 
-  class Pitch < MusicNode
+  class PitchNode < MusicNode
     def octave
       note_letter.octave + octave_shift.value
     end
@@ -544,7 +544,7 @@ module ABC
   end
 
   # CLEFS
-  class Clef < ABCNode
+  class ClefNode < ABCNode
   end
 
   # BASICS

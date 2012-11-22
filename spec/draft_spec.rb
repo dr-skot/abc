@@ -367,6 +367,20 @@ describe "abc 2.0 draft 4" do
       p.tunes[0].key.clef.stafflines.should == 4
     end
 
+    # TODO allow unknown clef names
+
+    # TODO implement this
+    #it "defaults to treble" do
+    #  p = parse "K:C"
+    #  p.tunes[0].key.clef.name.should == 'treble'
+    #end
+
+    # TODO app-specific clef specifiers
+
+    # TODO clef specifiers can come in any order
+
+    # TODO clef information can be in V: fields too
+
   end
 
 end

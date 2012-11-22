@@ -258,7 +258,7 @@ grammar ABC do
         result
       end
       def clef
-        super.node
+        super.node.clef
       end
     }
   end
@@ -408,7 +408,7 @@ grammar ABC do
   end
 
   rule pitch do
-     accidental:accidental? note_letter octave_shift <Pitch> {
+     accidental:accidental? note_letter octave_shift <PitchNode> {
        def accidental
          super.value if !super.empty?
        end
@@ -869,44 +869,19 @@ grammar ABC do
     octave:(space+ value:('+8'/'-8'))?
     middle:(space+ ('middle'/'m') '=' value:pitch)?
     transpose:(space+ ('transpose'/'t') '=' number:integer)?
-    stafflines:(space+ 'stafflines' '=' number:wholenum)?  <Clef> {
-      def name
-        clef.name.text_value
-      end
-      def line
-        if clef.empty?
-          nil
-        elsif clef.line_number.empty?
-          { 'treble' => 2, 'alto' => 3, 'tenor' => 4, 'bass' => 4 }[name]
-        else
-          clef.line_number.value
+    stafflines:(space+ 'stafflines' '=' number:wholenum)? {
+      def clef
+        unless @clef
+          opts = {}
+          opts[:name] = super.name.text_value unless super.empty?
+          opts[:line] = super.line_number.value unless super.empty? || super.line_number.empty?
+          opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.value.text_value] unless octave.empty?
+          opts[:middle] = middle.value unless middle.empty?
+          opts[:transpose] = transpose.number.value unless transpose.empty?
+          opts[:stafflines] = stafflines.number.value unless stafflines.empty?
+          @clef = Clef.new(opts)
         end
-      end
-      def octave_shift
-        if octave.empty?
-	  0
-	else
-          { '+8' => 1, '-8' => -1 }[octave.value.text_value]
-        end
-      end
-      def middle
-        if super.empty?
-          note = {'treble' => 'B', 'alto' => 'C', 'tenor' => 'A', 'bass' => 'D', 
-            'none' => 'B' }[name]
-          if name == 'bass' || name == 'tenor'
-            PseudoPitch.new(note, nil, -1)
-          else
-            PseudoPitch.new(note)
-          end
-        else
-          super.value
-        end
-      end
-      def transpose
-        super.number.value
-      end
-      def stafflines
-        super.number.value
+        @clef
       end
     }
   end
