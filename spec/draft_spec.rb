@@ -445,6 +445,33 @@ describe "abc 2.0 draft 4" do
       p = parse "V:T1"
       p.tunes[0].voices['T1'].should_not == nil
     end
+    it "only uses 1st 20 characters of id" do
+      p = parse "V:1234567890123456789012345"
+      p.tunes[0].voices['1234567890123456789012345'].should == nil
+      p.tunes[0].voices['12345678901234567890'].should_not == nil
+    end
+    # TODO only 1st 20 characters of id
+    it "parses name and subname" do
+      p = parse 'V:Ma tenor name="Mama" subname="M"'
+      p.tunes[0].voices['Ma'].name.should == 'Mama'
+      p.tunes[0].voices['Ma'].subname.should == 'M'
+      p = parse 'V:Da snm="D" nm="Daddy" bass'
+      p.tunes[0].voices['Da'].name.should == 'Daddy'
+      p.tunes[0].voices['Da'].subname.should == 'D'
+    end
+    it "parses stem" do
+      p = parse 'V:T1'
+      p.tunes[0].voices['T1'].stem.should == nil
+      p = parse 'V:T1 stem=up'
+      p.tunes[0].voices['T1'].stem.should == :up
+      p = parse 'V:T1 stem=down'
+      p.tunes[0].voices['T1'].stem.should == :down
+    end
+    # TODO should inherit clef from K field
+    it "has a default clef" do
+      p = parse "V:T1"
+      p.tunes[0].voices['T1'].clef.name.should == 'treble'
+    end
   end
 
 end

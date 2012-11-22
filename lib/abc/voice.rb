@@ -7,8 +7,11 @@ module ABC
     attr_accessor :stem
     attr_accessor :clef
 
-    def initialize(id)
+    def initialize(id, opts={})
       @id = id
+      @name = opts[:name]
+      @subname = opts[:subname]
+      @stem = opts[:stem] if opts[:stem]
     end
 
   end

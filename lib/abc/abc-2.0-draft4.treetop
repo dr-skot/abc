@@ -872,7 +872,7 @@ grammar ABC do
 
   rule clef_transpose do
     ('transpose'/'t') '=' transpose:integer {
-      def set_opts(opts)
+      def set_clef_opts(opts)
         opts[:transpose] = transpose.value 
       end
     }
@@ -880,7 +880,7 @@ grammar ABC do
 
   rule clef_stafflines do
     'stafflines' '=' stafflines:wholenum {
-      def set_opts(opts)
+      def set_clef_opts(opts)
         opts[:stafflines] = stafflines.value 
       end
     }
@@ -888,7 +888,7 @@ grammar ABC do
 
   rule clef_name do
     'clef='? name:[a-zA-Z]+ line_number:wholenum? octave:('+8'/'-8')? {
-      def set_opts(opts)
+      def set_clef_opts(opts)
         opts[:name] = name.text_value
         opts[:line_number] = line_number.value unless line_number.empty? 
         opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
@@ -898,7 +898,7 @@ grammar ABC do
 
   rule clef_middle do
     ('middle'/'m') '=' middle:pitch {
-        def set_opts(opts)
+        def set_clef_opts(opts)
           opts[:middle] = middle
         end
     }
@@ -906,7 +906,7 @@ grammar ABC do
 
   rule clef_app_specific do
       app:alphanum+ ':' field:alphanum+ '=' value:alphanum+ {
-        def set_opts(opts)
+        def set_clef_opts(opts)
           # TODO pass this data to the clef object
         end
       }
@@ -921,9 +921,9 @@ grammar ABC do
       def clef
         unless @clef
           opts = {}
-          first.set_opts(opts)
+          first.set_clef_opts(opts)
           extras.elements.each do |node| 
-            node.specifier.set_opts(opts)
+            node.specifier.set_clef_opts(opts)
           end
           @clef = Clef.new(opts)
         end
@@ -934,36 +934,61 @@ grammar ABC do
 
   # MULTIPLE VOICES
 
-  rule voice_header_field do
-    label:'V' ':' id:alphanum+ specifiers:(space+ specifier:voice_specifier)* <Field> {
-      def id
-        super.text_value
-      end
-      def voice
-        Voice.new(id)
-      end
-    }
+  rule voice_name do
+    ('name' / 'nm') '=' name:quoted_string {
+        def set_voice_opts(opts)
+          opts[:name] = name.value
+        end
+      }
   end
 
-  rule voice_specifiers do
-    first:voice_specifier extras:(space+ specifier:voice_specifier)* {
-      def array
-        result = []
-        result << first
-        extras.elements.each do |node|
-          result << node.specifier
+  rule voice_subname do
+    ('subname' / 'snm') '=' subname:quoted_string {
+        def set_voice_opts(opts)
+          opts[:subname] = subname.value
         end
-        result
-      end
-    }
+      }
+  end
+  
+  rule voice_stem do
+    'stem' '=' stem:('up' / 'down') {
+        def set_voice_opts(opts)
+          opts[:stem] = stem.text_value.to_sym
+        end
+      }
   end
 
   rule voice_specifier do
-    clef_specifier /
-    ('name' / 'nm') '=' name:quoted_string /
-    ('subname' / 'snm') '=' subname:quoted_string /
-    'stem' '=' ('up' / 'down')    
+    voice_name / voice_subname / voice_stem / clef_specifier
   end
+
+  rule voice_header_field do
+    label:'V' ':' id:alphanum+ specifiers:(space+ specifier:voice_specifier)* <Field> {
+      def id
+        super.text_value[0..19] # first 20 chars only
+      end
+      def voice
+        opts = {}
+        specifiers.elements.each do |node|
+          node.specifier.set_voice_opts(opts) if node.specifier.respond_to?(:set_voice_opts)
+        end
+        v = Voice.new(id, opts)
+        v.clef = clef
+        v
+      end
+      def clef
+        unless @clef
+          opts = {}
+          specifiers.elements.each do |node|
+            node.specifier.set_clef_opts(opts) if node.specifier.respond_to?(:set_clef_opts)
+          end
+          @clef = Clef.new(opts)
+        end
+        @clef
+      end
+    }
+  end
+
 
   # TODO find a better place for this
 
