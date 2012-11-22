@@ -1,12 +1,13 @@
 module ABC
 
   # A Key is initialized with a tonic eg 'C#', a mode eg 'minor' or 'Dorian' or '' (= major), 
-  # and optional extra accidentals eg { 'C' => 1, 'E' => -1, 'B' => 0 } (= C#, Eb, B natural)
+  # and optional extra accidentals eg { 'C' => 1, 'E' => -1, 'B' => 0 } (ie C#, Eb, B natural)
   # Key#signature returns a hash mapping note names (eg 'C', 'A') to 1 or -1 (sharp or flat)
 
   class Key
 
     # for convenience
+    # split_keys("A B C D" => 1) returns { 'A' => 1, 'B' => 1, 'C' => 1, 'D' => 1 }
     def self.split_keys(hash)
       list = hash.keys.map { |keygroup| keygroup.split.map { |key| [key, hash[keygroup]] } }
       Hash[*list.flatten]

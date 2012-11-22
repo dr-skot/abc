@@ -242,6 +242,17 @@ describe "abc 2.0 draft 4" do
 
     # TODO special handling of stanza numbers?
 
+    # TODO handle continuation across lyric lines eg
+    #   GCEA\
+    #   w:my dog has fleas\
+    #   gad
+    #   w:yes he does!
+    # !! this is apparently expected to work but so is
+    #   GCEA C
+    #   w:my dog has fleas\
+    #   gad
+    # where gad is the next lyric!!
+
   end
 
 
@@ -329,9 +340,9 @@ describe "abc 2.0 draft 4" do
     it "recognizes octave shifts" do
       p = parse "K:Am clef=bass"
       p.tunes[0].key.clef.octave_shift.should == 0
-      p = parse "K:Am clef=alto +8"
+      p = parse "K:Am clef=alto+8"
       p.tunes[0].key.clef.octave_shift.should == 1
-      p = parse "K:Am clef=treble -8"
+      p = parse "K:Am clef=treble-8"
       p.tunes[0].key.clef.octave_shift.should == -1
     end
     
@@ -384,7 +395,7 @@ describe "abc 2.0 draft 4" do
     end
 
     it "allows clef specifiers in any order" do
-      p = parse "K:C middle=d stafflines=3 bass4 t=-3 +8"
+      p = parse "K:C middle=d stafflines=3 bass4+8 t=-3"
       p.tunes[0].key.clef.name.should == 'bass'
       p.tunes[0].key.clef.middle.note.should == 'D'
       p.tunes[0].key.clef.stafflines.should == 3
@@ -395,6 +406,42 @@ describe "abc 2.0 draft 4" do
 
     # TODO clef information can be in V: fields too
 
+  end
+  
+  # 7. Multiple voices
+  # The V: field allows the writing of multi-voice music. In multi-voice ABC tunes, the tune body is divided into several sections, each beginning with a V: field. All the notes following such a V: field, up to the next V: field or the end of the tune body, belong to the voice.
+  # The basic syntax of the field is:
+  #   V:ID
+  # where ID can be either a number or a string, that uniquely identifies the voice in question. When using a string, only the first 20 characters of it will be distinguished. The ID will not be printed on the staff; it's only function is to indicate throughout the ABC file, which music line belongs to which voice.
+  # Example:
+  #   X:1
+  #   T:Zocharti Loch
+  #   C:Louis Lewandowski (1821-1894)
+  #   M:C
+  #   Q:1/4=76
+  #   %%score (T1 T2) (B1 B2)
+  #   V:T1           clef=treble-8  name="Tenore I"   snm="T.I"
+  #   V:T2           clef=treble-8  name="Tenore II"  snm="T.II"
+  #   V:B1  middle=d clef=bass      name="Basso I"    snm="B.I"
+  #   V:B2  middle=d clef=bass      name="Basso II"   snm="B.II"
+  #   K:Gm
+  #   %            End of header, start of tune body:
+  #   % 1
+  #   [V:T1]  (B2c2 d2g2)  | f6e2      | (d2c2 d2)e2 | d4 c2z2 |
+  #   [V:T2]  (G2A2 B2e2)  | d6c2      | (B2A2 B2)c2 | B4 A2z2 |
+  #   [V:B1]       z8      | z2f2 g2a2 | b2z2 z2 e2  | f4 f2z2 |
+  #   [V:B2]       x8      |     x8    |      x8     |    x8   |
+  #   % 5
+  #   [V:T1]  (B2c2 d2g2)  | f8        | d3c (d2fe)  | H d6    ||
+  #   [V:T2]       z8      |     z8    | B3A (B2c2)  | H A6    ||
+  #   [V:B1]  (d2f2 b2e'2) | d'8       | g3g  g4     | H^f6    ||
+  #   [V:B2]       x8      | z2B2 c2d2 | e3e (d2c2)  | H d6    ||
+  #   This layout closely resembles printed music, and permits the corresponding notes on different voices to be vertically aligned so that the chords can be read directly from the abc. The addition of single remark lines '%' between the grouped staves, indicating the bar nummers, also makes the source more legible.
+
+  describe "multivoice support" do
+    it "can parse a V: field in the header" do
+      p = parse "V:T1"
+    end
   end
 
 end

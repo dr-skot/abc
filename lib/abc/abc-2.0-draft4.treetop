@@ -870,14 +870,6 @@ grammar ABC do
   ##     [middle=<pitch>] [transpose=<semitones>]
   ##     [stafflines=<lines>]
 
-  rule clef_octave do
-    octave:('+8' / '-8') '' {
-      def set_opts(opts)
-        opts[:octave] = { '+8' => 1, '-8' => -1 }[text_value]
-      end
-    }
-  end
-
   rule clef_transpose do
     ('transpose'/'t') '=' transpose:integer {
       def set_opts(opts)
@@ -895,10 +887,11 @@ grammar ABC do
   end
 
   rule clef_name do
-    'clef='? name:[a-zA-Z]+ line_number:wholenum? {
+    'clef='? name:[a-zA-Z]+ line_number:wholenum? octave:('+8'/'-8')? {
       def set_opts(opts)
         opts[:name] = name.text_value
         opts[:line_number] = line_number.value unless line_number.empty? 
+        opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
       end
     }
   end
@@ -912,11 +905,15 @@ grammar ABC do
   end
 
   rule clef_app_specific do
-    app:alphanum+ ':' field:alphanum+ '=' value:alphanum
+      app:alphanum+ ':' field:alphanum+ '=' value:alphanum+ {
+        def set_opts(opts)
+          # TODO pass this data to the clef object
+        end
+      }
   end
 
   rule clef_specifier do
-    clef_octave / clef_transpose / clef_stafflines / clef_middle / clef_app_specific / clef_name
+    clef_transpose / clef_stafflines / clef_middle / clef_app_specific / clef_name
   end
 
   rule clef do
