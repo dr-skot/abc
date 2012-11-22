@@ -40,6 +40,7 @@ module ABC
     attr_reader :tonic
     attr_reader :mode
     attr_reader :extra_accidentals
+    attr_accessor :clef
 
     def initialize(tonic, mode="", extra_accidentals={})
       @tonic = tonic
@@ -61,6 +62,12 @@ module ABC
       base_signature.merge(extra_accidentals)
     end
     
+    def clef
+      @clef || Clef::DEFAULT
+    end
+
+    NONE = Key.new ""
+
   end
 
 end

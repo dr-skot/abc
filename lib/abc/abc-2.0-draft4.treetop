@@ -229,11 +229,11 @@ grammar ABC do
 
   rule key_field do
     label:'K' ':' value:(key/"none") <Field> {
-      def value
-        if super.text_value == "none"
-          NO_KEY
+      def key
+        if value.text_value == "none"
+          Key::NONE
         else
-          super
+          value.key
         end
       end
     }
@@ -243,7 +243,7 @@ grammar ABC do
     tonic:([A-G] [\#b]?) 
     mode:(space* value:mode?) 
     extra:(space* items:key_accidental*) 
-    clef:(space* node:clef?) <KeyNode> {
+    clef:(space* node:clef?) {
       def tonic
         super.text_value if super
       end
@@ -258,7 +258,14 @@ grammar ABC do
         result
       end
       def clef
-        super.node.clef
+        super.node.clef unless super.node.empty?
+      end
+      def key
+        if !@key
+          @key = Key.new tonic, mode, extra_accidentals
+          @key.clef = clef if clef
+        end
+        @key
       end
     }
   end
@@ -266,8 +273,7 @@ grammar ABC do
   # maj min m ion aeo mix dor phr lyd loc
   # a bit ugly here because no case-insensitivity support in treetop
   rule mode do
-    ( [mM] /
-      [mM] [aA] [jJ] /
+    ( [mM] [aA] [jJ] /
       [mM] [iI] [nN] /
       [iI] [oO] [nN] /
       [aA] [eE] [oO] /
@@ -276,7 +282,7 @@ grammar ABC do
       [pP] [hH] [rR] /
       [lL] [yY] [dD] /
       [lL] [oO] [cC] )
-    [A-Za-z]*
+    [A-Za-z]* / 'm' ![A-Za-z]
   end
 
   rule key_accidental do
@@ -864,21 +870,64 @@ grammar ABC do
   ##     [middle=<pitch>] [transpose=<semitones>]
   ##     [stafflines=<lines>]
 
+  rule clef_octave do
+    octave:('+8' / '-8') '' {
+      def set_opts(opts)
+        opts[:octave] = { '+8' => 1, '-8' => -1 }[text_value]
+      end
+    }
+  end
+
+  rule clef_transpose do
+    ('transpose'/'t') '=' transpose:integer {
+      def set_opts(opts)
+        opts[:transpose] = transpose.value 
+      end
+    }
+  end
+
+  rule clef_stafflines do
+    'stafflines' '=' stafflines:wholenum {
+      def set_opts(opts)
+        opts[:stafflines] = stafflines.value 
+      end
+    }
+  end
+
+  rule clef_name do
+    'clef='? name:[a-zA-Z]+ line_number:wholenum? {
+      def set_opts(opts)
+        opts[:name] = name.text_value
+        opts[:line_number] = line_number.value unless line_number.empty? 
+      end
+    }
+  end
+
+  rule clef_middle do
+    ('middle'/'m') '=' middle:pitch {
+        def set_opts(opts)
+          opts[:middle] = middle
+        end
+    }
+  end
+
+  rule clef_app_specific do
+    app:alphanum+ ':' field:alphanum+ '=' value:alphanum
+  end
+
+  rule clef_specifier do
+    clef_octave / clef_transpose / clef_stafflines / clef_middle / clef_app_specific / clef_name
+  end
+
   rule clef do
-    clef:('clef='? name:('treble'/'alto'/'tenor'/'bass'/'perc'/'none') line_number:wholenum?)?
-    octave:(space+ value:('+8'/'-8'))?
-    middle:(space+ ('middle'/'m') '=' value:pitch)?
-    transpose:(space+ ('transpose'/'t') '=' number:integer)?
-    stafflines:(space+ 'stafflines' '=' number:wholenum)? {
+    first:clef_specifier extras:(space+ specifier:clef_specifier)* {
       def clef
         unless @clef
           opts = {}
-          opts[:name] = super.name.text_value unless super.empty?
-          opts[:line] = super.line_number.value unless super.empty? || super.line_number.empty?
-          opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.value.text_value] unless octave.empty?
-          opts[:middle] = middle.value unless middle.empty?
-          opts[:transpose] = transpose.number.value unless transpose.empty?
-          opts[:stafflines] = stafflines.number.value unless stafflines.empty?
+          first.set_opts(opts)
+          extras.elements.each do |node| 
+            node.specifier.set_opts(opts)
+          end
           @clef = Clef.new(opts)
         end
         @clef
@@ -888,11 +937,16 @@ grammar ABC do
 
 
   # TODO find a better place for this
+
   rule spacer do
     "y" <Spacer>
   end
 
   # BASICS
+
+  rule alphanum do
+    [A-Za-z0-9_\-]
+  end
 
   rule abc_string do
     (!line_ender .)* <ABCString>

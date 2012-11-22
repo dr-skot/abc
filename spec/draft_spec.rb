@@ -340,6 +340,8 @@ describe "abc 2.0 draft 4" do
       p.tunes[0].key.clef.middle.height.should == 14
       p = parse "K:C treble middle=d"
       p.tunes[0].key.clef.middle.height.should == 14
+      p = parse "K:C middle=d"
+      p.tunes[0].key.clef.middle.height.should == 14
     end
 
     it "knows the default middle pitch for the basic clefs" do
@@ -367,17 +369,29 @@ describe "abc 2.0 draft 4" do
       p.tunes[0].key.clef.stafflines.should == 4
     end
 
-    # TODO allow unknown clef names
+    it "allows unknown clef names" do
+      p = parse "K:C baritone"
+      p.tunes[0].key.clef.name.should == 'baritone'
+    end
 
-    # TODO implement this
-    #it "defaults to treble" do
-    #  p = parse "K:C"
-    #  p.tunes[0].key.clef.name.should == 'treble'
-    #end
+    it "defaults to treble" do
+      p = parse "K:C"
+      p.tunes[0].key.clef.name.should == 'treble'
+    end
 
-    # TODO app-specific clef specifiers
+    it "allows app-specific specifiers" do
+      p = parse "K:C clef=perc mozart:noteC=snare-drum"
+    end
 
-    # TODO clef specifiers can come in any order
+    it "allows clef specifiers in any order" do
+      p = parse "K:C middle=d stafflines=3 bass4 t=-3 +8"
+      p.tunes[0].key.clef.name.should == 'bass'
+      p.tunes[0].key.clef.middle.note.should == 'D'
+      p.tunes[0].key.clef.stafflines.should == 3
+      p.tunes[0].key.clef.transpose.should == -3
+      p.tunes[0].key.clef.octave_shift.should == 1
+    end
+
 
     # TODO clef information can be in V: fields too
 

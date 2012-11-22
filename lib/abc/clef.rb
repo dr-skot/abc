@@ -68,6 +68,8 @@ module ABC
       @stafflines = opts[:stafflines] || 5
     end
 
+    DEFAULT = Clef.new
+
   end
 
 end

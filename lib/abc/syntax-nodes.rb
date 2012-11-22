@@ -200,24 +200,6 @@ module ABC
   class InfoField < Field
   end
 
-  # KEY
-  class KeyNode < ABCNode
-    def signature
-      @key ||= Key.new tonic, mode, extra_accidentals
-      @key.signature
-    end
-  end
-
-  class DummyKeyNode < KeyNode
-    attr_reader :tonic, :mode, :extra_accidentals
-    def initialize
-      @tonic = ""
-      @mode = ""
-      @extra_accidentals = {}
-    end
-  end
-
-  NO_KEY = DummyKeyNode.new
 
   # TUNE
 
@@ -316,10 +298,11 @@ module ABC
     end
     def key
       if !@key
-        @key = NO_KEY
         if header && (field = header.field(/K/))
-          @key = field.value
-        end 
+          @key = field.key
+        else
+          @key = Key::NONE
+        end
       end
       @key
     end
@@ -341,7 +324,7 @@ module ABC
           signature = base_signature
         elsif item.is_a?(Field) && item.label.text_value == "K"
           # key change
-          base_signature = item.value.signature.dup
+          base_signature = item.key.signature.dup
           signature = base_signature
         end
       end
@@ -541,10 +524,6 @@ module ABC
 
   # LYRICS
   class LyricUnit < ABCNode
-  end
-
-  # CLEFS
-  class ClefNode < ABCNode
   end
 
   # BASICS
