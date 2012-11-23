@@ -472,6 +472,15 @@ describe "abc 2.0 draft 4" do
       p = parse "V:T1"
       p.tunes[0].voices['T1'].clef.name.should == 'treble'
     end
+    it "supports clef specifiers" do
+      p = parse 'V:T1 nm="Tenore I" snm="T.I" middle=d stafflines=3 bass4+8 t=-3'
+      clef = p.tunes[0].voices['T1'].clef
+      clef.name.should == 'bass'
+      clef.middle.note.should == 'D'
+      clef.stafflines.should == 3
+      clef.transpose.should == -3
+      clef.octave_shift.should == 1
+    end
   end
 
 end
