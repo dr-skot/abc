@@ -492,7 +492,7 @@ describe "abc 2.0 draft 4" do
       b.notes[1].pitch.note.should == "E"
       b.notes[2].pitch.note.should == "F"
     end
-    it "works if you don't declare voices in header" do
+    it "still works if you don't declare voices in header" do
       p = parse "[V:A]abc\n[V:B]def"
       a = p.tunes[0].voices['A']
       b = p.tunes[0].voices['B']
@@ -502,6 +502,12 @@ describe "abc 2.0 draft 4" do
       b.notes[0].pitch.note.should == "D"
       b.notes[1].pitch.note.should == "E"
       b.notes[2].pitch.note.should == "F"
+    end
+    it "knows when there are voices" do
+      p = parse "abc"
+      p.tunes[0].has_voices?.should == false
+      p = parse "V:1\n[V:1]abc"
+      p.tunes[0].has_voices?.should == true
     end
   end
 

@@ -398,8 +398,10 @@ module ABC
       end
       @voices
     end
-    def divvy_voices
-      
+    def has_voices?
+      return voices.count > 0
+    end
+    def divvy_voices      
       voice = nil
       items.each do |item|
         # TODO lose text_value here, label should already be a string
