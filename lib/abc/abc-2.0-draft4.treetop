@@ -34,7 +34,7 @@ grammar ABC do
   end
 
   rule raw_body_field do
-     meter_field / tempo_field / unit_length_field / key_field / lyrics_field / other_body_field
+     meter_field / tempo_field / unit_length_field / key_field / lyrics_field / voice_inline_field / other_body_field
   end
 
   # TODO: don't fail to parse unrecognized fields
@@ -985,6 +985,14 @@ grammar ABC do
           @clef = Clef.new(opts)
         end
         @clef
+      end
+    }
+  end
+
+  rule voice_inline_field do
+    label:'V' ':' id:alphanum+ <Field> {
+      def id
+        super.text_value[0..19] # first 20 chars only
       end
     }
   end

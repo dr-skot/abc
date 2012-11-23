@@ -161,6 +161,9 @@ module ABC
     def apply_lyrics
       tunes.each { |tune| tune.apply_lyrics }
     end
+    def divvy_voices
+      tunes.each { |tune| tune.divvy_voices }
+    end
   end
   
   class Header < ABCNode
@@ -394,6 +397,20 @@ module ABC
         end
       end
       @voices
+    end
+    def divvy_voices
+      
+      voice = nil
+      items.each do |item|
+        # TODO lose text_value here, label should already be a string
+        if item.is_a?(Field) && item.label.text_value == 'V'
+          id = item.id
+          voices[id] = Voice.new(id) if !voices[id]
+          voice = voices[id]
+        else
+          voice.items << item if voice
+        end
+      end
     end
   end
 

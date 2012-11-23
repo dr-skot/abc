@@ -17,6 +17,7 @@ module ABC
         p.apply_meter
         p.apply_key_signatures
         p.apply_lyrics
+        p.divvy_voices
       end
       p
     end

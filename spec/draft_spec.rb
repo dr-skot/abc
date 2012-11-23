@@ -481,6 +481,28 @@ describe "abc 2.0 draft 4" do
       clef.transpose.should == -3
       clef.octave_shift.should == 1
     end
+    it "allocates music to voices" do
+      p = parse "V:A\nV:B\n[V:A]abc\n[V:B]def"
+      a = p.tunes[0].voices['A']
+      b = p.tunes[0].voices['B']
+      a.notes[0].pitch.note.should == "A"
+      a.notes[1].pitch.note.should == "B"
+      a.notes[2].pitch.note.should == "C"
+      b.notes[0].pitch.note.should == "D"
+      b.notes[1].pitch.note.should == "E"
+      b.notes[2].pitch.note.should == "F"
+    end
+    it "works if you don't declare voices in header" do
+      p = parse "[V:A]abc\n[V:B]def"
+      a = p.tunes[0].voices['A']
+      b = p.tunes[0].voices['B']
+      a.notes[0].pitch.note.should == "A"
+      a.notes[1].pitch.note.should == "B"
+      a.notes[2].pitch.note.should == "C"
+      b.notes[0].pitch.note.should == "D"
+      b.notes[1].pitch.note.should == "E"
+      b.notes[2].pitch.note.should == "F"
+    end
   end
 
 end
