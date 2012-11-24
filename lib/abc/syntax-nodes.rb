@@ -277,14 +277,19 @@ module ABC
         end
       end
     end
-    def apply_meter(tunebook_meter=nil)
-      @meter = tunebook_meter if tunebook_meter && (!header || !header.field(/M/))
-      if measure_length = meter.measure_length
-        items.each do |item|
-          if item.is_a? MeasureRest
-            item.measure_length = measure_length
-          elsif item.is_a?(Field) && item.label.text_value == "M"
-            measure_length = item.meter.measure_length
+    def apply_meter(tunebook_meter=nil, which_items=nil)
+      if (!which_items && has_voices?)
+        voices.each_value { |v| apply_meter(tunebook_meter, v.items) }
+      else
+        which_items = items if !which_items
+        @meter = tunebook_meter if tunebook_meter && (!header || !header.field(/M/))
+        if measure_length = meter.measure_length
+          which_items.each do |item|
+            if item.is_a? MeasureRest
+              item.measure_length = measure_length
+            elsif item.is_a?(Field) && item.label.text_value == "M"
+              measure_length = item.meter.measure_length
+            end
           end
         end
       end

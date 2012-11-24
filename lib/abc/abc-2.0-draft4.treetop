@@ -471,6 +471,9 @@ grammar ABC do
       def note_length
         measure_length * measure_count if measure_length
       end
+      def broken_rhythm_marker
+        nil
+      end
     }
   end
   

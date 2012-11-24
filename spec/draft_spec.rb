@@ -518,6 +518,28 @@ describe "abc 2.0 draft 4" do
       v2.notes[0].pitch.height.should == 11
       v2.notes[1].pitch.height.should == 10
     end
+    it "retains key change when voice comes back" do
+      p = parse "[V:1]b[K:F]b[V:2]b[K:F]b[V:1]b[K:C]b"
+      v1 = p.tunes[0].voices['1']
+      v1.notes[2].pitch.height.should == 10 # B flat
+      v1.notes[3].pitch.height.should == 11 # B
+    end
+    it "resets meter when new voice starts" do
+      p = parse "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4"
+      v1 = p.tunes[0].voices['1']
+      v2 = p.tunes[0].voices['2']
+      v1.notes[0].note_length.should == 4
+      v1.notes[1].note_length.should == 3
+      v2.notes[0].note_length.should == 4
+      v2.notes[1].note_length.should == 3
+    end
+    it "retains meter change when voice comes back" do
+      p = parse "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4[V:1]Z4[M:C]Z4"
+      v1 = p.tunes[0].voices['1']
+      v1.notes[2].note_length.should == 3
+      v1.notes[3].note_length.should == 4
+    end
+
   end
 
 end

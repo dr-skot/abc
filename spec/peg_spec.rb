@@ -572,7 +572,7 @@ describe "abc-2.0-draft4 PEG" do
       p = parse "M:C\n\nX:1\n\nX:2"
       p.meter.symbol.should == :common
       p.tunes[0].meter.symbol.should == :free
-      p.tunes[0].meter.symbol.should == :free
+      p.tunes[1].meter.symbol.should == :free
       p.apply_meter
       p.tunes[0].meter.symbol.should == :common
       p.tunes[1].meter.symbol.should == :common
