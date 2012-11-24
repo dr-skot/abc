@@ -509,6 +509,15 @@ describe "abc 2.0 draft 4" do
       p = parse "V:1\n[V:1]abc"
       p.tunes[0].has_voices?.should == true
     end
+    it "resets key when new voice starts" do
+      p = parse "[V:1]b[K:F]b[V:2]b[K:F]b"
+      v1 = p.tunes[0].voices['1']
+      v2 = p.tunes[0].voices['2']
+      v1.notes[0].pitch.height.should == 11 # B
+      v1.notes[1].pitch.height.should == 10 # B flat
+      v2.notes[0].pitch.height.should == 11
+      v2.notes[1].pitch.height.should == 10
+    end
   end
 
 end

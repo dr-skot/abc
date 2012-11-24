@@ -309,26 +309,31 @@ module ABC
       end
       @key
     end
-    def apply_key_signatures
-      base_signature = key.signature.dup
-      signature = base_signature
-      items.each do |item|
-        if item.respond_to?(:pitch) && item.pitch
-          item.pitch.signature = signature
+    def apply_key_signatures(which_items=nil)
+      if (!which_items && has_voices?)
+        voices.each_value { |v| apply_key_signatures(v.items) }
+      else
+        which_items = items if !which_items
+        base_signature = key.signature.dup
+        signature = base_signature
+        which_items.each do |item|
+          if item.respond_to?(:pitch) && item.pitch
+            item.pitch.signature = signature
           # note's accidental may have altered the signature so ask for it back
-          signature = item.pitch.signature
-        elsif item.respond_to?(:notes)
-          item.notes.each do |note|
-            note.pitch.signature = signature
-            signature = note.pitch.signature
+            signature = item.pitch.signature
+          elsif item.respond_to?(:notes)
+            item.notes.each do |note|
+              note.pitch.signature = signature
+              signature = note.pitch.signature
+            end
+          elsif item.is_a?(BarLine) && item.type != :dotted
+            # reset to base signature at end of each measure
+            signature = base_signature
+          elsif item.is_a?(Field) && item.label.text_value == "K"
+            # key change
+            base_signature = item.key.signature.dup
+            signature = base_signature
           end
-        elsif item.is_a?(BarLine) && item.type != :dotted
-          # reset to base signature at end of each measure
-          signature = base_signature
-        elsif item.is_a?(Field) && item.label.text_value == "K"
-          # key change
-          base_signature = item.key.signature.dup
-          signature = base_signature
         end
       end
     end
