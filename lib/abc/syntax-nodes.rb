@@ -244,16 +244,21 @@ module ABC
       end
       @unit_note_length ||= meter.default_unit_note_length
     end
-    def apply_note_lengths
-      len = unit_note_length
-      if tempo
-        tempo.unit_length = len
-      end
-      items.each do |item|
-        if item.is_a? NoteOrRest
-          item.unit_note_length = len
-        elsif item.is_a?(Field) && item.label.text_value == "L"
-          len = item.value
+    def apply_note_lengths(which_items=nil)
+      if (!which_items && has_voices?)
+        voices.each_value { |v| apply_note_lengths(v.items) }
+      else
+        which_items = items if !which_items
+        len = unit_note_length
+        if tempo
+          tempo.unit_length = len
+        end
+        which_items.each do |item|
+          if item.is_a? NoteOrRest
+            item.unit_note_length = len
+          elsif item.is_a?(Field) && item.label.text_value == "L"
+            len = item.value
+          end
         end
       end
     end

@@ -539,7 +539,24 @@ describe "abc 2.0 draft 4" do
       v1.notes[2].note_length.should == 3
       v1.notes[3].note_length.should == 4
     end
+    it "resets note length when new voice starts" do
+      p = parse "[V:1]a[L:1/4]b[V:2]a[L:1/4]b"
+      v1 = p.tunes[0].voices['1']
+      v2 = p.tunes[0].voices['2']
+      v1.notes[0].note_length.should == Rational(1, 8)
+      v1.notes[1].note_length.should == Rational(1, 4)
+      v2.notes[0].note_length.should == Rational(1, 8)
+      v2.notes[1].note_length.should == Rational(1, 4)
+    end
+    it "retains meter change when voice comes back" do
+      p = parse "[V:1]a[L:1/4]b[V:2]a[L:1/4]b[V:1]a[L:1/16]b"
+      v1 = p.tunes[0].voices['1']
+      v1.notes[2].note_length.should == Rational(1, 4)
+      v1.notes[3].note_length.should == Rational(1, 16)
+    end
 
+    # TODO what if the tune has voices but some notes occcur before the first voice field?
+    
   end
 
 end
