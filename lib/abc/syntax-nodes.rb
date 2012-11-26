@@ -415,7 +415,7 @@ module ABC
     def measures
       @first_voice.measures
     end
-    # alias_method :bars, :measures
+    alias_method :bars, :measures
   end
 
   class TuneLine

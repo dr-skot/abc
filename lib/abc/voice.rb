@@ -16,7 +16,7 @@ module ABC
     attr_accessor :items
     attr_accessor :measures
 
-    # alias_method :bars, :measures
+    alias_method :bars, :measures
 
     def initialize(id, opts={})
       @id = id
