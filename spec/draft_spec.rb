@@ -657,12 +657,15 @@ describe "abc 2.0 draft 4" do
       p.tunes[0].measures[0].notes[0].pitch.height.should == 9
       p.tunes[0].measures[0].overlays[0].notes[0].pitch.height.should == -3
     end
-    # TODO move this to a different section
+    # TODO move this to a different test section
     it "allows bars[] as a synonym for measures[]" do
       p = parse "|a b c & A B C|"
       p.tunes[0].bars.should == p.tunes[0].measures
       p.tunes[0].voices[""].bars.should == p.tunes[0].voices[""].measures
     end
+
+    # TODO allow fields in voice overlays, rather than just notes? eg what if we want a key change in overlaid voices?
+
   end
 
 end

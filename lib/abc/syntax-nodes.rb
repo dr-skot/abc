@@ -1,7 +1,7 @@
 # TODO ties and slurs should disappear as music items, should be information on individual notes
-# TODO all tunes should have voices, a default voice with id "" if nothing else has_voices? should change to many_voices?
 # TODO tune.overlays? might also be useful if there are overlays in any measures
 # TODO maybe also a list of these measures as measures_with_overlays
+# TODO K: field should end tune header
 
 require 'treetop'
 

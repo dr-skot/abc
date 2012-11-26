@@ -26,7 +26,7 @@ grammar ABC do
   end
 
   rule header_field do
-    (meter_field / tempo_field/ unit_length_field / key_field / voice_header_field / other_header_field) line_ender
+    (meter_field / tempo_field/ unit_length_field / voice_header_field / other_header_field) line_ender
   end
   
   rule inline_body_field do
@@ -243,7 +243,7 @@ grammar ABC do
     tonic:([A-G] [\#b]?) 
     mode:(space* value:mode?) 
     extra:(space* items:key_accidental*) 
-    clef:(space* node:clef?) {
+    clef:(space* node:clef?) {  # TODO should't this be space+?
       def tonic
         super.text_value if super
       end
@@ -321,9 +321,14 @@ grammar ABC do
     (tune_header tune_body? / tune_body) end_of_section <Tune>
   end
 
+  rule key_field_line do
+    key_field line_ender
+  end
+
   # "Extended information fields...may appear in the tune header"
+  # The key field, if it exists, finishes the tune header
   rule tune_header do
-    (info_field / header_field)+ <TuneHeader>
+    '' (key_field_line / (info_field / header_field)+ key_field_line?) <TuneHeader>
   end
 
   # TODO allow comment lines
@@ -1008,6 +1013,7 @@ grammar ABC do
 
 
   # TODO find a better place for this
+  # TODO spacer should be a stroke in the note definition
 
   rule spacer do
     "y" <Spacer>
