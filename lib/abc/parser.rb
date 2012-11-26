@@ -18,6 +18,7 @@ module ABC
         p.apply_meter
         p.apply_key_signatures
         p.apply_lyrics
+        p.collect_measures
       end
       p
     end

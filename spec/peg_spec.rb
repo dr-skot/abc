@@ -318,6 +318,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "applies the default unit note length" do
       p = parse "ab2c3/2d3/e/"
+      p.divvy_voices
       p.apply_note_lengths
       tune = p.tunes[0]
       tune.items[0].note_length.should == Rational(1, 8)
@@ -329,6 +330,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "applies an explicit unit note length" do
       p = parse "L:1/2\nab2c3/2d3/e/"
+      p.divvy_voices
       p.apply_note_lengths
       tune = p.tunes[0]
       tune.items[0].note_length.should == Rational(1, 2)
@@ -340,6 +342,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "can change unit note length with an inline L: field" do
       p = parse "L:1/2\na4[L:1/4]a4"
+      p.divvy_voices
       p.apply_note_lengths
       tune = p.tunes[0]
       tune.items[0].note_length.should == 2
@@ -348,6 +351,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "can change unit note length with a standalone L: field" do
       p = parse "L:1/2\na4\nL:1/4\na4"
+      p.divvy_voices
       p.apply_note_lengths
       tune = p.tunes[0]
       tune.items[0].note_length.should == 2
@@ -476,12 +480,14 @@ describe "abc-2.0-draft4 PEG" do
     it "can apply the tune's key signature to a tune" do
       p = parse "K:F\nB"
       p.tunes[0].items[0].pitch.height.should == -1
+      p.tunes[0].divvy_voices
       p.tunes[0].apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -2
     end
 
     it "retains accidentals within a measure when applying key signature" do
       p = parse "K:F\nB=BB"
+      p.tunes[0].divvy_voices
       p.tunes[0].apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -2
       p.tunes[0].items[1].pitch.height.should == -1
@@ -490,6 +496,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "resets accidentals at end of measure" do
       p = parse "K:F\nB=B|B"
+      p.tunes[0].divvy_voices
       p.tunes[0].apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -2
       p.tunes[0].items[1].pitch.height.should == -1
@@ -498,6 +505,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "does not reset accidentals at dotted bar line" do
       p = parse "K:F\nB=B.|B"
+      p.tunes[0].divvy_voices
       p.tunes[0].apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -2
       p.tunes[0].items[1].pitch.height.should == -1
@@ -506,6 +514,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "can apply key signatures to all tunes in tunebook" do
       p = parse "K:Eb\nA=A^AA\n\nK:F\nB"
+      p.divvy_voices
       p.apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -4
       p.tunes[0].items[1].pitch.height.should == -3
@@ -516,6 +525,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "does not apply key signature from previous tune" do
       p = parse "X:1\nK:Eb\nA\n\n\nX:2\nA"
+      p.divvy_voices
       p.apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == -4
       p.tunes[1].items[0].pitch.height.should == -3
@@ -523,6 +533,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "changes key signature when inline K: field found in tune body" do
       p = parse "X:1\nK:C\nC[K:A]C"
+      p.divvy_voices
       p.apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == 0
       p.tunes[0].items[2].pitch.height.should == 1
@@ -530,6 +541,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "changes key signature when standalone K: field found in tune body" do
       p = parse "X:1\nK:C\nC\nK:A\nC"
+      p.divvy_voices
       p.apply_key_signatures
       p.tunes[0].items[0].pitch.height.should == 0
       p.tunes[0].items[2].pitch.height.should == 1
@@ -563,6 +575,7 @@ describe "abc-2.0-draft4 PEG" do
     it "knows the note length of measure-count rests after applying meter" do
       p = parse "M:C\nZ4[M:3/4]Z2\n"
       p.tunes[0].items[0].note_length.should == nil
+      p.divvy_voices
       p.apply_meter
       p.tunes[0].items[0].note_length.should == 4
       p.tunes[0].items[2].note_length.should == Rational(6, 4)
@@ -573,6 +586,7 @@ describe "abc-2.0-draft4 PEG" do
       p.meter.symbol.should == :common
       p.tunes[0].meter.symbol.should == :free
       p.tunes[1].meter.symbol.should == :free
+      p.divvy_voices
       p.apply_meter
       p.tunes[0].meter.symbol.should == :common
       p.tunes[1].meter.symbol.should == :common
@@ -582,6 +596,7 @@ describe "abc-2.0-draft4 PEG" do
       p = parse "M:C\n\nX:1\nM:C|"
       p.meter.symbol.should == :common
       p.tunes[0].meter.symbol.should == :cut
+      p.divvy_voices
       p.apply_meter
       p.tunes[0].meter.symbol.should == :cut
     end
@@ -628,6 +643,7 @@ describe "abc-2.0-draft4 PEG" do
     
     it "works in tandem with unit note length and note length markers" do
       p = parse "L:1/8\na2>b2"
+      p.divvy_voices
       p.apply_broken_rhythms
       p.apply_note_lengths
       p.tunes[0].items[0].note_length.should == Rational(3, 8)
@@ -910,12 +926,14 @@ describe "abc-2.0-draft4 PEG" do
     it "applies key signatures to chord pitches" do
       p = parse "K:D\n[DFA]"
       p.tunes[0].items[0].notes[1].pitch.height.should == 5
+      p.divvy_voices
       p.apply_key_signatures
       p.tunes[0].items[0].notes[1].pitch.height.should == 6      
     end
     it "applies measure accidentals to chord pitches" do
       p = parse "^F[DFA]|[DFA]"
       p.tunes[0].items[1].notes[1].pitch.height.should == 5
+      p.divvy_voices
       p.apply_key_signatures
       p.tunes[0].items[1].notes[1].pitch.height.should == 6      
       p.tunes[0].items[3].notes[1].pitch.height.should == 5      
@@ -923,6 +941,7 @@ describe "abc-2.0-draft4 PEG" do
     it "creates measure accidentals from chord pitches" do
       p = parse "[D^FA]F|F"
       p.tunes[0].items[1].pitch.height.should == 5
+      p.divvy_voices
       p.apply_key_signatures
       p.tunes[0].items[1].pitch.height.should == 6      
       p.tunes[0].items[3].pitch.height.should == 5

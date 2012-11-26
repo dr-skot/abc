@@ -345,7 +345,7 @@ grammar ABC do
 
   rule tune_element do
     inline_body_field /
-    tune_space / tuplet_symbol / slur / variant_ending / notelike_thing / rest / tie / spacer / bar_line / tune_hard_linebreak /
+    tune_space / tuplet_symbol / slur / variant_ending / notelike_thing / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
     ignored_char
   end
 
@@ -998,6 +998,12 @@ grammar ABC do
         super.text_value[0..19] # first 20 chars only
       end
     }
+  end
+
+  # VOICE OVERLAYS
+
+  rule overlay_delimiter do
+    '&' <OverlayDelimiter> 
   end
 
 

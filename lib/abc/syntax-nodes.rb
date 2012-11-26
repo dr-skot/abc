@@ -1,3 +1,8 @@
+# TODO ties and slurs should disappear as music items, should be information on individual notes
+# TODO all tunes should have voices, a default voice with id "" if nothing else has_voices? should change to many_voices?
+# TODO tune.overlays? might also be useful if there are overlays in any measures
+# TODO maybe also a list of these measures as measures_with_overlays
+
 require 'treetop'
 
 class Object
@@ -164,6 +169,9 @@ module ABC
     def divvy_voices
       tunes.each { |tune| tune.divvy_voices }
     end
+    def collect_measures
+      tunes.each { |tune| tune.collect_measures }
+    end
   end
   
   class Header < ABCNode
@@ -233,9 +241,23 @@ module ABC
       @lines
     end
     def items
+      if @first_voice
+        @first_voice.items
+      else
+        all_items
+      end
+    end
+    def all_items
       children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) }
     end
     def notes
+      if @first_voice
+        @first_voice.notes
+      else
+        all_notes
+      end
+    end
+    def all_notes
       items.select { |item| item.is_a?(NoteOrRest) }
     end
     def unit_note_length
@@ -244,23 +266,11 @@ module ABC
       end
       @unit_note_length ||= meter.default_unit_note_length
     end
-    def apply_note_lengths(which_items=nil)
-      if (!which_items && has_voices?)
-        voices.each_value { |v| apply_note_lengths(v.items) }
-      else
-        which_items = items if !which_items
-        len = unit_note_length
-        if tempo
-          tempo.unit_length = len
-        end
-        which_items.each do |item|
-          if item.is_a? NoteOrRest
-            item.unit_note_length = len
-          elsif item.is_a?(Field) && item.label.text_value == "L"
-            len = item.value
-          end
-        end
+    def apply_note_lengths
+      if tempo
+        tempo.unit_length = unit_note_length
       end
+      voices.each_value { |v| v.apply_note_lengths(unit_note_length) }
     end
     def apply_broken_rhythms
       last_note = nil
@@ -282,22 +292,9 @@ module ABC
         end
       end
     end
-    def apply_meter(tunebook_meter=nil, which_items=nil)
-      if (!which_items && has_voices?)
-        voices.each_value { |v| apply_meter(tunebook_meter, v.items) }
-      else
-        which_items = items if !which_items
-        @meter = tunebook_meter if tunebook_meter && (!header || !header.field(/M/))
-        if measure_length = meter.measure_length
-          which_items.each do |item|
-            if item.is_a? MeasureRest
-              item.measure_length = measure_length
-            elsif item.is_a?(Field) && item.label.text_value == "M"
-              measure_length = item.meter.measure_length
-            end
-          end
-        end
-      end
+    def apply_meter(tunebook_meter=nil)
+      @meter = tunebook_meter if tunebook_meter && !(header && header.field(/M/))
+      voices.each_value { |v| v.apply_meter(meter) }
     end
     def tempo
       if !@tempo
@@ -319,33 +316,8 @@ module ABC
       end
       @key
     end
-    def apply_key_signatures(which_items=nil)
-      if (!which_items && has_voices?)
-        voices.each_value { |v| apply_key_signatures(v.items) }
-      else
-        which_items = items if !which_items
-        base_signature = key.signature.dup
-        signature = base_signature
-        which_items.each do |item|
-          if item.respond_to?(:pitch) && item.pitch
-            item.pitch.signature = signature
-          # note's accidental may have altered the signature so ask for it back
-            signature = item.pitch.signature
-          elsif item.respond_to?(:notes)
-            item.notes.each do |note|
-              note.pitch.signature = signature
-              signature = note.pitch.signature
-            end
-          elsif item.is_a?(BarLine) && item.type != :dotted
-            # reset to base signature at end of each measure
-            signature = base_signature
-          elsif item.is_a?(Field) && item.label.text_value == "K"
-            # key change
-            base_signature = item.key.signature.dup
-            signature = base_signature
-          end
-        end
-      end
+    def apply_key_signatures()
+        voices.each_value { |v| v.apply_key_signatures(key) }
     end
     def apply_beams
       beam = :start
@@ -407,16 +379,17 @@ module ABC
         @voices = {}
         if header
           header.fields(/V/).each do |node|
+            @first_voice = node.voice if !@first_voice
             @voices[node.voice.id] = node.voice
           end
         end
       end
       @voices
     end
-    def has_voices?
-      return voices.count > 0
+    def many_voices?
+      return voices.count > 1
     end
-    def divvy_voices      
+    def divvy_voices
       voice = nil
       items.each do |item|
         # TODO lose text_value here, label should already be a string
@@ -424,11 +397,25 @@ module ABC
           id = item.id
           voices[id] = Voice.new(id) if !voices[id]
           voice = voices[id]
+          @first_voice = voice if !@first_voice
         else
-          voice.items << item if voice
+          if !voice
+            if !@first_voice
+              @first_voice = voices[""] = Voice.new("")  # create default voice if necessary
+            end
+            voice = @first_voice
+          end
+          voice.items << item
         end
       end
     end
+    def collect_measures
+      voices.each_value { |v| v.collect_measures }
+    end
+    def measures
+      @first_voice.measures
+    end
+    # alias_method :bars, :measures
   end
 
   class TuneLine
@@ -569,6 +556,10 @@ module ABC
 
   # LYRICS
   class LyricUnit < ABCNode
+  end
+
+  # OVERLAY DELIMITER
+  class OverlayDelimiter < MusicNode
   end
 
   # BASICS

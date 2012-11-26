@@ -3,6 +3,7 @@ $LOAD_PATH << './'
 # TODO figure out the right way to deal with these dependencies
 require 'lib/abc/parser.rb'
 require 'lib/abc/voice.rb'
+require 'lib/abc/measure.rb'
 
 describe "abc 2.0 draft 4" do
 
@@ -440,6 +441,66 @@ describe "abc 2.0 draft 4" do
   #   [V:B2]       x8      | z2B2 c2d2 | e3e (d2c2)  | H d6    ||
   #   This layout closely resembles printed music, and permits the corresponding notes on different voices to be vertically aligned so that the chords can be read directly from the abc. The addition of single remark lines '%' between the grouped staves, indicating the bar nummers, also makes the source more legible.
 
+  # V: can appear both in the body and the header. In the latter case, V: is used exclusively to set voice properties. For example, the name property in the example above, specifies which label should be printed on the first staff of the voice in question. Note that these properties may be also set or changed in the tune body. The V: properties will be fully explained in the next section.
+
+  # Please note that the exact grouping of voices on the staff or staves is not specified by V: itself. This may be specified with the %%score stylesheet directive. See section Voice grouping for details. Please see section Instrumentation directives to learn how to assign a General MIDI instrument to a voice, using a %%MIDI stylesheet directive.
+
+  # Although it is not recommended, the tune body of fragment X:1, could also be notated this way:
+
+  # X:2
+  # T:Zocharti Loch
+  # %...skipping rest of the header...
+  # K:Gm
+  # %               Start of tune body:
+  # V:T1
+  #  (B2c2 d2g2) | f6e2 | (d2c2 d2)e2 | d4 c2z2 |
+  #  (B2c2 d2g2) | f8 | d3c (d2fe) | H d6 ||
+  # V:T2
+  #  (G2A2 B2e2) | d6c2 | (B2A2 B2)c2 | B4 A2z2 |
+  #  z8 | z8 | B3A (B2c2) | H A6 ||
+  # V:B1
+  #  z8 | z2f2 g2a2 | b2z2 z2 e2 | f4 f2z2 |
+  #  (d2f2 b2e'2) | d'8 | g3g  g4 | H^f6 ||
+  # V:B2
+  #  x8 | x8 | x8 | x8 |
+  #  x8 | z2B2 c2d2 | e3e (d2c2) | H d6 ||
+
+  # In the example above, each V: label occurs only once, and the complete part for that voice follows. The output of tune X:2 will be exactly the same as the ouput of tune X:1; the source code of X:1, however, is much better readable.
+
+  # 7.1. Voice properties
+
+  # V: fields can contain voice specifiers such as name, clef, and so on. For example,
+
+  # V:T name="Tenor" clef=treble-8
+  # indicates that voice 'T' will be drawn on a staff labelled "Tenor", using the treble clef with a small '8' underneath. Player programs will transpose the notes by one octave. Possible voice definitions include:
+
+  # name="voice name"
+  #   The voice name is printed on the left of the first staff only. The characters '\n' produce a newline int the output.
+  # subname="voice subname"
+  #   The voice subname is printed on the left of all staves but the first one.
+  # stem=up/down
+  #   Forces the note stem direction.
+  # clef=
+  #   Specifies a clef; see section Clefs for details.
+  # The name specifier may be abbreviated to nm=. The subname specifier may be abbreviated to snm=.
+
+  # Applications may implement their own specifiers, but must gracefully ignore specifiers they don't understand or implement. This is required for portability of ABC files between applications.
+
+  # 7.2. Breaking lines
+
+  # The rules for breaking lines in multi-voice ABC files are the same as described above. Each line of input may end in a backslash (\) to continue it; lyrics should immediately follow in w: lines (if any). See the example tune Canzonetta.abc.
+
+  # 7.3. Inline fields
+
+  # To avoid ambiguity, inline fields that specify music properties should be repeated in each voice. For example,
+
+  # ...
+  # P:C
+  # [V:1] C4|[M:3/4]CEG|Gce|
+  # [V:2] E4|[M:3/4]G3 |E3 |
+  # P:D
+  # ...
+
   describe "multivoice support" do
     it "can parse a V: field in the header" do
       p = parse "V:T1"
@@ -503,11 +564,11 @@ describe "abc 2.0 draft 4" do
       b.notes[1].pitch.note.should == "E"
       b.notes[2].pitch.note.should == "F"
     end
-    it "knows when there are voices" do
+    it "knows when there is more than one voice" do
       p = parse "abc"
-      p.tunes[0].has_voices?.should == false
-      p = parse "V:1\n[V:1]abc"
-      p.tunes[0].has_voices?.should == true
+      p.tunes[0].many_voices?.should == false
+      p = parse "V:1\nV:2\n[V:1]abc"
+      p.tunes[0].many_voices?.should == true
     end
     it "resets key when new voice starts" do
       p = parse "[V:1]b[K:F]b[V:2]b[K:F]b"
@@ -554,9 +615,49 @@ describe "abc 2.0 draft 4" do
       v1.notes[2].note_length.should == Rational(1, 4)
       v1.notes[3].note_length.should == Rational(1, 16)
     end
+    it "uses first voice if you for tune.notes[]" do
+      p = parse "[V:1]a[V:2]b[V:1]a[V:2]b"
+      p.tunes[0].notes.should == p.tunes[0].voices["1"].notes
+    end
+    # TODO: for this to work, K field has to mark last field of header
+    #it "allows V: fields as standalones" do
+    #  p = parse "K:C\nV:A\na\nV:B\nb"
+    #  p.tunes[0].voices['A'].notes[0].pitch.note.should == 'A'
+    #  p.tunes[0].voices['B'].notes[0].pitch.note.should == 'B'
+    #end
 
     # TODO what if the tune has voices but some notes occcur before the first voice field?
-    
+    it "has a default voice if no voices specified" do
+      p = parse "abc"
+      p.tunes[0].voices[""].items.should == p.tunes[0].items
+    end
   end
+
+  # 7.4. Voice overlay
+  # The & operator may be used to temporarily overlay several voices within one measure. The & operator sets the time point of the music back to the previous bar line, and the notes which follow it form a temporary voice in parallel with the preceding one. This may only be used to add one complete bar's worth of music for each &.
+  # Example:
+  # A2 | c d e f g  a  &\
+  #      A A A A A  A  &\
+  #      F E D C B, A, |]
+  # It can also be used to overlay a pattern of chord symbols on a melody line:
+  # B4              z   +5+c (3BAG &\
+  # "Em" x2 "G7" x2 "C" x4         |
+  # Likewise, the & operator may be used in w: lyrics and in s: symbol lines, to provide a separate line of lyrics and symbols to each of the overlayed voices:
+  #    g4 f4 | e6 e2  &\
+  #    (d8   | c6) c2
+  # w: ha-la-| lu-yoh &\
+  #    lu-   |   -yoh
+  # In meter free music, invisible bar line signs '[|]' may be used instead of regular ones.
+  
+  describe "voice overlay support" do
+    it "allows multiple voices in a single bar" do
+      p = parse "|a b c & A B C|"
+      p.tunes[0].measures[0].overlays?.should == true
+      p.tunes[0].measures[0].overlays.count.should == 1
+      p.tunes[0].measures[0].notes[0].pitch.height.should == 9
+      p.tunes[0].measures[0].overlays[0].notes[0].pitch.height.should == -3
+    end
+  end
+
 
 end
