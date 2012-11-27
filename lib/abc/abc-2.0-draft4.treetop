@@ -10,13 +10,21 @@ grammar ABC do
   # "The file may optionally start with a file header."
   # ** We'll loosen this a little and allow 0 or more tunes, ie an empty tunebook is legal
   rule file do
-    file_header? tune* <Tunebook>
+    file_header? (tune / free_text tune)* <Tunebook>
   end
   
   # "The file header is a block of consecutive field lines, finished by a blank line."
   # "Extended information fields...may appear in the file header"
   rule file_header do
     (info_field / file_field)+ end_of_section <FileHeader>
+  end
+
+  rule free_text do
+    text:(!end_of_section .)+ end_of_line end_of_section <FreeText> {
+      def text
+        super.text_value
+      end
+    }
   end
   
   # FIELDS

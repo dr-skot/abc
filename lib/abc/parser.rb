@@ -11,6 +11,7 @@ module ABC
     def parse(input)
       p = @parser.parse input
       if p
+        p.assign_free_text
         p.propagate_tunebook_header
         p.divvy_voices
         p.apply_note_lengths

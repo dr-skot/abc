@@ -90,6 +90,9 @@ module ABC
   class ABCNode < Treetop::Runtime::SyntaxNode
   end
 
+  class FreeText < ABCNode
+  end
+
   class NodeWithHeader < ABCNode
     attr_accessor :master_node
     def header
@@ -160,6 +163,17 @@ module ABC
     def collect_measures
       tunes.each { |tune| tune.collect_measures }
     end
+    def assign_free_text
+      free_text = nil
+      children.each_with_index do |child|
+        if child.is_a? FreeText
+          free_text = child.text
+        elsif child.is_a? Tune
+          child.free_text = free_text
+          free_text = nil
+        end
+      end
+    end
   end
   
   class Header < ABCNode
@@ -203,6 +217,7 @@ module ABC
   # TUNE
 
   class Tune < NodeWithHeader
+    attr_accessor :free_text
     def refnum
       if header && (value = header.value(/X/))
         value.to_i
