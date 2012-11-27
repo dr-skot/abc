@@ -11,28 +11,118 @@ describe "abc 2.0 draft 4" do
     @parser = ABC::Parser.new
   end
 
+  # for convenience
   def parse(input)
     p = @parser.parse(input)
     p.should_not be(nil), @parser.base_parser.failure_reason
     p
   end
 
-  ## 2. File structure
-  ## An ABC file consists of one or more tune transcriptions. The tunes are separated from each other by blank lines. An ABC file with more than one tune in it, is called an ABC tunebook.
+  def fail_to_parse(input)
+    p = @parser.parse(input)
+    p.should == nil
+    p
+  end
 
+
+  ## 2. File structure
   describe "file structure" do
+
+    ## An ABC file consists of one or more tune transcriptions. The tunes are separated from each other by blank lines. An ABC file with more than one tune in it, is called an ABC tunebook.
+    ## The tune itself consists of a header and a body. The header is composed of several field lines, which are further discussed in the section Information fields. The header should start with an X (reference number) field followed by a T (title) field and finish with a K (key) field. The body of the tune, which contains the actual music in ABC notation, should follow immediately after. As will be explained, certain fields may also be used inside this tune body. If the file contains only one tune the X field may be dropped. It is legal to write a tune without a body. This feature can be used to document tunes without transcribing them.
+    it "accepts canonical tune headers with X, T, and K fields" do
+      p = parse "X:2\nT:Short People\nK:Eb\nabc"
+      p.tunes[0].refnum.should == 2
+      p.tunes[0].title.should == "Short People"
+      p.tunes[0].key.tonic.should == "Eb"
+    end
+    
+    it "accepts a tune header without a body" do
+      p = parse "X:2\nT:Short People\nK:Eb\n"
+      p.tunes[0].refnum.should == 2
+      p.tunes[0].title.should == "Short People"
+      p.tunes[0].key.tonic.should == "Eb"
+    end
+    
     it "separates tunes with blank lines" do
       p = parse "X:1\nT:Title\nK:C\nabc\n\nX:2\nT:Title2\nK:Em\n"
       p.tunes.count.should == 2
       p = parse "abc\ndef\n\nabc\n\ndef"
       p.tunes.count.should == 3
     end
+    
+    it "allows X field to be dropped if only one tune in file (and refnum defaults to 1)" do
+      p = parse "T:Happy Birthday\nK:C"
+      p.tunes[0].refnum.should == 1
+    end
+    
+    it "accepts no header-only fields after the K: field" do
+      fail_to_parse "K:C\nA:Author\nabc"
+    end
+    
+    it "can handle a standalone body field right after the K: field" do
+      p = parse "K:C\nK:F\nabc"
+      p.tunes[0].key.tonic.should == "C"
+      p.tunes[0].items[0].key.tonic.should == "F"
+    end
+    
+    # EXTENSIONS
+    it "allows tune data with no header" do
+      p = parse "abc"
+      p.tunes.count.should == 1
+    end
+    
+    it "separates headerless tunes with blank lines" do
+      p = parse "abc\n\ndef"
+      p.tunes.count.should == 2
+    end
+    
+    ## The file may optionally start with a file header, which is a block of consecutive field lines, finished by a blank line. The file header may be used to set default values for the tunes in the file. Such a file header may only appear at the beginning of a file, not between tunes. Of course, tunes may override the file header settings. However, when the end of a tune is reached, the defaults set by the file header are restored. Applications which extract separate tunes from a file, must insert the fields of the original file header, into the header of the extracted tune. However, since users may manually extract tunes, without taking care of the file header, it is advisable not to use file headers in tunebooks that are to be distributed.
+
+    it "recognizes a file header" do
+      p = parse "A:Madonna\nZ:me"
+      p.tunes.count.should == 0
+      p.author.should == "Madonna"
+      p.transcriber.should == "me"
+    end
+
+    it "does not consider it a file header if it has tune fields in it" do
+      p = parse "A:Madonna\nZ:me\nK:C" # note: K field is only allowed in tune headers
+      p.header.should == nil
+      p.tunes[0].author.should == "Madonna"
+    end 
+
+    it "does not consider it a file header if it's followed by music" do
+      p = parse "A:Madonna\nZ:me\nabc" 
+      p.header.should == nil
+      p.tunes[0].author.should == "Madonna"
+    end
+
+    it "passes file header values to tunes" do
+      p = parse "A:Madonna\nZ:me\n\nX:1\nabc" 
+      p.author.should == "Madonna"
+      p.tunes[0].author.should == "Madonna"
+    end
+    
+    it "allows tunes to override the file header" do
+      p = parse "A:Madonna\nZ:me\n\nX:1\nA:Cher\nabc" 
+      p.author.should == "Madonna"
+      p.tunes[0].author.should == "Cher"
+    end
+
+    it "resets header values with each tune" do
+      p = parse "A:Madonna\nZ:me\n\nX:1\nA:Cher\nabc\n\nX:2\ndef" 
+      p.author.should == "Madonna"
+      p.tunes[0].author.should == "Cher"
+      p.tunes[1].author.should == "Madonna"
+    end
+        
+    ## It is legal to write free text before or between the tunes of a tunebook. The free text should be separated from the surrounding tunes by blank lines. Programs that are able to print tunebooks, may print the free text sections. The free text is treated as an ABC string. The free text may be interspersed with directives (see section ABC Stylesheet specification) or with Extended information fields; however, the scope of these settings is limited to the text that appears up to the beginning of the next tune. At that point, the defaults set by the file header are restored.
+
   end
 
-  ## The tune itself consists of a header and a body. The header is composed of several field lines, which are further discussed in the section Information fields. The header should start with an X (reference number) field followed by a T (title) field and finish with a K (key) field. The body of the tune, which contains the actual music in ABC notation, should follow immediately after. As will be explained, certain fields may also be used inside this tune body. If the file contains only one tune the X field may be dropped. It is legal to write a tune without a body. This feature can be used to document tunes without transcribing them.
+  
 
-  ## The file may optionally start with a file header, which is a block of consecutive field lines, finished by a blank line. The file header may be used to set default values for the tunes in the file. Such a file header may only appear at the beginning of a file, not between tunes. Of course, tunes may override the file header settings. However, when the end of a tune is reached, the defaults set by the file header are restored. Applications which extract separate tunes from a file, must insert the fields of the original file header, into the header of the extracted tune. However, since users may manually extract tunes, without taking care of the file header, it is advisable not to use file headers in tunebooks that are to be distributed.
-  ## It is legal to write free text before or between the tunes of a tunebook. The free text should be separated from the surrounding tunes by blank lines. Programs that are able to print tunebooks, may print the free text sections. The free text is treated as an ABC string. The free text may be interspersed with directives (see section ABC Stylesheet specification) or with Extended information fields; however, the scope of these settings is limited to the text that appears up to the beginning of the next tune. At that point, the defaults set by the file header are restored.
 
 
 
@@ -619,12 +709,11 @@ describe "abc 2.0 draft 4" do
       p = parse "[V:1]a[V:2]b[V:1]a[V:2]b"
       p.tunes[0].notes.should == p.tunes[0].voices["1"].notes
     end
-    # TODO: for this to work, K field has to mark last field of header
-    #it "allows V: fields as standalones" do
-    #  p = parse "K:C\nV:A\na\nV:B\nb"
-    #  p.tunes[0].voices['A'].notes[0].pitch.note.should == 'A'
-    #  p.tunes[0].voices['B'].notes[0].pitch.note.should == 'B'
-    #end
+    it "allows V: fields as standalones" do
+      p = parse "K:C\nV:A\na\nV:B\nb"
+      p.tunes[0].voices['A'].notes[0].pitch.note.should == 'A'
+      p.tunes[0].voices['B'].notes[0].pitch.note.should == 'B'
+    end
 
     # TODO what if the tune has voices but some notes occcur before the first voice field?
     it "has a default voice if no voices specified" do

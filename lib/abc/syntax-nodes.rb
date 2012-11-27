@@ -1,25 +1,13 @@
 # TODO ties and slurs should disappear as music items, should be information on individual notes
 # TODO tune.overlays? might also be useful if there are overlays in any measures
 # TODO maybe also a list of these measures as measures_with_overlays
-# TODO K: field should end tune header
+# TODO dotted bar should not make a new measure
+# TODO data structure: tunes[t].measures[m].notes[n] note can be: note, chord, rest, !measure rest! which can make the measure several measures long
+# TODO data structure: tunes[t].measures[m].items[i] item is any of the above plus spacer, dotted bar and fields
+# TODO handle continuation lines with a preprocess
 
 require 'treetop'
 
-class Object
-  def try(method, *args)
-    send method, args if respond_to? method
-  end
-end
-
-class Array
-  # http://stackoverflow.com/questions/4800337/split-array-into-sub-arrays-based-on-value
-  def split
-    result = [a=[]]
-    each{ |o| yield(o) ? (result << a=[]) : (a << o) }
-    result.pop if a.empty?
-    result
-  end
-end
 
 class Treetop::Runtime::SyntaxNode
 
