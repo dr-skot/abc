@@ -403,20 +403,22 @@ grammar ABC do
   
   # NOTES AND RESTS
 
-    # TODO annotations and decorations can be interspersed
   rule notelike_thing do
     grace_note_and_or_broken_rhythm? space* chord_annotation:chord_annotation? space* modifiers:(node:(annotation / decoration) space*)* stroke:stroke <NoteOrRest> {
        def broken_rhythm_marker
          child(BrokenRhythm)
        end
        def decorations
-         modifiers.elements.inject([]) { |result, el| result << el.node.symbol if el.node.type == :decoration }
+         @decorations ||= modifiers.elements.inject([]) { |result, el| result << el.node.symbol if el.node.type == :decoration }
        end
        def annotations
-         modifiers.elements.inject([]) { |result, el| result << el.node if el.node.type == :annotation }
+         @annotations ||= modifiers.elements.inject([]) { |result, el| result << el.node if el.node.type == :annotation }
        end
        def chord_symbol
-         chord_annotation.symbol if !chord_annotation.empty?
+         @chord_symbol ||= chord_annotation.symbol if !chord_annotation.empty?
+       end
+       def chord_symbol=(sym)
+         @chord_symbol = sym
        end
        def pitch
          stroke.pitch if stroke.respond_to? :pitch
@@ -739,7 +741,7 @@ grammar ABC do
   ##   O       coda
   ## However these characters (~.uvTHLMPSO) are just short cuts for commonly used decorations and can even be redefined (see section Redefinable symbols). More generally, symbols can be entered using the syntax +symbol+, e.g. +trill+A4 for a trill symbol (tr).
   rule decoration do
-    '+' label:[^+]+ '+' {
+    '+' label:[^+]+ '+' <SymbolUnit> {
       def type
         :decoration
       end
@@ -804,7 +806,10 @@ grammar ABC do
   ## Programs should treat chord symbols quite liberally.
 
   rule chord_annotation do
-    '"' symbol:(chord_symbol space* ('(' chord_symbol ')')?) '"' {
+    '"' symbol:(chord_symbol space* ('(' chord_symbol ')')?) '"' <SymbolUnit> {
+      def type
+        :chord_symbol
+      end
       def symbol
         super.text_value
       end
@@ -827,7 +832,7 @@ grammar ABC do
   ## Places the note between parentheses.
 
   rule annotation do
-    '"' placement_specifier:('^' / '_' / '<' / '>' / '@') text:(!'"' .)* '"' space* {
+    '"' placement_specifier:('^' / '_' / '<' / '>' / '@') text:(!'"' .)* '"' space* <SymbolUnit> {
       def type
         :annotation
       end
@@ -899,7 +904,7 @@ grammar ABC do
   end
 
   rule symbol_skip do
-    ('*' / '|') '' {
+    ('*' / '|') '' <SymbolUnit> {
       def skip
         if text_value == '*'
           :note

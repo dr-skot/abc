@@ -222,10 +222,20 @@ describe "abc 2.0 draft 4" do
   ##   CDEF    | G```AB`c
   ##   s: "^slow" | +f+ ** +fff+
   describe "symbol line support" do
-    it "handles symbol lines" do
+    it "applys symbol line symbols to notes" do
       p = parse(["CDEF    | G```AB`c ",
                  "s: \"^slow\" | +f+ ** +fff+"].join("\n"))
       p.tunes[0].lines[0].symbols.should_not == nil
+      p.tunes[0].notes[0].annotations[0].placement.should == :above
+      p.tunes[0].notes[0].annotations[0].text.should == "slow"
+      p.tunes[0].notes[1].annotations.should == []
+      p.tunes[0].notes[1].decorations.should == []
+      p.tunes[0].notes[2].decorations.should == []
+      p.tunes[0].notes[3].decorations.should == []
+      p.tunes[0].notes[4].decorations[0].symbol.should == 'f'
+      p.tunes[0].notes[5].decorations.should == []
+      p.tunes[0].notes[6].decorations.should == []
+      p.tunes[0].notes[7].decorations[0].symbol.should == 'fff'
     end
   end
 

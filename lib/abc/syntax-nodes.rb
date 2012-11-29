@@ -154,6 +154,9 @@ module ABC
     def apply_beams
       tunes.each { |tune| tune.apply_beams }
     end
+    def apply_symbol_lines
+      tunes.each { |tune| tune.apply_symbol_lines }
+    end
     def apply_lyrics
       tunes.each { |tune| tune.apply_lyrics }
     end
@@ -237,7 +240,7 @@ module ABC
             is_hard_break = it.hard?
             a = []
           elsif it.is_a?(SymbolLine)
-            @lines[-1].symbols = it
+            @lines[-1].symbols = it.children(SymbolUnit)
           else
             a << it
           end
@@ -341,6 +344,35 @@ module ABC
         end
       end
     end
+    def apply_symbol_lines
+      lines.each do |line|
+        if line && line.symbols
+          items = line.items
+          i = 0
+          line.symbols.each do |symbol|
+            break if i >= items.count
+            if symbol.skip == :note
+              # advance to next note, then skip it
+              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest)
+              i += 1
+            elsif symbol.skip == :bar
+              # advance to next (undotted) bar, then skip it
+              i += 1 until items.count <= i || items[i].is_a?(BarLine) && items[i].type != :dotted
+              i += 1
+            else
+              # find next note and set this symbol on it
+              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest)
+              if i < items.count
+                items[i].annotations << symbol if symbol.type == :annotation
+                items[i].decorations << symbol if symbol.type == :decoration
+                items[i].chord_symbol = symbol if symbol.type == :chord_symbol
+                i += 1
+              end
+            end
+          end
+        end
+      end
+    end
     def apply_lyrics
       last_line = nil
       waiting_for_bar = false
@@ -353,7 +385,7 @@ module ABC
             break if i >= items.count
             if lyric.skip == :note
               # advance to next note, then skip it
-              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest);
+              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest)
               i += 1
             elsif lyric.skip == :bar
               # advance to next (undotted) bar, then skip it
@@ -562,6 +594,12 @@ module ABC
 
   # SYMBOL LINE
   class SymbolLine < ABCNode
+  end
+
+  class SymbolUnit < ABCNode
+    def skip
+      :none
+    end
   end
 
   # LYRICS
