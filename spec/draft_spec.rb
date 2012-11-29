@@ -134,14 +134,11 @@ describe "abc 2.0 draft 4" do
         p.tunes[0].refnum.should == 2
         p.tunes[0].free_text.should == "Free text!"
       end
-
+      # TODO interspersed with stylesheet directives
+      # TODO interspersed with extended info fields
     end
 
   end
-
-  
-
-
 
 
   ## 2.1. Remarks
@@ -184,20 +181,23 @@ describe "abc 2.0 draft 4" do
       p.tunes[0].lines.count.should == 1
       p.tunes[0].lines[0].items.count.should == 6
     end
+    it "can do any number of continuations" do
+      p = parse "abc\\\ndef\\\nabc\\\ndef"
+      p.tunes[0].lines.count.should == 1
+      p.tunes[0].notes.count.should == 12
+    end
     it "allows space and comments after backslash" do
       p = parse "abc \\ % remark \n def"
       p.tunes[0].lines.count.should == 1
     end
-    it "allows continuation in a field" do
+    it "allows continuation in a lyrics line" do
       p = parse(["gf|e2dc B2A2|B2G2 E2D2|.G2.G2 \\  % continuation",
                  "GABc|d4 B2",
                  "w: Sa-ys my au-l' wan to your aul' wan\\",
                  "   Will~ye come to the Wa-x-ies dar-gle?"].join("\n"))
-      p.should_not be(nil), @parser.base_parser.failure_reason
       p.tunes[0].lines.count.should == 2
       p.tunes[0].lines[1].items[0].is_a?(Field).should == true
-      # TODO make this work
-      # p.tunes[0].lines[1].items[0].value.should == "Sa-ys my au-l\' wan to your aul\' wan   Will~ye come to the Wa-x-ies dar-gle?"
+      p.tunes[0].lines[1].items[0].units.count.should == 19
     end
   end
 
@@ -214,6 +214,21 @@ describe "abc 2.0 draft 4" do
       p.tunes[0].lines[2].hard_break?.should == true
     end
   end
+
+
+  ## 4.15. Symbol lines
+  ## Adding many symbols to a line of music can make a tune difficult to read. In such cases, a symbol line (a line that contains only +...+ decorations and "..." chord symbols or annotations) can be used, analogous to a lyrics line. A symbol line starts with 's:', followed by a line of symbols. Matching of notes and symbols follows the rules defined in section Lyrics.
+  ## Example:
+  ##   CDEF    | G```AB`c
+  ##   s: "^slow" | +f+ ** +fff+
+  describe "symbol line support" do
+    it "handles symbol lines" do
+      p = parse(["CDEF    | G```AB`c ",
+                 "s: \"^slow\" | +f+ ** +fff+"].join("\n"))
+      p.tunes[0].lines[0].symbols.should_not == nil
+    end
+  end
+
 
 
   ## 5. Lyrics

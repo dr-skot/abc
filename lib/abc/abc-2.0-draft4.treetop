@@ -68,6 +68,14 @@ grammar ABC do
   end
 
   rule rest_of_tune_field do
+    (!(line_ender/']'/'\\') .)+ {
+      def value
+        text_value
+      end
+    }
+  end
+
+  rule rest_of_tune_field2 do
     line:(!(line_ender/']'/'\\') .)+ extra:('\\' line_ender recursive:rest_of_tune_field)? {
       def value
         result = line.text_value
@@ -345,7 +353,15 @@ grammar ABC do
   end
 
   rule tune_line do
-    (tune_element+ / raw_body_field) tune_line_ender
+    (music_line / raw_body_field) tune_line_ender symbol_line?
+  end
+
+  rule music_line do
+    tune_element+ ('\\' line_ender music_line_continuation)?
+  end
+
+  rule music_line_continuation do
+    music_line
   end
 
   rule tune_line_ender do
@@ -353,7 +369,7 @@ grammar ABC do
        def hard?
          false
        end
-     } / '\\' line_ender
+     }
   end
 
   rule tune_element do
@@ -828,24 +844,22 @@ grammar ABC do
   # LYRICS
 
   rule lyrics_field do
-    label:'w' ':' space* rest_of_lyrics_field <Field> {
+    label:'w' ':' space* lyrics_line <Field> {
       def units
         children(LyricUnit)
       end
       def value
-        rest_of_lyrics_field.value
+        lyrics_line.value
       end
     }
   end
 
-  rule rest_of_lyrics_field do
-    line:(!(line_ender / '\\' line_ender) lyric_unit)+ extra:('\\' line_ender recursive:rest_of_lyrics_field)? {
-      def value
-        result = line.text_value
-        result += extra.recursive.value unless extra.empty?
-        result
-      end
-    }
+  rule lyrics_line do
+    lyric_unit+ ('\\' lyrics_line_continuation)?
+  end
+
+  rule lyrics_line_coninuation do
+    lyric_unit+
   end
 
   rule lyric_unit do
@@ -877,6 +891,23 @@ grammar ABC do
 
   rule lyric_divider do
     space+ / line_ender
+  end
+
+  # SYMBOL LINES
+  rule symbol_line do
+    's' ':' (space+ / symbol_skip / annotation / decoration / chord_annotation)+ line_ender <SymbolLine>
+  end
+
+  rule symbol_skip do
+    ('*' / '|') '' {
+      def skip
+        if text_value == '*'
+          :note
+        else
+          :bar
+        end
+      end
+    }
   end
 
 
