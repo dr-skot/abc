@@ -222,9 +222,9 @@ describe "abc 2.0 draft 4" do
   ##   CDEF    | G```AB`c
   ##   s: "^slow" | +f+ ** +fff+
   describe "symbol line support" do
-    it "applys symbol line symbols to notes" do
-      p = parse(["CDEF    | G```AB`c ",
-                 "s: \"^slow\" | +f+ ** +fff+"].join("\n"))
+    it "applies symbol line symbols to notes" do
+      p = parse(["CDEF    | G```AB`c c",
+                 "s: \"^slow\" | +f+ ** +fff+ \"Gm\""].join("\n"))
       p.tunes[0].lines[0].symbols.should_not == nil
       p.tunes[0].notes[0].annotations[0].placement.should == :above
       p.tunes[0].notes[0].annotations[0].text.should == "slow"
@@ -236,9 +236,10 @@ describe "abc 2.0 draft 4" do
       p.tunes[0].notes[5].decorations.should == []
       p.tunes[0].notes[6].decorations.should == []
       p.tunes[0].notes[7].decorations[0].symbol.should == 'fff'
+      p.tunes[0].notes[8].chord_symbol.should == 'Gm'
     end
-  end
 
+  end
 
 
   ## 5. Lyrics

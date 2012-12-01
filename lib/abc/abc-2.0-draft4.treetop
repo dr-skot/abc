@@ -415,7 +415,10 @@ grammar ABC do
          @annotations ||= modifiers.elements.inject([]) { |result, el| result << el.node if el.node.type == :annotation }
        end
        def chord_symbol
-         @chord_symbol ||= chord_annotation.symbol if !chord_annotation.empty?
+         if !@chord_symbol
+           @chord_symbol = chord_annotation.symbol if !chord_annotation.empty?
+         end
+         @chord_symbol
        end
        def chord_symbol=(sym)
          @chord_symbol = sym
@@ -900,7 +903,7 @@ grammar ABC do
 
   # SYMBOL LINES
   rule symbol_line do
-    's' ':' (space+ / symbol_skip / annotation / decoration / chord_annotation)+ line_ender <SymbolLine>
+    's' ':' (space+ / symbol_skip / chord_annotation / annotation / decoration )+ line_ender <SymbolLine>
   end
 
   rule symbol_skip do

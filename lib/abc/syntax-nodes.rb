@@ -365,7 +365,7 @@ module ABC
               if i < items.count
                 items[i].annotations << symbol if symbol.type == :annotation
                 items[i].decorations << symbol if symbol.type == :decoration
-                items[i].chord_symbol = symbol if symbol.type == :chord_symbol
+                items[i].chord_symbol = symbol.symbol if symbol.type == :chord_symbol
                 i += 1
               end
             end
