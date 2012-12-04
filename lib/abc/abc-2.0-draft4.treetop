@@ -4,28 +4,187 @@
 # TODO free text
 grammar ABC do
   
-  # FILE
+  # 2.1 Abc file identification
+  # All abc files should have the extension ".abc" (all lower-case) on all platforms.
+  # Comment: Some web-servers only allow a limited selection of file types; in this case a ".txt" extension is the best alternative.
+  # Every abc file should begin with the string %abc. An optional version number may follow on the same line, e.g.
+  #   %abc-2.1
+  # Version numbers of 2.1 or higher indicate that the abc file is to be interpreted strictly according to the corresponding abc standard; if the version number is missing, the file will be treated under loose interpretation. The version field may also be used to indicate abc versions for individual tunes.
   
-  # "An ABC file consists of one or more tune transcriptions."
-  # "The file may optionally start with a file header."
-  # ** We'll loosen this a little and allow 0 or more tunes, ie an empty tunebook is legal
-  rule file do
-    file_header? (tune / free_text tune)* <Tunebook>
+  ## TODO deal with this in preprocessor
+
+
+  # 2.2 Abc file structure
+  # An abc file consists of one or more abc tune transcriptions, optionally interspersed with free text and typeset text annotations. It may optionally start with a file header to set up default values for processing the file.
+  # The file header, abc tunes and text annotations are separated from each other by empty lines (also known as blank lines).
+  # An abc file with more than one tune in it is called an abc tunebook.
+  
+  rule abc_file do
+    (file_header end_of_section)? ((tune / typeset_text / free_text) end_of_section)+ <Tunebook>
   end
   
-  # "The file header is a block of consecutive field lines, finished by a blank line."
-  # "Extended information fields...may appear in the file header"
   rule file_header do
-    (info_field / file_field)+ end_of_section <FileHeader>
+    # (info_field / file_field)+ <FileHeader>
+    file_field+ <FileHeader>
   end
 
+
+  # 2.2.1 Abc tune
+  # An abc tune itself consists of a tune header and a tune body, terminated by an empty line or the end of the file. It may also contain comment lines or stylesheet directives.
+  # The tune header is composed of several information field lines, which are further discussed in information fields. The tune header should start with an X:(reference number) field followed by a T:(title) field and finish with a K:(key) field.
+  # The tune body, which contains the music code, follows immediately after. Certain fields may also be used inside the tune body - see use of fields within the tune body.
+  # It is legal to write an abc tune without a tune body. This feature can be used to document tunes without transcribing them.
+  # Abc music code lines are those lines in the tune body which give notes, bar lines and other musical symbols - see the tune body for details. In effect, music code is the contents of any line which is not an information field, stylesheet directive or comment line.
+
+  rule tune do
+    tune_header tune_body? <Tune>
+  end
+
+  rule tune_header do
+    refnum_field line_ender 
+    title_field line_ender 
+    (info_field / header_field)* 
+      key_field line_ender <TuneHeader>
+  end
+
+
+  # 2.2.3 Free text and typeset text
+  # The terms free text and typeset text refer to any text not directly included within the information fields in a tune header. Typically such text is used for annotating abc tunebooks; free text is for annotating the abc file but is not included in the typeset score, whereas typeset text is intended for printing out.
+  # Free text is just that. It can be included anywhere in an abc file, after the file header, but must be separated from abc tunes, typeset text and the file header by empty lines. Typically it is used for annotating the abc file but in principle can be any text not containing information fields.
+  # Comment: Since raw html markup and email headers are treated as free text (provided they don't inadvertently contain information fields) this means that abc software can process a wide variety of text-based input files just by ignoring non-abc code.
+  # By default free text is not included in the printed score, although typesetting software may offer the option to print it out (e.g. via a command line switch or GUI checkbox). In this case, the software should treat the free text as a text string, but may format it in any way it chooses.
+  # Typeset text is any text specified using text directives. It may be inserted anywhere in an abc file after the file header, either separated from tunes by empty lines, or included in the tune header or tune body.
+  # Typeset text should be printed by typesetting programs although its exact position in the printed score is program-dependent.
+  # Typeset text that is included in an abc tune (i.e. within the tune header or tune body), must be retained by any programs, such as databasing software, that splits an abc file into separate abc tunes.
+
+  rule typeset_text do
+    '%%' (!end_of_line .)+ {
+      def type
+        :typeset_text
+      end
+    }
+  end
+
+  # TODO free_text should not be invoked on malformed headers or typeset text
+  # TODO ignore comments in free text
   rule free_text do
-    text:(!end_of_section .)+ end_of_line end_of_section <FreeText> {
+    !tune_header
+    text:(!end_of_section .)+ end_of_line <FreeText> {
       def text
         super.text_value
       end
     }
   end
+
+
+  # 2.2.4 Empty lines and line-breaking
+  # Empty lines (also known as blank lines) are used to separate abc tunes, free text and the file header. They also aid the readability of abc files.
+  # Lines that consist entirely of white-space (space and tab characters) are also regarded as empty lines.
+  # Line-breaks (also known as new lines, line feeds, carriage returns, end-of-lines, etc.) can be used within an abc file to aid readability and, if required, break up long input lines - see continuation of input lines.
+  # More specifically, line-breaks in the music code can be used to structure the abc transcription and, by default, generate line-breaks in the printed music. For more details see typesetting line-breaks.
+
+  rule end_of_file do
+    !.
+  end
+
+  rule line_feed do
+    ("\r"? "\n")
+  end
+
+  rule end_of_line do
+    line_feed / end_of_file
+  end
+
+  rule space do
+    # TODO more strict on space? only space and tab?
+    !end_of_line [\s]
+  end
+  
+  rule blank_line do
+    space* end_of_line
+  end
+
+  rule end_of_section do
+    blank_line (!end_of_file blank_line)*
+  end
+
+
+
+  # 2.2.5 Comments and remarks
+  # A percent symbol (%) will cause the remainder of any input line to be ignored. It can be used to add a comment to the end of an abc line or as a comment line in its own right. (To get a percent symbol, type \% - see text strings.)
+  # Alternatively, you can use the syntax [r:remark] to write a remark in the middle of a line of music.
+  # Example:
+  #   |:DEF FED| % this is an end of line comment
+  #   % this is a comment line
+  #   DEF [r:and this is a remark] FED:|
+  # Abc code which contains comments and remarks should be processed in exactly the same way as it would be if all the comments and remarks were removed (although, if the code is preprocessed, and comments are actually removed, the stylesheet directives should be left in place).
+  # Important clarification: lines which just contain a comment are processed as if the entire line were removed, even if the comment is preceded by white-space (i.e. the % symbol is the not first character). In other words, removing the comment effectively removes the entire line and so no empty line is introduced.
+  
+  rule comment do
+    '%' (!end_of_line .)+
+  end
+
+  rule line_ender do
+    space* comment? end_of_line
+  end
+
+  # TODO should we have special rules for the r: field here?
+
+
+  # 2.2.6 Continuation of input lines
+  # It is sometimes necessary to tell abc software that an input line is continued on the next physical line(s) in the abc file, so that the two (or more) lines are treated as one. In abc 2.0 there was a universal continuation character (see outdated continuations) for this purpose, but it was decided that this was both unnecessary and confusing.
+  # In abc 2.1, there are ways of continuing each of the 4 different input line types: music code, information fields, comments and stylesheet directives.
+  # In abc music code, by default, line-breaks in the code generate line-breaks in the typeset score and these can be suppressed by using a backslash (or by telling abc typesetting software to ignore line-breaks using I:linebreak $ or I:linebreak <none>) - see typesetting line-breaks for full details.
+  # Comment for programmers: The backslash effectively acts as a continuation character for music code lines, although, for those used to encountering it in other computer language contexts, its use is very abc-specific. In particular it can continue music code lines through information fields, comments and stylesheet directives.
+  # The 3 other input line types can be continued as follows:
+  #   information fields can be continued using +: at the start of the following line - see field continuation;
+  #   comments can easily be continued by adding a % symbol at the start of the following line - since they are ignored by abc software it doesn't matter how many lines they are split into;
+  #   most stylesheet directives are too short to require a continuation syntax, but if one is required then use the I:<directive> form (see I:instruction), in place of %%<directive> and continue the line as a field - see field continuation.
+  # Comment for developers: Unlike other languages, and because of the way in which both information fields and music code can be continued through comments, stylesheet directives and (in the case of music code) information fields, it is generally not possible to parse abc files by pre-processing continuations into single lines.
+  # Note that, with the exception of abc music code, continuations are unlikely to be needed often. Indeed in most cases it should be possible, although not necessarily desirable, to write very long input lines, since most abc editing software will display them as wrapped within the text editor window.
+  # Recommendation: Despite there being no limit on line length in abc files, it is recommended that users avoid writing abc code with very long lines. In particular, judiciously applied line-breaks can aid the (human) readability of abc code. More importantly, users who send abc tunes with long lines should be aware that email software sometimes introduces additional line-breaks into lines with more than 72 characters and these may even cause errors when the resulting tune is processed.
+
+
+
+  # 2.3.1 Embedded abc fragment
+  # An abc fragment is a partial abc tune. It may contain a partial tune header with no body or a tune body with optional tune header information fields.
+  # Example 1: A fragment with no tune header:
+  # <div class="abc-fragment">
+  # CDEF GABc|
+  # </div>
+  # Example 2: A fragment with a partial tune header:
+  # <div class="abc-fragment">
+  # T:Major scale in D
+  # K:D
+  # DEFG ABcd|
+  # </div>
+  # Unless T:, M: and K: fields are present, a fragment is assumed to describe a stave in the treble clef with no title, no meter indication and no key signature, respectively.
+  # An abc fragment does not require an empty line to mark the end of the tune body if it is terminated by the document markup.
+  # Note for developers: For processing as an abc tune, the parsing code is notionally assumed to add empty X:, T: and K: fields, if these are missing. However, since the processing generally takes place internally within a software package, these need not be added in actuality.
+
+  rule abc_fragment do
+    '' (partial_header tune_body? / tune_body) <Tune>
+  end
+
+  rule partial_header do
+    '' (header_field* key_field line_ender / header_field+) <TuneHeader>
+  end
+
+  # 3.1.1 X: - reference number
+  # The X: (reference number) field is used to assign to each tune within a tunebook a unique reference number (a positive integer), for example: X:23.
+  # The X: field is also used to indicate the start of the tune (and hence the tune header), so all tunes must start with an X: field and only one X: field is allowed per tune.
+  # The X: field may be empty, although this is not recommended.
+  # Recommendation for developers: Software which writes abc files is recommended to offer users the possibility to manage X: field numbering automatically. GUI applications may even hide the X: field from users although they should always allow the user access to the raw abc file.
+
+  rule refnum_field do
+    label:'X' ':' value:integer? <Field>
+  end
+
+  rule title_field do
+    label:'T' ':' value:(!line_ender .)+ <Field>
+  end
+
+
   
   # FIELDS
 
@@ -84,6 +243,8 @@ grammar ABC do
       end
     }
   end
+
+
 
   # METER FIELD
   rule meter_field do
@@ -329,22 +490,8 @@ grammar ABC do
     [A-Za-z\-_]+
   end
 
-  # TUNE
-  
-  # "It is legal to write a tune without a body."
-  # ** We'll also allow raw music with no header
-  rule tune do
-    (tune_header tune_body? / tune_body) end_of_section <Tune>
-  end
-
   rule key_field_line do
     key_field line_ender
-  end
-
-  # "Extended information fields...may appear in the tune header"
-  # The key field, if it exists, finishes the tune header
-  rule tune_header do
-    '' (key_field_line / (info_field / header_field)+ key_field_line?) <TuneHeader>
   end
 
   # TODO allow comment lines
@@ -1074,38 +1221,6 @@ grammar ABC do
 
   rule abc_string do
     (!line_ender .)* <ABCString>
-  end
-
-  rule blank_line do
-    space* end_of_line
-  end
-
-  rule line_ender do
-    space* comment? end_of_line
-  end
-
-  rule space do
-    !end_of_line [\s]
-  end
-  
-  rule comment do
-    '%' (!end_of_line .)+
-  end
-
-  rule end_of_line do
-    line_feed / end_of_file
-  end
-
-  rule line_feed do
-    ("\r"? "\n")
-  end
-
-  rule end_of_section do
-    blank_line (!end_of_file blank_line)*
-  end
-
-  rule end_of_file do
-    !.
   end
 
   rule digit do

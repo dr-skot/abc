@@ -108,6 +108,7 @@ module ABC
     end
     
     def method_missing(meth, *args, &block)
+      return nil unless header
       if STRING_FIELDS[meth]
         values = header.values(STRING_FIELDS[meth])
         if values.count > 0 

@@ -13,13 +13,25 @@ describe "abc 2.0 draft 4" do
 
   # for convenience
   def parse(input)
-    p = @parser.parse(input)
-    p.should_not be(nil), @parser.base_parser.failure_reason
-    p
+    tunebook = @parser.parse(input)     
+    tunebook.should_not be(nil), @parser.base_parser.failure_reason
+    tunebook
   end
 
   def fail_to_parse(input)
     p = @parser.parse(input)
+    p.should == nil
+    p
+  end
+
+  def parse_fragment(input)
+    tune = @parser.parse_fragment(input)
+    tune.should_not be(nil), @parser.base_parser.failure_reason
+    tune
+  end
+
+  def fail_to_parse_fragment(input)
+    p = @parser.parse_fragment(input)
     p.should == nil
     p
   end
@@ -47,90 +59,77 @@ describe "abc 2.0 draft 4" do
     it "separates tunes with blank lines" do
       p = parse "X:1\nT:Title\nK:C\nabc\n\nX:2\nT:Title2\nK:Em\n"
       p.tunes.count.should == 2
-      p = parse "abc\ndef\n\nabc\n\ndef"
-      p.tunes.count.should == 3
     end
-    
-    it "allows X field to be dropped if only one tune in file (and refnum defaults to 1)" do
-      p = parse "T:Happy Birthday\nK:C"
-      p.tunes[0].refnum.should == 1
-    end
+
+    # TODO: allow for this under 2.0?
+    # it "allows X field to be dropped if only one tune in file (and refnum defaults to 1)" do
+    #  p = parse "T:Happy Birthday\nK:C"
+    #  p.tunes[0].refnum.should == 1
+    # end
     
     it "accepts no header-only fields after the K: field" do
-      fail_to_parse "K:C\nA:Author\nabc"
+      fail_to_parse "X:1\nT:T\nK:C\nC:Author\nabc"
     end
     
     it "can handle a standalone body field right after the K: field" do
-      p = parse "K:C\nK:F\nabc"
+      p = parse "X:1\nT:T\nK:C\nK:F\nabc"
       p.tunes[0].key.tonic.should == "C"
       p.tunes[0].items[0].key.tonic.should == "F"
     end
     
-    # EXTENSIONS
-    it "allows tune data with no header" do
-      p = parse "abc"
-      p.tunes.count.should == 1
+    it "allows fragment tune data with no header" do
+      p = parse_fragment "abc"
     end
-    
-    it "separates headerless tunes with blank lines" do
-      p = parse "abc\n\ndef"
-      p.tunes.count.should == 2
-    end
-    
+        
     ## The file may optionally start with a file header, which is a block of consecutive field lines, finished by a blank line. The file header may be used to set default values for the tunes in the file. Such a file header may only appear at the beginning of a file, not between tunes. Of course, tunes may override the file header settings. However, when the end of a tune is reached, the defaults set by the file header are restored. Applications which extract separate tunes from a file, must insert the fields of the original file header, into the header of the extracted tune. However, since users may manually extract tunes, without taking care of the file header, it is advisable not to use file headers in tunebooks that are to be distributed.
 
     it "recognizes a file header" do
-      p = parse "A:Madonna\nZ:me"
-      p.tunes.count.should == 0
-      p.author.should == "Madonna"
+      p = parse "C:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
+      p.composer.should == "Madonna"
       p.transcriber.should == "me"
     end
 
     it "does not consider it a file header if it has tune fields in it" do
-      p = parse "A:Madonna\nZ:me\nK:C" # note: K field is only allowed in tune headers
-      p.header.should == nil
-      p.tunes[0].author.should == "Madonna"
+      fail_to_parse "C:Madonna\nZ:me\nK:C\n\nX:1\nT:Like a Prayer\nK:Dm" # note: K field is only allowed in tune headers
     end 
 
     it "does not consider it a file header if it's followed by music" do
-      p = parse "A:Madonna\nZ:me\nabc" 
-      p.header.should == nil
-      p.tunes[0].author.should == "Madonna"
+      fail_to_parse "C:Madonna\nZ:me\nabc\n\nX:1\nT:Like a Prayer\nK:Dm" 
     end
 
     it "passes file header values to tunes" do
-      p = parse "A:Madonna\nZ:me\n\nX:1\nabc" 
-      p.author.should == "Madonna"
-      p.tunes[0].author.should == "Madonna"
+      p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nK:Dm\nabc" 
+      p.composer.should == "Madonna"
+      p.tunes[0].composer.should == "Madonna"
     end
     
     it "allows tunes to override the file header" do
-      p = parse "A:Madonna\nZ:me\n\nX:1\nA:Cher\nabc" 
-      p.author.should == "Madonna"
-      p.tunes[0].author.should == "Cher"
+      p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nC:Cher\nK:Eb\nabc" 
+      p.composer.should == "Madonna"
+      p.tunes[0].composer.should == "Cher"
     end
 
     it "resets header values with each tune" do
-      p = parse "A:Madonna\nZ:me\n\nX:1\nA:Cher\nabc\n\nX:2\ndef" 
-      p.author.should == "Madonna"
-      p.tunes[0].author.should == "Cher"
-      p.tunes[1].author.should == "Madonna"
+      p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nC:Cher\nK:Eb\nabc\n\nX:2\nT:T2\nK:C\ndef" 
+      p.composer.should == "Madonna"
+      p.tunes[0].composer.should == "Cher"
+      p.tunes[1].composer.should == "Madonna"
     end
         
     ## It is legal to write free text before or between the tunes of a tunebook. The free text should be separated from the surrounding tunes by blank lines. Programs that are able to print tunebooks, may print the free text sections. The free text is treated as an ABC string. The free text may be interspersed with directives (see section ABC Stylesheet specification) or with Extended information fields; however, the scope of these settings is limited to the text that appears up to the beginning of the next tune. At that point, the defaults set by the file header are restored.
     describe "free text" do
       it "can be written between tunes" do
-        p = parse "X:1\nabc\n\nFree text!\n\nX:2\ndef"
+        p = parse "X:1\nT:T1\nK:C\nabc\n\nFree text!\n\nX:2\nT:T2\nK:D\ndef"
         p.tunes[0].free_text.should == nil
         p.tunes[1].free_text.should == "Free text!"
       end
       it "can be written before the first tune" do
-        p = parse "Free text!\n\nX:1\nabc"
+        p = parse "Free text!\n\nX:1\nT:T\nK:D\nabc"
         p.tunes[0].free_text.should == "Free text!"
       end
       it "can be written between the file header and the first tune" do
-        p = parse "A:Author\n\nFree text!\n\nX:2\nabc"
-        p.author.should == "Author"
+        p = parse "C:Author\n\nFree text!\n\nX:2\nT:T\nK:C\nabc"
+        p.composer.should == "Author"
         p.tunes[0].refnum.should == 2
         p.tunes[0].free_text.should == "Free text!"
       end
@@ -147,19 +146,19 @@ describe "abc 2.0 draft 4" do
 
   describe "remarks support" do
     it "ignores remarks in music lines" do
-      p = parse "abc %remark\ndef %remark\n"
-      p.tunes[0].items[2].pitch.height.should == 12 # c
-      p.tunes[0].items[3].pitch.height.should == 14 # d
+      p = parse_fragment "abc %remark\ndef %remark\n"
+      p.items[2].pitch.height.should == 12 # c
+      p.items[3].pitch.height.should == 14 # d
     end
     it "ignores remarks in header lines" do
-      p = parse "T:Jingle Bells % jingle all the way y'all!\n"
+      p = parse "T:Jingle Bells % jingle all the way y'all!\n\nX:1\nT:JB\nK:C"
       p.title.should == "Jingle Bells"
     end
     it "allows [r: remarks] in music" do
-      p = parse "def [r: remarks] abc"
-      p.tunes[0].items[2].pitch.height.should == 17 # f
-      p.tunes[0].items[3].is_a?(Field).should == true
-      p.tunes[0].items[4].pitch.height.should == 9 # a
+      p = parse_fragment "def [r: remarks] abc"
+      p.items[2].pitch.height.should == 17 # f
+      p.items[3].is_a?(Field).should == true
+      p.items[4].pitch.height.should == 9 # a
     end
   end
 
@@ -174,30 +173,30 @@ describe "abc 2.0 draft 4" do
 
   describe "line continuation support" do
     it "appends lines with backslash" do
-      p = parse "abc\ndef"
-      p.tunes[0].lines.count.should == 2
-      p.tunes[0].lines[0].items.count.should == 3
-      p = parse "abc\\\ndef"
-      p.tunes[0].lines.count.should == 1
-      p.tunes[0].lines[0].items.count.should == 6
+      p = parse_fragment "abc\ndef"
+      p.lines.count.should == 2
+      p.lines[0].items.count.should == 3
+      p = parse_fragment "abc\\\ndef"
+      p.lines.count.should == 1
+      p.lines[0].items.count.should == 6
     end
     it "can do any number of continuations" do
-      p = parse "abc\\\ndef\\\nabc\\\ndef"
-      p.tunes[0].lines.count.should == 1
-      p.tunes[0].notes.count.should == 12
+      p = parse_fragment "abc\\\ndef\\\nabc\\\ndef"
+      p.lines.count.should == 1
+      p.notes.count.should == 12
     end
     it "allows space and comments after backslash" do
-      p = parse "abc \\ % remark \n def"
-      p.tunes[0].lines.count.should == 1
+      p = parse_fragment "abc \\ % remark \n def"
+      p.lines.count.should == 1
     end
     it "allows continuation in a lyrics line" do
-      p = parse(["gf|e2dc B2A2|B2G2 E2D2|.G2.G2 \\  % continuation",
+      p = parse_fragment(["gf|e2dc B2A2|B2G2 E2D2|.G2.G2 \\  % continuation",
                  "GABc|d4 B2",
                  "w: Sa-ys my au-l' wan to your aul' wan\\",
                  "   Will~ye come to the Wa-x-ies dar-gle?"].join("\n"))
-      p.tunes[0].lines.count.should == 2
-      p.tunes[0].lines[1].items[0].is_a?(Field).should == true
-      p.tunes[0].lines[1].items[0].units.count.should == 19
+      p.lines.count.should == 2
+      p.lines[1].items[0].is_a?(Field).should == true
+      p.lines[1].items[0].units.count.should == 19
     end
   end
 
@@ -208,10 +207,10 @@ describe "abc 2.0 draft 4" do
 
   describe "line breaking support" do
     it "recognizes hard linebreaks" do
-      p = parse "abc\ndef!ABC"
-      p.tunes[0].lines.count.should == 3
-      p.tunes[0].lines[1].hard_break?.should == false
-      p.tunes[0].lines[2].hard_break?.should == true
+      p = parse_fragment "abc\ndef!ABC"
+      p.lines.count.should == 3
+      p.lines[1].hard_break?.should == false
+      p.lines[2].hard_break?.should == true
     end
   end
 
@@ -223,20 +222,20 @@ describe "abc 2.0 draft 4" do
   ##   s: "^slow" | +f+ ** +fff+
   describe "symbol line support" do
     it "applies symbol line symbols to notes" do
-      p = parse(["CDEF    | G```AB`c c",
+      p = parse_fragment(["CDEF    | G```AB`c c",
                  "s: \"^slow\" | +f+ ** +fff+ \"Gm\""].join("\n"))
-      p.tunes[0].lines[0].symbols.should_not == nil
-      p.tunes[0].notes[0].annotations[0].placement.should == :above
-      p.tunes[0].notes[0].annotations[0].text.should == "slow"
-      p.tunes[0].notes[1].annotations.should == []
-      p.tunes[0].notes[1].decorations.should == []
-      p.tunes[0].notes[2].decorations.should == []
-      p.tunes[0].notes[3].decorations.should == []
-      p.tunes[0].notes[4].decorations[0].symbol.should == 'f'
-      p.tunes[0].notes[5].decorations.should == []
-      p.tunes[0].notes[6].decorations.should == []
-      p.tunes[0].notes[7].decorations[0].symbol.should == 'fff'
-      p.tunes[0].notes[8].chord_symbol.should == 'Gm'
+      p.lines[0].symbols.should_not == nil
+      p.notes[0].annotations[0].placement.should == :above
+      p.notes[0].annotations[0].text.should == "slow"
+      p.notes[1].annotations.should == []
+      p.notes[1].decorations.should == []
+      p.notes[2].decorations.should == []
+      p.notes[3].decorations.should == []
+      p.notes[4].decorations[0].symbol.should == 'f'
+      p.notes[5].decorations.should == []
+      p.notes[6].decorations.should == []
+      p.notes[7].decorations[0].symbol.should == 'fff'
+      p.notes[8].chord_symbol.should == 'Gm'
     end
 
   end
@@ -274,107 +273,107 @@ describe "abc 2.0 draft 4" do
   describe "lyrics support" do
 
     it "can set words to notes" do
-      p = parse "GCEA\nw:My dog has fleas"
-      # puts p.tunes[0].items[0].inspect
-      p.tunes[0].notes[0].lyric.text.should == "My"
-      p.tunes[0].notes[1].lyric.text.should == "dog"
-      p.tunes[0].notes[2].lyric.text.should == "has"
-      p.tunes[0].notes[3].lyric.text.should == "fleas"
+      p = parse_fragment "GCEA\nw:My dog has fleas"
+      # puts p.items[0].inspect
+      p.notes[0].lyric.text.should == "My"
+      p.notes[1].lyric.text.should == "dog"
+      p.notes[2].lyric.text.should == "has"
+      p.notes[3].lyric.text.should == "fleas"
     end
 
     it "can set words to notes" do
-      p = parse "GCEA\nw:My dog has fleas"
-      p.tunes[0].notes[0].lyric.text.should == "My"
-      p.tunes[0].notes[1].lyric.text.should == "dog"
-      p.tunes[0].notes[2].lyric.text.should == "has"
-      p.tunes[0].notes[3].lyric.text.should == "fleas"
+      p = parse_fragment "GCEA\nw:My dog has fleas"
+      p.notes[0].lyric.text.should == "My"
+      p.notes[1].lyric.text.should == "dog"
+      p.notes[2].lyric.text.should == "has"
+      p.notes[3].lyric.text.should == "fleas"
     end
 
     it "can set one syllable to 2 notes" do
-      p = parse "FDB\nw:O_ say can you see"
-      p.tunes[0].notes[0].lyric.text.should == "O"
-      p.tunes[0].notes[0].lyric.note_count.should == 2
-      p.tunes[0].notes[1].lyric.should == nil
-      p.tunes[0].notes[2].lyric.text.should == "say"
-      p.tunes[0].notes[2].lyric.note_count.should == 1
+      p = parse_fragment "FDB\nw:O_ say can you see"
+      p.notes[0].lyric.text.should == "O"
+      p.notes[0].lyric.note_count.should == 2
+      p.notes[1].lyric.should == nil
+      p.notes[2].lyric.text.should == "say"
+      p.notes[2].lyric.note_count.should == 1
     end
 
     it "can set one syllable to 3 notes" do
-      p = parse "FDdB\nw:O__ say can you see"
-      p.tunes[0].notes[0].lyric.text.should == "O"
-      p.tunes[0].notes[0].lyric.note_count.should == 3
-      p.tunes[0].notes[1].lyric.should == nil
-      p.tunes[0].notes[2].lyric.should == nil
-      p.tunes[0].notes[3].lyric.text.should == "say"
-      p.tunes[0].notes[3].lyric.note_count.should == 1
+      p = parse_fragment "FDdB\nw:O__ say can you see"
+      p.notes[0].lyric.text.should == "O"
+      p.notes[0].lyric.note_count.should == 3
+      p.notes[1].lyric.should == nil
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.text.should == "say"
+      p.notes[3].lyric.note_count.should == 1
     end
 
     it "splits words with hyphen" do
-      p = parse "ccGEB\nw:gal-lant-ly stream-ing"
-      p.tunes[0].notes[0].lyric.text.should == "gal"
-      p.tunes[0].notes[0].lyric.hyphen?.should == true
-      p.tunes[0].notes[1].lyric.text.should == "lant"
-      p.tunes[0].notes[1].lyric.hyphen?.should == true
-      p.tunes[0].notes[2].lyric.text.should == "ly"
-      p.tunes[0].notes[2].lyric.hyphen?.should == false
+      p = parse_fragment "ccGEB\nw:gal-lant-ly stream-ing"
+      p.notes[0].lyric.text.should == "gal"
+      p.notes[0].lyric.hyphen?.should == true
+      p.notes[1].lyric.text.should == "lant"
+      p.notes[1].lyric.hyphen?.should == true
+      p.notes[2].lyric.text.should == "ly"
+      p.notes[2].lyric.hyphen?.should == false
     end
 
     it "suppports hyphen with underscore" do
-      p = parse "d2fedcb4\nw:ban-_ner yet_ wave"
-      p.tunes[0].notes[0].lyric.text.should == "ban"
-      p.tunes[0].notes[0].lyric.hyphen?.should == true
-      p.tunes[0].notes[0].lyric.note_count.should == 2
-      p.tunes[0].notes[2].lyric.text.should == "ner"
-      p.tunes[0].notes[2].lyric.hyphen?.should == false
+      p = parse_fragment "d2fedcb4\nw:ban-_ner yet_ wave"
+      p.notes[0].lyric.text.should == "ban"
+      p.notes[0].lyric.hyphen?.should == true
+      p.notes[0].lyric.note_count.should == 2
+      p.notes[2].lyric.text.should == "ner"
+      p.notes[2].lyric.hyphen?.should == false
     end
 
     it "stretches with two hyphens" do
-      p = parse "d2fedcb4\nw:ban--ner yet_ wave"
-      p.tunes[0].notes[0].lyric.text.should == "ban"
-      p.tunes[0].notes[0].lyric.hyphen?.should == true
-      p.tunes[0].notes[0].lyric.note_count.should == 2
-      p.tunes[0].notes[2].lyric.text.should == "ner"
-      p.tunes[0].notes[2].lyric.hyphen?.should == false
+      p = parse_fragment "d2fedcb4\nw:ban--ner yet_ wave"
+      p.notes[0].lyric.text.should == "ban"
+      p.notes[0].lyric.hyphen?.should == true
+      p.notes[0].lyric.note_count.should == 2
+      p.notes[2].lyric.text.should == "ner"
+      p.notes[2].lyric.hyphen?.should == false
     end
 
     it "stretches with space hyphen" do
-      p = parse "d2fedcb4\nw:ban -ner yet_ wave"
-      p.tunes[0].notes[0].lyric.text.should == "ban"
-      p.tunes[0].notes[0].lyric.hyphen?.should == true
-      p.tunes[0].notes[0].lyric.note_count.should == 2
-      p.tunes[0].notes[2].lyric.text.should == "ner"
-      p.tunes[0].notes[2].lyric.hyphen?.should == false
+      p = parse_fragment "d2fedcb4\nw:ban -ner yet_ wave"
+      p.notes[0].lyric.text.should == "ban"
+      p.notes[0].lyric.hyphen?.should == true
+      p.notes[0].lyric.note_count.should == 2
+      p.notes[2].lyric.text.should == "ner"
+      p.notes[2].lyric.hyphen?.should == false
     end
 
     it "skips notes with *" do
-      p = parse "acddc\nw:*see ** see"
-      p.tunes[0].notes[0].lyric.should == nil
-      p.tunes[0].notes[1].lyric.text.should == "see"
-      p.tunes[0].notes[1].lyric.note_count.should == 1
-      p.tunes[0].notes[2].lyric.should == nil
-      p.tunes[0].notes[3].lyric.should == nil
-      p.tunes[0].notes[4].lyric.text.should == "see"
-      p.tunes[0].notes[4].lyric.note_count.should == 1
+      p = parse_fragment "acddc\nw:*see ** see"
+      p.notes[0].lyric.should == nil
+      p.notes[1].lyric.text.should == "see"
+      p.notes[1].lyric.note_count.should == 1
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.should == nil
+      p.notes[4].lyric.text.should == "see"
+      p.notes[4].lyric.note_count.should == 1
     end
 
     it "preserves spaces with ~" do
-      p = parse "abc\nw:go~on get jiggy with it"
-      p.tunes[0].notes[0].lyric.text.should == "go on"
-      p.tunes[0].notes[1].lyric.text.should == "get"
+      p = parse_fragment "abc\nw:go~on get jiggy with it"
+      p.notes[0].lyric.text.should == "go on"
+      p.notes[1].lyric.text.should == "get"
     end
 
     it "escapes hyphens with backslash" do
-      p = parse "abc\nw:x\\-ray"
-      p.tunes[0].notes[0].lyric.text.should == "x-ray"
+      p = parse_fragment "abc\nw:x\\-ray"
+      p.notes[0].lyric.text.should == "x-ray"
     end
 
     it "advances to the next bar with |" do
-      p = parse "abc|def\nw:yeah|yeah"
-      p.tunes[0].notes[0].lyric.text.should == "yeah"
-      p.tunes[0].notes[0].lyric.note_count.should == 1
-      p.tunes[0].notes[1].lyric.should == nil
-      p.tunes[0].notes[2].lyric.should == nil
-      p.tunes[0].notes[3].lyric.text.should == "yeah"
+      p = parse_fragment "abc|def\nw:yeah|yeah"
+      p.notes[0].lyric.text.should == "yeah"
+      p.notes[0].lyric.note_count.should == 1
+      p.notes[1].lyric.should == nil
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.text.should == "yeah"
     end
 
     # TODO special handling of stanza numbers?
@@ -439,105 +438,105 @@ describe "abc 2.0 draft 4" do
   describe "clef support" do
 
     it "recognizes the simple clef names" do
-      p = parse "K:Am clef=treble"
-      p.tunes[0].key.clef.name.should == "treble"
-      p = parse "K:Am clef=alto"
-      p.tunes[0].key.clef.name.should == "alto"
-      p = parse "K:Am clef=tenor"
-      p.tunes[0].key.clef.name.should == "tenor"
-      p = parse "K:Am clef=bass"
-      p.tunes[0].key.clef.name.should == "bass"
-      p = parse "K:Am clef=perc"
-      p.tunes[0].key.clef.name.should == "perc"
-      p = parse "K:Am clef=none"
-      p.tunes[0].key.clef.name.should == "none"
+      p = parse_fragment "K:Am clef=treble"
+      p.key.clef.name.should == "treble"
+      p = parse_fragment "K:Am clef=alto"
+      p.key.clef.name.should == "alto"
+      p = parse_fragment "K:Am clef=tenor"
+      p.key.clef.name.should == "tenor"
+      p = parse_fragment "K:Am clef=bass"
+      p.key.clef.name.should == "bass"
+      p = parse_fragment "K:Am clef=perc"
+      p.key.clef.name.should == "perc"
+      p = parse_fragment "K:Am clef=none"
+      p.key.clef.name.should == "none"
     end
 
     it "recognizes a clef name without the clef= specifier" do
-      p = parse "K:Am alto"
-      p.tunes[0].key.clef.name.should == "alto"
+      p = parse_fragment "K:Am alto"
+      p.key.clef.name.should == "alto"
     end
 
     it "lets you specify line on which to draw the clef" do
-      p = parse "K:Am clef=bass4"
-      p.tunes[0].key.clef.line.should == 4
+      p = parse_fragment "K:Am clef=bass4"
+      p.key.clef.line.should == 4
     end
 
     it "has default lines for the basic clefs" do
-      p = parse "K:C clef=treble"
-      p.tunes[0].key.clef.line.should == 2
-      p = parse "K:C clef=alto"
-      p.tunes[0].key.clef.line.should == 3
-      p = parse "K:C clef=tenor"
-      p.tunes[0].key.clef.line.should == 4
-      p = parse "K:C clef=bass"
-      p.tunes[0].key.clef.line.should == 4
+      p = parse_fragment "K:C clef=treble"
+      p.key.clef.line.should == 2
+      p = parse_fragment "K:C clef=alto"
+      p.key.clef.line.should == 3
+      p = parse_fragment "K:C clef=tenor"
+      p.key.clef.line.should == 4
+      p = parse_fragment "K:C clef=bass"
+      p.key.clef.line.should == 4
     end
 
     it "recognizes octave shifts" do
-      p = parse "K:Am clef=bass"
-      p.tunes[0].key.clef.octave_shift.should == 0
-      p = parse "K:Am clef=alto+8"
-      p.tunes[0].key.clef.octave_shift.should == 1
-      p = parse "K:Am clef=treble-8"
-      p.tunes[0].key.clef.octave_shift.should == -1
+      p = parse_fragment "K:Am clef=bass"
+      p.key.clef.octave_shift.should == 0
+      p = parse_fragment "K:Am clef=alto+8"
+      p.key.clef.octave_shift.should == 1
+      p = parse_fragment "K:Am clef=treble-8"
+      p.key.clef.octave_shift.should == -1
     end
     
     it "lets you specify the middle pitch" do
-      p = parse "K:C clef=treble middle=d"
-      p.tunes[0].key.clef.middle.height.should == 14
-      p = parse "K:C treble middle=d"
-      p.tunes[0].key.clef.middle.height.should == 14
-      p = parse "K:C middle=d"
-      p.tunes[0].key.clef.middle.height.should == 14
+      p = parse_fragment "K:C clef=treble middle=d"
+      p.key.clef.middle.height.should == 14
+      p = parse_fragment "K:C treble middle=d"
+      p.key.clef.middle.height.should == 14
+      p = parse_fragment "K:C middle=d"
+      p.key.clef.middle.height.should == 14
     end
 
     it "knows the default middle pitch for the basic clefs" do
-      p = parse "K:C clef=treble"
-      p.tunes[0].key.clef.middle.height.should == 11
-      p = parse "K:C clef=alto"
-      p.tunes[0].key.clef.middle.height.should == 0
-      p = parse "K:C clef=tenor"
-      p.tunes[0].key.clef.middle.height.should == -3
-      p = parse "K:C clef=bass"
-      p.tunes[0].key.clef.middle.height.should == -10
-      p = parse "K:C clef=none"
-      p.tunes[0].key.clef.middle.height.should == 11
+      p = parse_fragment "K:C clef=treble"
+      p.key.clef.middle.height.should == 11
+      p = parse_fragment "K:C clef=alto"
+      p.key.clef.middle.height.should == 0
+      p = parse_fragment "K:C clef=tenor"
+      p.key.clef.middle.height.should == -3
+      p = parse_fragment "K:C clef=bass"
+      p.key.clef.middle.height.should == -10
+      p = parse_fragment "K:C clef=none"
+      p.key.clef.middle.height.should == 11
     end
 
     it "parses transpose information" do
-      p = parse "K:C clef=treble transpose=-2"
-      p.tunes[0].key.clef.transpose.should == -2
-      p = parse "K:C clef=treble t=4"
-      p.tunes[0].key.clef.transpose.should == 4
+      p = parse_fragment "K:C clef=treble transpose=-2"
+      p.key.clef.transpose.should == -2
+      p = parse_fragment "K:C clef=treble t=4"
+      p.key.clef.transpose.should == 4
     end
 
     it "parses number of stafflines" do
-      p = parse "K:C clef=treble stafflines=4"
-      p.tunes[0].key.clef.stafflines.should == 4
+      p = parse_fragment "K:C clef=treble stafflines=4"
+      p.key.clef.stafflines.should == 4
     end
 
     it "allows unknown clef names" do
-      p = parse "K:C baritone"
-      p.tunes[0].key.clef.name.should == 'baritone'
+      p = parse_fragment "K:C baritone"
+      p.key.clef.name.should == 'baritone'
     end
 
     it "defaults to treble" do
-      p = parse "K:C"
-      p.tunes[0].key.clef.name.should == 'treble'
+      p = parse_fragment "K:C"
+      p.key.clef.name.should == 'treble'
     end
 
     it "allows app-specific specifiers" do
-      p = parse "K:C clef=perc mozart:noteC=snare-drum"
+      p = parse_fragment "K:C clef=perc mozart:noteC=snare-drum"
     end
 
     it "allows clef specifiers in any order" do
-      p = parse "K:C middle=d stafflines=3 bass4+8 t=-3"
-      p.tunes[0].key.clef.name.should == 'bass'
-      p.tunes[0].key.clef.middle.note.should == 'D'
-      p.tunes[0].key.clef.stafflines.should == 3
-      p.tunes[0].key.clef.transpose.should == -3
-      p.tunes[0].key.clef.octave_shift.should == 1
+      p = parse_fragment "K:C middle=d stafflines=3 bass4+8 t=-3"
+      p.key.clef.name.should == 'bass'
+      p.key.clef.middle.note.should == 'D'
+      p.key.clef.stafflines.should == 3
+      p.key.clef.transpose.should == -3
+      p.key.clef.octave_shift.should == 1
     end
 
 
@@ -637,39 +636,39 @@ describe "abc 2.0 draft 4" do
 
   describe "multivoice support" do
     it "can parse a V: field in the header" do
-      p = parse "V:T1"
-      p.tunes[0].voices['T1'].should_not == nil
+      p = parse_fragment "V:T1"
+      p.voices['T1'].should_not == nil
     end
     it "only uses 1st 20 characters of id" do
-      p = parse "V:1234567890123456789012345"
-      p.tunes[0].voices['1234567890123456789012345'].should == nil
-      p.tunes[0].voices['12345678901234567890'].should_not == nil
+      p = parse_fragment "V:1234567890123456789012345"
+      p.voices['1234567890123456789012345'].should == nil
+      p.voices['12345678901234567890'].should_not == nil
     end
     # TODO only 1st 20 characters of id
     it "parses name and subname" do
-      p = parse 'V:Ma tenor name="Mama" subname="M"'
-      p.tunes[0].voices['Ma'].name.should == 'Mama'
-      p.tunes[0].voices['Ma'].subname.should == 'M'
-      p = parse 'V:Da snm="D" nm="Daddy" bass'
-      p.tunes[0].voices['Da'].name.should == 'Daddy'
-      p.tunes[0].voices['Da'].subname.should == 'D'
+      p = parse_fragment 'V:Ma tenor name="Mama" subname="M"'
+      p.voices['Ma'].name.should == 'Mama'
+      p.voices['Ma'].subname.should == 'M'
+      p = parse_fragment 'V:Da snm="D" nm="Daddy" bass'
+      p.voices['Da'].name.should == 'Daddy'
+      p.voices['Da'].subname.should == 'D'
     end
     it "parses stem" do
-      p = parse 'V:T1'
-      p.tunes[0].voices['T1'].stem.should == nil
-      p = parse 'V:T1 stem=up'
-      p.tunes[0].voices['T1'].stem.should == :up
-      p = parse 'V:T1 stem=down'
-      p.tunes[0].voices['T1'].stem.should == :down
+      p = parse_fragment 'V:T1'
+      p.voices['T1'].stem.should == nil
+      p = parse_fragment 'V:T1 stem=up'
+      p.voices['T1'].stem.should == :up
+      p = parse_fragment 'V:T1 stem=down'
+      p.voices['T1'].stem.should == :down
     end
     # TODO should inherit clef from K field
     it "has a default clef" do
-      p = parse "V:T1"
-      p.tunes[0].voices['T1'].clef.name.should == 'treble'
+      p = parse_fragment "V:T1"
+      p.voices['T1'].clef.name.should == 'treble'
     end
     it "supports clef specifiers" do
-      p = parse 'V:T1 nm="Tenore I" snm="T.I" middle=d stafflines=3 bass4+8 t=-3'
-      clef = p.tunes[0].voices['T1'].clef
+      p = parse_fragment 'V:T1 nm="Tenore I" snm="T.I" middle=d stafflines=3 bass4+8 t=-3'
+      clef = p.voices['T1'].clef
       clef.name.should == 'bass'
       clef.middle.note.should == 'D'
       clef.stafflines.should == 3
@@ -677,9 +676,9 @@ describe "abc 2.0 draft 4" do
       clef.octave_shift.should == 1
     end
     it "allocates music to voices" do
-      p = parse "V:A\nV:B\n[V:A]abc\n[V:B]def"
-      a = p.tunes[0].voices['A']
-      b = p.tunes[0].voices['B']
+      p = parse_fragment "V:A\nV:B\n[V:A]abc\n[V:B]def"
+      a = p.voices['A']
+      b = p.voices['B']
       a.notes[0].pitch.note.should == "A"
       a.notes[1].pitch.note.should == "B"
       a.notes[2].pitch.note.should == "C"
@@ -688,9 +687,9 @@ describe "abc 2.0 draft 4" do
       b.notes[2].pitch.note.should == "F"
     end
     it "still works if you don't declare voices in header" do
-      p = parse "[V:A]abc\n[V:B]def"
-      a = p.tunes[0].voices['A']
-      b = p.tunes[0].voices['B']
+      p = parse_fragment "[V:A]abc\n[V:B]def"
+      a = p.voices['A']
+      b = p.voices['B']
       a.notes[0].pitch.note.should == "A"
       a.notes[1].pitch.note.should == "B"
       a.notes[2].pitch.note.should == "C"
@@ -699,70 +698,70 @@ describe "abc 2.0 draft 4" do
       b.notes[2].pitch.note.should == "F"
     end
     it "knows when there is more than one voice" do
-      p = parse "abc"
-      p.tunes[0].many_voices?.should == false
-      p = parse "V:1\nV:2\n[V:1]abc"
-      p.tunes[0].many_voices?.should == true
+      p = parse_fragment "abc"
+      p.many_voices?.should == false
+      p = parse_fragment "V:1\nV:2\n[V:1]abc"
+      p.many_voices?.should == true
     end
     it "resets key when new voice starts" do
-      p = parse "[V:1]b[K:F]b[V:2]b[K:F]b"
-      v1 = p.tunes[0].voices['1']
-      v2 = p.tunes[0].voices['2']
+      p = parse_fragment "[V:1]b[K:F]b[V:2]b[K:F]b"
+      v1 = p.voices['1']
+      v2 = p.voices['2']
       v1.notes[0].pitch.height.should == 11 # B
       v1.notes[1].pitch.height.should == 10 # B flat
       v2.notes[0].pitch.height.should == 11
       v2.notes[1].pitch.height.should == 10
     end
     it "retains key change when voice comes back" do
-      p = parse "[V:1]b[K:F]b[V:2]b[K:F]b[V:1]b[K:C]b"
-      v1 = p.tunes[0].voices['1']
+      p = parse_fragment "[V:1]b[K:F]b[V:2]b[K:F]b[V:1]b[K:C]b"
+      v1 = p.voices['1']
       v1.notes[2].pitch.height.should == 10 # B flat
       v1.notes[3].pitch.height.should == 11 # B
     end
     it "resets meter when new voice starts" do
-      p = parse "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4"
-      v1 = p.tunes[0].voices['1']
-      v2 = p.tunes[0].voices['2']
+      p = parse_fragment "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4"
+      v1 = p.voices['1']
+      v2 = p.voices['2']
       v1.notes[0].note_length.should == 4
       v1.notes[1].note_length.should == 3
       v2.notes[0].note_length.should == 4
       v2.notes[1].note_length.should == 3
     end
     it "retains meter change when voice comes back" do
-      p = parse "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4[V:1]Z4[M:C]Z4"
-      v1 = p.tunes[0].voices['1']
+      p = parse_fragment "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4[V:1]Z4[M:C]Z4"
+      v1 = p.voices['1']
       v1.notes[2].note_length.should == 3
       v1.notes[3].note_length.should == 4
     end
     it "resets note length when new voice starts" do
-      p = parse "[V:1]a[L:1/4]b[V:2]a[L:1/4]b"
-      v1 = p.tunes[0].voices['1']
-      v2 = p.tunes[0].voices['2']
+      p = parse_fragment "[V:1]a[L:1/4]b[V:2]a[L:1/4]b"
+      v1 = p.voices['1']
+      v2 = p.voices['2']
       v1.notes[0].note_length.should == Rational(1, 8)
       v1.notes[1].note_length.should == Rational(1, 4)
       v2.notes[0].note_length.should == Rational(1, 8)
       v2.notes[1].note_length.should == Rational(1, 4)
     end
     it "retains meter change when voice comes back" do
-      p = parse "[V:1]a[L:1/4]b[V:2]a[L:1/4]b[V:1]a[L:1/16]b"
-      v1 = p.tunes[0].voices['1']
+      p = parse_fragment "[V:1]a[L:1/4]b[V:2]a[L:1/4]b[V:1]a[L:1/16]b"
+      v1 = p.voices['1']
       v1.notes[2].note_length.should == Rational(1, 4)
       v1.notes[3].note_length.should == Rational(1, 16)
     end
     it "uses first voice if you for tune.notes[]" do
-      p = parse "[V:1]a[V:2]b[V:1]a[V:2]b"
-      p.tunes[0].notes.should == p.tunes[0].voices["1"].notes
+      p = parse_fragment "[V:1]a[V:2]b[V:1]a[V:2]b"
+      p.notes.should == p.voices["1"].notes
     end
     it "allows V: fields as standalones" do
-      p = parse "K:C\nV:A\na\nV:B\nb"
-      p.tunes[0].voices['A'].notes[0].pitch.note.should == 'A'
-      p.tunes[0].voices['B'].notes[0].pitch.note.should == 'B'
+      p = parse_fragment "K:C\nV:A\na\nV:B\nb"
+      p.voices['A'].notes[0].pitch.note.should == 'A'
+      p.voices['B'].notes[0].pitch.note.should == 'B'
     end
 
     # TODO what if the tune has voices but some notes occcur before the first voice field?
     it "has a default voice if no voices specified" do
-      p = parse "abc"
-      p.tunes[0].voices[""].items.should == p.tunes[0].items
+      p = parse_fragment "abc"
+      p.voices[""].items.should == p.items
     end
   end
 
@@ -784,17 +783,17 @@ describe "abc 2.0 draft 4" do
   
   describe "voice overlay support" do
     it "allows multiple voices in a single bar" do
-      p = parse "|a b c & A B C|"
-      p.tunes[0].measures[0].overlays?.should == true
-      p.tunes[0].measures[0].overlays.count.should == 1
-      p.tunes[0].measures[0].notes[0].pitch.height.should == 9
-      p.tunes[0].measures[0].overlays[0].notes[0].pitch.height.should == -3
+      p = parse_fragment "|a b c & A B C|"
+      p.measures[0].overlays?.should == true
+      p.measures[0].overlays.count.should == 1
+      p.measures[0].notes[0].pitch.height.should == 9
+      p.measures[0].overlays[0].notes[0].pitch.height.should == -3
     end
     # TODO move this to a different test section
     it "allows bars[] as a synonym for measures[]" do
-      p = parse "|a b c & A B C|"
-      p.tunes[0].bars.should == p.tunes[0].measures
-      p.tunes[0].voices[""].bars.should == p.tunes[0].voices[""].measures
+      p = parse_fragment "|a b c & A B C|"
+      p.bars.should == p.measures
+      p.voices[""].bars.should == p.voices[""].measures
     end
 
     # TODO allow fields in voice overlays, rather than just notes? eg what if we want a key change in overlaid voices?
