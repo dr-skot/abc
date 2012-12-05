@@ -25,7 +25,7 @@ grammar ABC do
   
   rule file_header do
     # (info_field / file_field)+ <FileHeader>
-    file_field+ <FileHeader>
+    comment_line* file_field+ <FileHeader>
   end
 
 
@@ -37,12 +37,12 @@ grammar ABC do
   # Abc music code lines are those lines in the tune body which give notes, bar lines and other musical symbols - see the tune body for details. In effect, music code is the contents of any line which is not an information field, stylesheet directive or comment line.
 
   rule tune do
-    tune_header tune_body? <Tune>
+    comment_line* tune_header tune_body? <Tune>
   end
 
   rule tune_header do
-    refnum_field line_ender 
-    title_field line_ender 
+    refnum_field line_ender
+    title_field line_ender
     (info_field / header_field)* 
       key_field line_ender <TuneHeader>
   end
@@ -65,15 +65,18 @@ grammar ABC do
     }
   end
 
-  # TODO free_text should not be invoked on malformed headers or typeset text
   # TODO ignore comments in free text
   rule free_text do
-    !tune_header
+    !header_start
     text:(!end_of_section .)+ end_of_line <FreeText> {
       def text
         super.text_value
       end
     }
+  end
+
+  rule header_start do
+    comment_line* [A-Za-z] ':'
   end
 
 
@@ -124,10 +127,16 @@ grammar ABC do
     '%' (!end_of_line .)+
   end
 
-  rule line_ender do
-    space* comment? end_of_line
+  rule comment_line do
+    space* comment end_of_line
   end
 
+  rule line_ender do
+    space* comment? end_of_line comment_line*
+  end
+
+  # TODO support '\%' escape sequence
+  # TODO differentiate comments from directives
   # TODO should we have special rules for the r: field here?
 
 

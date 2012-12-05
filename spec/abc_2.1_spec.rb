@@ -44,7 +44,6 @@ describe "abc 2.1" do
   end
 
 
-
   # 2.2 Abc file structure
   # An abc file consists of one or more abc tune transcriptions, optionally interspersed with free text and typeset text annotations. It may optionally start with a file header to set up default values for processing the file.
   # The file header, abc tunes and text annotations are separated from each other by empty lines (also known as blank lines).
@@ -63,7 +62,7 @@ describe "abc 2.1" do
       p = parse "X:1\nT:Title\nK:C\nabc"
       p.tunes.count.should == 1
     end
-    it "can consist of a several tunes with or without bodies" do
+    it "can consist of several tunes with or without bodies" do
       p = parse "X:1\nT:Title\nK:C\nabc\n\nX:2\nT:T2\nK:D\n\nX:3\nT:T3\nK:none\ncba"
       p.tunes.count.should == 3
     end
@@ -74,13 +73,69 @@ describe "abc 2.1" do
     end
     it "can include free text" do
       p = parse "free text\n\nX:1\nT:T\nK:C"
+      p.tunes[0].free_text.should == "free text"
+      # TODO actually free text should probably not be associated with the tune in this way
     end
-    # TODO make sure badly formed tune or fileheader is not interpreted as free text
     it "can include typeset text annotations" do
       p = parse "N:fileheader\n\n%%text blah\n\nX:1\nT:T\nK:C"
       # TODO confirm that this is a text annotation and not free text
     end
+    it "doesn't confuse a bad header with free text" do
+      fail_to_parse "X:1\n\nX:2\nT:T\nK:C"
+      # TODO return a legible warning in such cases
+    end
+    it "can contain comment lines in the file header" do
+      p = parse "C:Madonna\n%comment\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
+      p.composer.should == "Madonna"
+      p.transcriber.should == "me"
+    end
+    it "can start a file header with comment lines" do
+      p = parse "%comment\n%comment\nC:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
+      p.composer.should == "Madonna"
+      p.transcriber.should == "me"
+    end
+    it "can end a file header with comment lines" do
+      p = parse "C:Madonna\nZ:me\n%comment\n%comment\n\nX:1\nT:Like a Prayer\nK:Dm"
+      p.composer.should == "Madonna"
+      p.transcriber.should == "me"
+    end
   end
+
+
+  # 2.2.1 Abc tune
+  # An abc tune itself consists of a tune header and a tune body, terminated by an empty line or the end of the file. It may also contain comment lines or stylesheet directives.
+  # The tune header is composed of several information field lines, which are further discussed in information fields. The tune header should start with an X:(reference number) field followed by a T:(title) field and finish with a K:(key) field.
+  # The tune body, which contains the music code, follows immediately after. Certain fields may also be used inside the tune body - see use of fields within the tune body.
+  # It is legal to write an abc tune without a tune body. This feature can be used to document tunes without transcribing them.
+  # Abc music code lines are those lines in the tune body which give notes, bar lines and other musical symbols - see the tune body for details. In effect, music code is the contents of any line which is not an information field, stylesheet directive or comment line.
+  
+  describe "tune" do
+    it "can contain comment lines in the header" do
+      p = parse "X:1\nT:T\n% comment\nK:D\nabc\ndef"
+      p.tunes.count.should == 1
+      p.tunes[0].key.tonic.should == "D"
+    end
+    it "can contain comment lines in the tune" do
+      p = parse "X:1\nT:T\nK:D\nabc\n% more comments\ndef"
+      p.tunes.count.should == 1
+      p.tunes[0].items[3].pitch.note.should == "D"
+    end
+    it "can start with comment lines" do
+      p = parse "%comment\n%comment\nX:1\nT:T\nK:D\nabc\ndef"
+      p.tunes.count.should == 1
+      p.tunes[0].key.tonic.should == "D"
+    end
+    it "can end with comment lines" do
+      p = parse "X:1\nT:T\nK:D\nabc\ndef\n%comment\n%comment"
+      p.tunes.count.should == 1
+      p.tunes[0].key.tonic.should == "D"
+    end
+    # TODO should we allow tunes to *start* with comments?
+    it "can appear with no body" do
+      p = parse "X:1\nT:T\nK:C\n"
+    end
+  end
+
 
   # 2.3.1 Embedded abc fragment
   # An abc fragment is a partial abc tune. It may contain a partial tune header with no body or a tune body with optional tune header information fields.
