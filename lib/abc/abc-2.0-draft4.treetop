@@ -18,16 +18,24 @@ grammar ABC do
   # An abc file consists of one or more abc tune transcriptions, optionally interspersed with free text and typeset text annotations. It may optionally start with a file header to set up default values for processing the file.
   # The file header, abc tunes and text annotations are separated from each other by empty lines (also known as blank lines).
   # An abc file with more than one tune in it is called an abc tunebook.
-  
+
   rule abc_file do
-    (file_header end_of_section)? ((tune / typeset_text / free_text) end_of_section)+ <Tunebook>
-  end
-  
-  rule file_header do
-    # (info_field / file_field)+ <FileHeader>
-    comment_line* file_field+ <FileHeader>
+    # guarantee at least one tune section, while text sections can be anywhere
+    file_header_section? text_section* tune_section (tune_section / text_section)* <Tunebook>
   end
 
+  rule file_header_section do
+    file_header end_of_section
+  end
+
+  rule text_section do
+    (typeset_text / free_text) end_of_section
+  end
+  
+  rule tune_section do
+    tune end_of_section
+  end
+  
 
   # 2.2.1 Abc tune
   # An abc tune itself consists of a tune header and a tune body, terminated by an empty line or the end of the file. It may also contain comment lines or stylesheet directives.
@@ -45,6 +53,18 @@ grammar ABC do
     title_field line_ender
     (info_field / header_field)* 
       key_field line_ender <TuneHeader>
+  end
+
+
+  # 2.2.2 File header
+  # The file may optionally start with a file header (immediately after the version field), consisting of a block of consecutive information fields, stylesheet directives, or both, terminated with an empty line. The file header is used to set default values for the tunes in the file.
+  # The file header may only appear at the beginning of a file, not between tunes.
+  # Settings in a tune may override the file header settings, but when the end of a tune is reached the defaults set by the file header are reinstated.
+  # Applications which extract separate tunes from a file must insert the fields of the original file header into the header of the extracted tune. However, since users may manually extract tunes without regard to the file header, it is not recommended to use a file header in an abc tunebook that is to be distributed.
+
+  # TODO allow stylesheet directives
+  rule file_header do
+    comment_line* file_field+ <FileHeader>
   end
 
 

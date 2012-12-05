@@ -52,6 +52,9 @@ describe "abc 2.1" do
   describe "file structure" do
     it "must include at least 1 tune" do
       fail_to_parse ""
+      fail_to_parse "C:Madonna"
+      fail_to_parse "free text"
+      fail_to_parse "%%text typeset text"
     end
     it "can consist of a single tune with no body" do
       p = parse "X:1\nT:Title\nK:C"
@@ -83,21 +86,6 @@ describe "abc 2.1" do
     it "doesn't confuse a bad header with free text" do
       fail_to_parse "X:1\n\nX:2\nT:T\nK:C"
       # TODO return a legible warning in such cases
-    end
-    it "can contain comment lines in the file header" do
-      p = parse "C:Madonna\n%comment\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
-      p.composer.should == "Madonna"
-      p.transcriber.should == "me"
-    end
-    it "can start a file header with comment lines" do
-      p = parse "%comment\n%comment\nC:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
-      p.composer.should == "Madonna"
-      p.transcriber.should == "me"
-    end
-    it "can end a file header with comment lines" do
-      p = parse "C:Madonna\nZ:me\n%comment\n%comment\n\nX:1\nT:Like a Prayer\nK:Dm"
-      p.composer.should == "Madonna"
-      p.transcriber.should == "me"
     end
   end
 
@@ -135,6 +123,69 @@ describe "abc 2.1" do
       p = parse "X:1\nT:T\nK:C\n"
     end
   end
+
+
+  # 2.2.2 File header
+  # The file may optionally start with a file header (immediately after the version field), consisting of a block of consecutive information fields, stylesheet directives, or both, terminated with an empty line. The file header is used to set default values for the tunes in the file.
+  # The file header may only appear at the beginning of a file, not between tunes.
+  # Settings in a tune may override the file header settings, but when the end of a tune is reached the defaults set by the file header are reinstated.
+  # Applications which extract separate tunes from a file must insert the fields of the original file header into the header of the extracted tune. However, since users may manually extract tunes without regard to the file header, it is not recommended to use a file header in an abc tunebook that is to be distributed.
+
+  define "file header" do
+    it "cannot appear between tunes" do
+      fail_to_parse "X:1\nT:Like a Prayer\nK:Dm\n\nC:Madonna\nZ:me\n\nX:2\nT:Like A Virgin\nK:F"
+      # TODO generate a legible warning in this case
+    end
+    it "can contain comment lines" do
+      p = parse "C:Madonna\n%comment\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
+      p.composer.should == "Madonna"
+      p.transcriber.should == "me"
+    end
+    it "can start with comment lines" do
+      p = parse "%comment\n%comment\nC:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
+      p.composer.should == "Madonna"
+      p.transcriber.should == "me"
+    end
+    it "can end with comment lines" do
+      p = parse "C:Madonna\nZ:me\n%comment\n%comment\n\nX:1\nT:Like a Prayer\nK:Dm"
+      p.composer.should == "Madonna"
+      p.transcriber.should == "me"
+    end
+    it "cannot contain tune fields" do
+      fail_to_parse "C:Madonna\nZ:me\nK:C\n\nX:1\nT:Like a Prayer\nK:Dm" # note: K field is only allowed in tune headers
+    end 
+    it "cannot be followed by music" do
+      fail_to_parse "C:Madonna\nZ:me\nabc\n\nX:1\nT:Like a Prayer\nK:Dm" 
+    end
+    it "passes its settings to all tunes" do
+      p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nK:Dm\nabc" 
+      p.composer.should == "Madonna"
+      p.tunes[0].composer.should == "Madonna"
+    end    
+    it "can be overridden by the tune header" do
+      p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nC:Cher\nK:Eb\nabc" 
+      p.composer.should == "Madonna"
+      p.tunes[0].composer.should == "Cher"
+    end
+    it "resets overridden values with each new tune" do
+      p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nC:Cher\nK:Eb\nabc\n\nX:2\nT:T2\nK:C\ndef" 
+      p.composer.should == "Madonna"
+      p.tunes[0].composer.should == "Cher"
+      p.tunes[1].composer.should == "Madonna"
+    end
+  end
+
+
+  # 2.2.3 Free text and typeset text
+  # The terms free text and typeset text refer to any text not directly included within the information fields in a tune header. Typically such text is used for annotating abc tunebooks; free text is for annotating the abc file but is not included in the typeset score, whereas typeset text is intended for printing out.
+  # Free text is just that. It can be included anywhere in an abc file, after the file header, but must be separated from abc tunes, typeset text and the file header by empty lines. Typically it is used for annotating the abc file but in principle can be any text not containing information fields.
+  # Comment: Since raw html markup and email headers are treated as free text (provided they don't inadvertently contain information fields) this means that abc software can process a wide variety of text-based input files just by ignoring non-abc code.
+  # By default free text is not included in the printed score, although typesetting software may offer the option to print it out (e.g. via a command line switch or GUI checkbox). In this case, the software should treat the free text as a text string, but may format it in any way it chooses.
+  # Typeset text is any text specified using text directives. It may be inserted anywhere in an abc file after the file header, either separated from tunes by empty lines, or included in the tune header or tune body.
+  # Typeset text should be printed by typesetting programs although its exact position in the printed score is program-dependent.
+  # Typeset text that is included in an abc tune (i.e. within the tune header or tune body), must be retained by any programs, such as databasing software, that splits an abc file into separate abc tunes.
+
+  # TODO write the coverage for this once we have typeset text support in place
 
 
   # 2.3.1 Embedded abc fragment

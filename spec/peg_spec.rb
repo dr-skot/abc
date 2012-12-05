@@ -295,7 +295,7 @@ describe "abc-2.0-draft4 PEG" do
   
   describe "note lengths" do
     it "accepts short and long notes" do
-      parse "a2 b3/2 c3/ d/ d/2e//"
+      parse_fragment "a2 b3/2 c3/ d/ d/2e//"
     end
 
     it "does not accept weirdo note lengths" do
@@ -370,7 +370,7 @@ describe "abc-2.0-draft4 PEG" do
   describe "octave" do
 
     it "accepts notes in various octaves" do
-      parse "ABC abc a,b'C,,D'' e,', f'', G,,,,,'''"
+      parse_fragment "ABC abc a,b'C,,D'' e,', f'', G,,,,,'''"
     end
 
     it "correctly calculates the octave for note letters" do
@@ -559,7 +559,7 @@ describe "abc-2.0-draft4 PEG" do
   describe "rests" do
 
     it "accepts rests" do
-      parse "z3/2 x// x2 Z4"
+      parse_fragment "z3/2 x// x2 Z4"
     end
     
     it "does not accept wierdo rest lengths" do
@@ -612,7 +612,7 @@ describe "abc-2.0-draft4 PEG" do
   describe "broken rhythm" do
 
     it "accepts broken rhythm markers" do
-      parse "a>b c<d a>>b c2<<d2"
+      parse_fragment "a>b c<d a>>b c2<<d2"
     end
     
     it "does not accept broken rhythm weirdness" do
@@ -997,7 +997,7 @@ describe "abc-2.0-draft4 PEG" do
   end
 
   it "accepts spacers" do
-    parse "ab y de"
+    parse_fragment "ab y de"
   end
   
   describe "beaming support" do
