@@ -90,7 +90,13 @@ module ABC
   class ABCNode < Treetop::Runtime::SyntaxNode
   end
 
-  class FreeText < ABCNode
+  class ABCSection < ABCNode
+  end
+
+  class TypesetText < ABCSection
+  end
+
+  class FreeText < ABCSection
   end
 
   class NodeWithHeader < ABCNode
@@ -128,6 +134,9 @@ module ABC
   end
   
   class Tunebook < NodeWithHeader
+    def sections
+      children.select { |c| c.is_a?(Tune) || c.is_a?(ABCSection) }
+    end
     def tunes
       children(Tune)
     end

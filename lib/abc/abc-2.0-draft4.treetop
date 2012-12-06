@@ -20,7 +20,7 @@ grammar ABC do
   # An abc file with more than one tune in it is called an abc tunebook.
 
   rule abc_file do
-    # guarantee at least one tune section, while text sections can be anywhere
+    # guarantee at least one tune section, and allow text sections anywhere
     file_header_section? text_section* tune_section (tune_section / text_section)* <Tunebook>
   end
 
@@ -78,17 +78,13 @@ grammar ABC do
   # Typeset text that is included in an abc tune (i.e. within the tune header or tune body), must be retained by any programs, such as databasing software, that splits an abc file into separate abc tunes.
 
   rule typeset_text do
-    '%%' (!end_of_line .)+ {
-      def type
-        :typeset_text
-      end
-    }
+    '%%' (!end_of_line .)+ <TypesetText>
   end
 
+  # TODO make this stricter? technically free text should not contain *any* info fields; this just insures it doesn't start with one
   # TODO ignore comments in free text
   rule free_text do
-    !header_start
-    text:(!end_of_section .)+ end_of_line <FreeText> {
+    !header_start text:(!end_of_section .)+ end_of_line <FreeText> {
       def text
         super.text_value
       end
@@ -111,7 +107,7 @@ grammar ABC do
   end
 
   rule line_feed do
-    ("\r"? "\n")
+    "\r"? "\n"
   end
 
   rule end_of_line do
@@ -119,8 +115,7 @@ grammar ABC do
   end
 
   rule space do
-    # TODO more strict on space? only space and tab?
-    !end_of_line [\s]
+    " " / "\t"
   end
   
   rule blank_line do
@@ -533,7 +528,7 @@ grammar ABC do
   end
 
   rule music_line do
-    tune_element+ ('\\' line_ender music_line_continuation)?
+    (tune_space? tune_element)+ tune_space? ('\\' line_ender music_line_continuation)?
   end
 
   rule music_line_continuation do
@@ -550,7 +545,7 @@ grammar ABC do
 
   rule tune_element do
     inline_body_field /
-    tune_space / tuplet_symbol / slur / variant_ending / notelike_thing / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
+    tuplet_symbol / slur / variant_ending / notelike_thing / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
     ignored_char
   end
 

@@ -76,12 +76,13 @@ describe "abc 2.1" do
     end
     it "can include free text" do
       p = parse "free text\n\nX:1\nT:T\nK:C"
-      p.tunes[0].free_text.should == "free text"
-      # TODO actually free text should probably not be associated with the tune in this way
+      p.sections.count.should == 2
+      p.sections[0].is_a?(FreeText).should == true
     end
     it "can include typeset text annotations" do
       p = parse "N:fileheader\n\n%%text blah\n\nX:1\nT:T\nK:C"
-      # TODO confirm that this is a text annotation and not free text
+      p.sections.count.should == 2
+      p.sections[0].is_a?(TypesetText).should == true
     end
     it "doesn't confuse a bad header with free text" do
       fail_to_parse "X:1\n\nX:2\nT:T\nK:C"
@@ -186,6 +187,32 @@ describe "abc 2.1" do
   # Typeset text that is included in an abc tune (i.e. within the tune header or tune body), must be retained by any programs, such as databasing software, that splits an abc file into separate abc tunes.
 
   # TODO write the coverage for this once we have typeset text support in place
+
+
+  # 2.2.4 Empty lines and line-breaking
+  # Empty lines (also known as blank lines) are used to separate abc tunes, free text and the file header. They also aid the readability of abc files.
+  # Lines that consist entirely of white-space (space and tab characters) are also regarded as empty lines.
+  # Line-breaks (also known as new lines, line feeds, carriage returns, end-of-lines, etc.) can be used within an abc file to aid readability and, if required, break up long input lines - see continuation of input lines.
+  # More specifically, line-breaks in the music code can be used to structure the abc transcription and, by default, generate line-breaks in the printed music. For more details see typesetting line-breaks.
+
+  describe "empty line" do
+    it "breaks sections" do
+      p = parse "free_text\n\nX:1\nT:T\nK:C\nabc"
+      p.sections.count.should == 2
+    end
+    it "can contain whitespace" do
+      p = parse "free_text\n  \t \nX:1\nT:T\nK:C\nabc"
+      p.sections.count.should == 2
+    end
+    it "can contain whitespace after a tune" do
+      p = parse "X:1\nT:T\nK:C\nabc\n     \nX:2\nT:T2\nK:D\ndef"
+      p.tunes.count.should == 2
+    end
+    it "can contain whitespace after a tune with no body" do
+      p = parse "X:1\nT:T\nK:C\n     \nX:2\nT:T2\nK:D\ndef"
+      p.tunes.count.should == 2
+    end
+  end
 
 
   # 2.3.1 Embedded abc fragment
