@@ -215,6 +215,96 @@ describe "abc 2.1" do
   end
 
 
+  # 2.2.5 Comments and remarks
+  # A percent symbol (%) will cause the remainder of any input line to be ignored. It can be used to add a comment to the end of an abc line or as a comment line in its own right. (To get a percent symbol, type \% - see text strings.)
+  # Alternatively, you can use the syntax [r:remark] to write a remark in the middle of a line of music.
+  # Example:
+  #   |:DEF FED| % this is an end of line comment
+  #   % this is a comment line
+  #   DEF [r:and this is a remark] FED:|
+  # Abc code which contains comments and remarks should be processed in exactly the same way as it would be if all the comments and remarks were removed (although, if the code is preprocessed, and comments are actually removed, the stylesheet directives should be left in place).
+  # Important clarification: lines which just contain a comment are processed as if the entire line were removed, even if the comment is preceded by white-space (i.e. the % symbol is the not first character). In other words, removing the comment effectively removes the entire line and so no empty line is introduced.
+  
+  describe "comment" do
+    it "can appear at the end of an abc line" do
+      p = parse_fragment "abc % comment\ndef"
+      p.lines.count.should == 2
+      p.items[3].pitch.note.should == "D"
+    end
+    it "can appear as a line in its own right" do
+      p = parse_fragment "abc\n   % comment\ndef"
+      p.lines.count.should == 2
+      p.items[3].pitch.note.should == "D"
+    end
+    it "does not introduce an empty line" do
+      fail_to_parse "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
+    end
+  end
+
+  # TODO instead of creating a field remark should be ignored
+  describe "remark" do
+    it "can appear in the middle of a music line" do
+      p = parse_fragment "def [r: remarks] abc"
+      p.items[2].pitch.height.should == 17 # f
+      p.items[3].is_a?(Field).should == true
+      p.items[4].pitch.height.should == 9 # a
+    end
+  end
+
+  # 2.2.6 Continuation of input lines
+  # It is sometimes necessary to tell abc software that an input line is continued on the next physical line(s) in the abc file, so that the two (or more) lines are treated as one. In abc 2.0 there was a universal continuation character (see outdated continuations) for this purpose, but it was decided that this was both unnecessary and confusing.
+  # In abc 2.1, there are ways of continuing each of the 4 different input line types: music code, information fields, comments and stylesheet directives.
+  # In abc music code, by default, line-breaks in the code generate line-breaks in the typeset score and these can be suppressed by using a backslash (or by telling abc typesetting software to ignore line-breaks using I:linebreak $ or I:linebreak <none>) - see typesetting line-breaks for full details.
+  # Comment for programmers: The backslash effectively acts as a continuation character for music code lines, although, for those used to encountering it in other computer language contexts, its use is very abc-specific. In particular it can continue music code lines through information fields, comments and stylesheet directives.
+  # The 3 other input line types can be continued as follows:
+  #   information fields can be continued using +: at the start of the following line - see field continuation;
+  #   comments can easily be continued by adding a % symbol at the start of the following line - since they are ignored by abc software it doesn't matter how many lines they are split into;
+  #   most stylesheet directives are too short to require a continuation syntax, but if one is required then use the I:<directive> form (see I:instruction), in place of %%<directive> and continue the line as a field - see field continuation.
+  # Comment for developers: Unlike other languages, and because of the way in which both information fields and music code can be continued through comments, stylesheet directives and (in the case of music code) information fields, it is generally not possible to parse abc files by pre-processing continuations into single lines.
+  # Note that, with the exception of abc music code, continuations are unlikely to be needed often. Indeed in most cases it should be possible, although not necessarily desirable, to write very long input lines, since most abc editing software will display them as wrapped within the text editor window.
+  # Recommendation: Despite there being no limit on line length in abc files, it is recommended that users avoid writing abc code with very long lines. In particular, judiciously applied line-breaks can aid the (human) readability of abc code. More importantly, users who send abc tunes with long lines should be aware that email software sometimes introduces additional line-breaks into lines with more than 72 characters and these may even cause errors when the resulting tune is processed.
+
+  describe "music line continuation" do
+    it "combines two lines with a backslash" do
+      p = parse_fragment "abc\ndef"
+      p.lines.count.should == 2
+      p.lines[0].items.count.should == 3
+      p = parse_fragment "abc\\\ndef"
+      p.lines.count.should == 1
+      p.lines[0].items.count.should == 6
+    end
+    it "can combine more than two lines" do
+      p = parse_fragment "abc\\\ndef\\\nabc\\\ndef"
+      p.lines.count.should == 1
+      p.notes.count.should == 12
+    end
+    it "allows space and comments after the backslash" do
+      p = parse_fragment "abc \\ % remark \n def"
+      p.lines.count.should == 1
+    end
+    it "works across information fields" do
+      p = parse_fragment "abc \\ \nM:3/4\ndef"
+      p.lines.count.should == 1
+    end
+    # TODO works across stylesheet directives
+    it "works across comment lines" do
+      p = parse_fragment "abc \\ \n % remark \n def"
+      p.lines.count.should == 1
+    end
+    it "puts information field with following music line" do
+      p = parse_fragment "abc\nM:3/4\ndef"
+      p.lines.count.should == 2
+      p.lines[1].items[0].is_a?(Field).should == true
+    end
+    it "recognizes lyrics" do
+      p = parse_fragment "abc\nw:my dog has\n"
+      p.lines.count.should == 1
+      # p.items[].is_a?(LyricsLine).should == true
+    end
+  end
+
+
+
   # 2.3.1 Embedded abc fragment
   # An abc fragment is a partial abc tune. It may contain a partial tune header with no body or a tune body with optional tune header information fields.
   # Example 1: A fragment with no tune header:

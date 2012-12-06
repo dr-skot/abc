@@ -189,15 +189,16 @@ describe "abc 2.0 draft 4" do
       p = parse_fragment "abc \\ % remark \n def"
       p.lines.count.should == 1
     end
-    it "allows continuation in a lyrics line" do
-      p = parse_fragment(["gf|e2dc B2A2|B2G2 E2D2|.G2.G2 \\  % continuation",
-                 "GABc|d4 B2",
-                 "w: Sa-ys my au-l' wan to your aul' wan\\",
-                 "   Will~ye come to the Wa-x-ies dar-gle?"].join("\n"))
-      p.lines.count.should == 2
-      p.lines[1].items[0].is_a?(Field).should == true
-      p.lines[1].items[0].units.count.should == 19
-    end
+    # TODO should we support this?
+    # it "allows continuation in a lyrics line" do
+    #   p = parse_fragment(["gf|e2dc B2A2|B2G2 E2D2|.G2.G2 \\  % continuation",
+    #              "GABc|d4 B2",
+    #              "w: Sa-ys my au-l' wan to your aul' wan\\",
+    #              "   Will~ye come to the Wa-x-ies dar-gle?"].join("\n"))
+    #   p.lines.count.should == 2
+    #   p.lines[1].items[0].is_a?(Field).should == true
+    #   p.lines[1].items[0].units.count.should == 19
+    # end
   end
 
   ## 2.3. Line breaking
@@ -222,8 +223,8 @@ describe "abc 2.0 draft 4" do
   ##   s: "^slow" | +f+ ** +fff+
   describe "symbol line support" do
     it "applies symbol line symbols to notes" do
-      p = parse_fragment(["CDEF    | G```AB`c c",
-                 "s: \"^slow\" | +f+ ** +fff+ \"Gm\""].join("\n"))
+      p = parse_fragment([     "CDEF    | G```AB`c     c",
+                          "s: \"^slow\" | +f+ ** +fff+ \"Gm\""].join("\n"))
       p.lines[0].symbols.should_not == nil
       p.notes[0].annotations[0].placement.should == :above
       p.notes[0].annotations[0].text.should == "slow"
@@ -274,7 +275,6 @@ describe "abc 2.0 draft 4" do
 
     it "can set words to notes" do
       p = parse_fragment "GCEA\nw:My dog has fleas"
-      # puts p.items[0].inspect
       p.notes[0].lyric.text.should == "My"
       p.notes[1].lyric.text.should == "dog"
       p.notes[2].lyric.text.should == "has"

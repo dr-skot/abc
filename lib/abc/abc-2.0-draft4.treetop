@@ -225,7 +225,7 @@ grammar ABC do
   end
 
   rule raw_body_field do
-     meter_field / tempo_field / unit_length_field / key_field / lyrics_field / voice_inline_field / other_body_field
+     symbol_line / meter_field / tempo_field / unit_length_field / key_field / lyrics_field / voice_inline_field / other_body_field
   end
 
   # TODO: don't fail to parse unrecognized fields
@@ -518,30 +518,34 @@ grammar ABC do
     key_field line_ender
   end
 
-  # TODO allow comment lines
   rule tune_body do
     tune_line+
   end
 
   rule tune_line do
-    (music_line / raw_body_field) tune_line_ender symbol_line?
+    raw_body_field line_ender / music_line
   end
 
   rule music_line do
-    (tune_space? tune_element)+ tune_space? ('\\' line_ender music_line_continuation)?
+    (tune_space? tune_element)+ music_line_ender
   end
 
-  rule music_line_continuation do
-    music_line
+  rule music_line_ender do
+    tune_space? (music_line_break / music_line_continuation)
   end
 
-  rule tune_line_ender do
+  rule music_line_break do
      '' line_ender <TuneLineBreak> {
        def hard?
          false
        end
      }
   end
+
+  rule music_line_continuation do
+     '\\' line_ender
+  end
+
 
   rule tune_element do
     inline_body_field /
@@ -1023,26 +1027,22 @@ grammar ABC do
   # LYRICS
 
   rule lyrics_field do
-    label:'w' ':' space* lyrics_line <Field> {
+    label:'w' ':' space* lyrics <LyricsLine> {
       def units
         children(LyricUnit)
       end
       def value
-        lyrics_line.value
+        lyrics.text_value
       end
     }
   end
 
-  rule lyrics_line do
-    lyric_unit+ ('\\' lyrics_line_continuation)?
-  end
-
-  rule lyrics_line_coninuation do
+  rule lyrics do
     lyric_unit+
   end
 
   rule lyric_unit do
-    word:("\\-" / [^ _\-\*\|])+ hyphen:(space? '-'+)? stretch:'_'* space* <LyricUnit> {
+    word:("\\-" / [^ _\-\*\|\n])+ hyphen:(space? '-'+)? stretch:'_'* space* <LyricUnit> {
       attr_reader :skip
       def text
         word.text_value.gsub('\\-', '-').gsub('~', ' ')
@@ -1074,7 +1074,7 @@ grammar ABC do
 
   # SYMBOL LINES
   rule symbol_line do
-    's' ':' (space+ / symbol_skip / chord_annotation / annotation / decoration )+ line_ender <SymbolLine>
+    's' ':' (space+ / symbol_skip / chord_annotation / annotation / decoration )+ <SymbolLine>
   end
 
   rule symbol_skip do

@@ -240,21 +240,23 @@ module ABC
     end
     def lines
       if !@lines
-        @lines = []
-        a = []
-        is_hard_break = false
+        line = TuneLine.new
+        @lines = [line]
         all_items = children.select { |c| c.is_a?(MusicNode) || c.is_a?(Field) || c.is_a?(TuneLineBreak) || c.is_a?(SymbolLine) }
         all_items.each do |it|
           if it.is_a?(TuneLineBreak)
-            @lines << TuneLine.new(a, is_hard_break)
-            is_hard_break = it.hard?
-            a = []
+            line = TuneLine.new
+            line.hard_break = it.hard?
+            @lines << line
           elsif it.is_a?(SymbolLine)
-            @lines[-1].symbols = it.children(SymbolUnit)
+            @lines[-2].symbols = it.children(SymbolUnit) if @lines.count > 1
+          elsif it.is_a?(LyricsLine)
+            @lines[-2].lyrics = it.children(LyricUnit) if @lines.count > 1
           else
-            a << it
+            line.items << it
           end
         end
+        @lines.pop if @lines[-1].items.count == 0
       end
       @lines
     end
@@ -384,14 +386,11 @@ module ABC
       end
     end
     def apply_lyrics
-      last_line = nil
-      waiting_for_bar = false
       lines.each do |line|
-        if line.items[0].is_a?(Field) && line.items[0].label.text_value == 'w' && last_line
-          units = line.items[0].units
-          items = last_line.items
+        if line && line.lyrics
+          items = line.items
           i = 0
-          units.each do |lyric|
+          line.lyrics.each do |lyric|
             break if i >= items.count
             if lyric.skip == :note
               # advance to next note, then skip it
@@ -415,10 +414,9 @@ module ABC
               # then advance to next item
               i += 1
             end
+            # TODO propagate extra lyrics to next line?
           end
-          # TODO propagate extra lyrics to next line?
         end
-        last_line = line
       end
     end
     def voices
@@ -468,12 +466,14 @@ module ABC
   class TuneLine
     attr_reader :items
     attr_accessor :symbols
-    def initialize(items, is_hard_break=false)
+    attr_accessor :lyrics
+    attr_accessor :hard_break
+    def initialize(items=[], hard_break=false)
       @items = items
-      @is_hard_break = is_hard_break
+      @hard_break = hard_break
     end
     def hard_break?
-      @is_hard_break
+      @hard_break
     end
     def notes
       items.select { |item| item.is_a?(NoteOrRest) }
@@ -613,6 +613,9 @@ module ABC
   end
 
   # LYRICS
+  class LyricsLine < Field
+  end
+
   class LyricUnit < ABCNode
   end
 
