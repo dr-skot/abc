@@ -1084,7 +1084,7 @@ grammar ABC do
 
   # SYMBOL LINES
   rule symbol_line do
-    's' ':' (space+ / symbol_skip / chord_annotation / annotation / decoration )+ <SymbolLine>
+    's' ':' (field_space+ / symbol_skip / chord_annotation / annotation / decoration )+ <SymbolLine>
   end
 
   rule symbol_skip do

@@ -300,7 +300,7 @@ describe "abc 2.1" do
 
   # TODO move this to proper section
   describe "information field continuation" do
-    it "combines string-based lines with '+:'" do
+    it "combines string-based fields with '+:'" do
       p = parse_fragment "H:let me tell you a little\n+:about this song"
       p.history.should == "let me tell you a little about this song"
     end
@@ -308,8 +308,11 @@ describe "abc 2.1" do
       p = parse_fragment "GCEA\nw:my dog\n+:has fleas"
       p.notes[3].lyric.text.should == "fleas"
     end
+    it "combines symbol lines with '+:'" do
+      p = parse_fragment "GCEA\ns:**\n+:*+f+"
+      p.notes[3].decorations[0].symbol.should == "f"
+    end
   end
-
 
 
   # 2.3.1 Embedded abc fragment
