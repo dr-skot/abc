@@ -367,5 +367,23 @@ describe "abc 2.1" do
     end
   end
 
+
+  # 3. Information fields
+  # Any line beginning with a letter in the range A-Z or a-z and immediately followed by a colon (:) is an information field. Information fields are used to notate things such as composer, meter, etc. In fact anything that isn't music.
+  # An information field may also be inlined in a tune body when enclosed by [ and ] - see use of fields within the tune body.
+  # Many of these information field identifiers are currently unused so, in order to extend the number of information fields in the future, programs that comply with this standard must ignore the occurrence of information fields not defined here (although they should give a non-fatal error message to warn the user, in case the field identifier is an error or is unsupported).
+  # Some information fields are permitted only in the file or tune header and some only in the tune body, while others are allowed in both locations. information field identifiers A-G, X-Z and a-g, x-z are not permitted in the body to avoid confusion with note symbols, rests and spacers.
+  # Users who wish to use abc notation solely for transcribing (rather than documenting) tunes can ignore most of the information fields. For this purpose all that is really needed are the X:(reference number), T:(title), M:(meter), L:(unit note length) and K:(key) information fields, plus if applicable C:(composer) and w: or W: (words/lyrics, respectively within or after the tune).
+  # Recommendation for newcomers: A good way to find out how to use the fields is to look at the example files, sample abc tunes (in particular English.abc), and try out some examples.
+  # The information fields are summarised in the following table and discussed in description of information fields and elsewhere.
+  # The table illustrates how the information fields may be used in the tune header and whether they may also be used in the tune body (see use of fields within the tune body for details) or in the file header (see abc file structure).
+  
+  describe "information field" do
+    it "can have an unrecognized identifier" do
+      p = parse "J:unknown field\n\nX:1\nT:T\nK:C"
+    end
+
+  end
+
 end
 

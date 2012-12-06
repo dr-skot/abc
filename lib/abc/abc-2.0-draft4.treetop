@@ -51,7 +51,7 @@ grammar ABC do
   rule tune_header do
     refnum_field line_ender
     title_field line_ender
-    (info_field / header_field)* 
+    (extended_info_field / header_field)* 
       key_field line_ender <TuneHeader>
   end
 
@@ -64,7 +64,7 @@ grammar ABC do
 
   # TODO allow stylesheet directives
   rule file_header do
-    comment_line* file_field+ <FileHeader>
+    comment_line* (file_header_field line_ender)+ <FileHeader>
   end
 
 
@@ -173,15 +173,15 @@ grammar ABC do
   end
 
   rule music_line_break do
-     '' line_ender <TuneLineBreak> {
-       def hard?
-         false
-       end
-     }
+    '' line_ender <TuneLineBreak> {
+      def hard?
+        false
+      end
+    }
   end
 
   rule music_line_continuation do
-     '\\' line_ender
+    '\\' line_ender
   end
 
 
@@ -209,6 +209,69 @@ grammar ABC do
     '' (header_field* key_field line_ender / header_field+) <TuneHeader>
   end
 
+
+  # 3. Information fields
+  # Any line beginning with a letter in the range A-Z or a-z and immediately followed by a colon (:) is an information field. Information fields are used to notate things such as composer, meter, etc. In fact anything that isn't music.
+  # An information field may also be inlined in a tune body when enclosed by [ and ] - see use of fields within the tune body.
+  # Many of these information field identifiers are currently unused so, in order to extend the number of information fields in the future, programs that comply with this standard must ignore the occurrence of information fields not defined here (although they should give a non-fatal error message to warn the user, in case the field identifier is an error or is unsupported).
+  # Some information fields are permitted only in the file or tune header and some only in the tune body, while others are allowed in both locations. information field identifiers A-G, X-Z and a-g, x-z are not permitted in the body to avoid confusion with note symbols, rests and spacers.
+  # Users who wish to use abc notation solely for transcribing (rather than documenting) tunes can ignore most of the information fields. For this purpose all that is really needed are the X:(reference number), T:(title), M:(meter), L:(unit note length) and K:(key) information fields, plus if applicable C:(composer) and w: or W: (words/lyrics, respectively within or after the tune).
+  # Recommendation for newcomers: A good way to find out how to use the fields is to look at the example files, sample abc tunes (in particular English.abc), and try out some examples.
+  # The information fields are summarised in the following table and discussed in description of information fields and elsewhere.
+  # The table illustrates how the information fields may be used in the tune header and whether they may also be used in the tune body (see use of fields within the tune body for details) or in the file header (see abc file structure).
+  
+  rule any_field do
+    special_field / string_field
+  end
+
+  rule special_field do
+    instruction_field / key_field / unit_note_length_field / meter_field / macro_field / parts_field / tempo_field / symbol_line / user_defined_field / lyrics_field / refnum_field
+  end
+
+  rule string_field do
+    label:[A-Za-z] ':' content:string_field_content <Field>
+  end
+
+  rule file_header_field_excludes do
+    [KPQsTVWwX]
+  end
+
+  rule tune_header_field_excludes do
+    [swXK]
+  end
+
+  rule tune_body_field_exludes do
+    [A-a-gX-Zx-zHOS]
+  end
+  
+  rule inline_field_excludes do
+    [A-a-gX-Zx-zHOSsTWw]
+  end
+
+  rule file_header_field do
+    !file_header_field_excludes any_field
+  end
+
+  rule other_file_field do
+    # M already found by earlier rule
+    label:[ABCDFGHImNORrSTUZ] ':' content:string_field_content <Field>
+  end
+
+
+  rule tune_header_field do
+    !tune_header_field_excludes any_field
+  end
+
+  rule tune_body_field do
+    !tune_body_field_excludes any_field
+  end
+
+  rule inline_field do
+    # TODO info field needs to terminate at ']'
+    '[' !inline_field_excludes any_field ']'
+  end
+  
+
   # 3.1.1 X: - reference number
   # The X: (reference number) field is used to assign to each tune within a tunebook a unique reference number (a positive integer), for example: X:23.
   # The X: field is also used to indicate the start of the tune (and hence the tune header), so all tunes must start with an X: field and only one X: field is allowed per tune.
@@ -220,43 +283,61 @@ grammar ABC do
   end
 
   rule title_field do
-     label:'T' ':' content:string_field_content <Field>
+    label:'T' ':' content:string_field_content <Field>
   end
 
 
-   # 3.3 Field continuation
-   # A field that is too long for one line may be continued by prefixing +: at the start of the following line. For string-type information fields (see the information fields table for a list of string-type fields), the continuation is considered to add a space between the two half lines.
-   # Example: The following two excerpts are considered equivalent.
-   # w:Sa-ys my au-l' wan to your aul' wan,
-   # +:will~ye come to the Wa-x-ies dar-gle?
-   # w:Sa-ys my au-l' wan to your aul' wan, will~ye come to the Wa-x-ies dar-gle?
-   # Comment: This is most useful for continuing long w:(aligned lyrics) and H:(history) fields. However, it can also be useful for preventing automatic wrapping by email software (see continuation of input lines).
-   # Recommendation for GUI developers: Sometimes users may wish to paste paragraphs of text into an abc file, particularly in the H:(history) field. GUI developers are recommended to provide tools for reformatting such paragraphs, for example by splitting them into several lines each prefixed by +:.
-   # There is no limit to the number of times a field may be continued and comments and stylesheet directives may be interspersed between the continuations.
-   # Example: The following is a legal continuation of the w: field, although the usage not recommended (the change of font could also be achieved by font specifiers - see font directives).
-   # %%vocalfont Times-Roman 14
-   # w:nor-mal
-   # % legal, but not recommended
-   # %%vocalfont Times-Italic *
-   # +:i-ta-lic
-   # %%vocalfont Times-Roman *
-   # +:nor-mal
+  rule instruction_field do
+    'not implemented'
+  end
 
-   rule field_space do
-     space / line_ender '+:'
-   end
+  rule macro_field do
+    'not implemented'
+  end
+
+  rule parts_field do
+    'not implemented'
+  end
+
+  rule user_defined_field do
+    'not implemented'
+  end
+
+
+
+  # 3.3 Field continuation
+  # A field that is too long for one line may be continued by prefixing +: at the start of the following line. For string-type information fields (see the information fields table for a list of string-type fields), the continuation is considered to add a space between the two half lines.
+  # Example: The following two excerpts are considered equivalent.
+  # w:Sa-ys my au-l' wan to your aul' wan,
+  # +:will~ye come to the Wa-x-ies dar-gle?
+  # w:Sa-ys my au-l' wan to your aul' wan, will~ye come to the Wa-x-ies dar-gle?
+  # Comment: This is most useful for continuing long w:(aligned lyrics) and H:(history) fields. However, it can also be useful for preventing automatic wrapping by email software (see continuation of input lines).
+  # Recommendation for GUI developers: Sometimes users may wish to paste paragraphs of text into an abc file, particularly in the H:(history) field. GUI developers are recommended to provide tools for reformatting such paragraphs, for example by splitting them into several lines each prefixed by +:.
+  # There is no limit to the number of times a field may be continued and comments and stylesheet directives may be interspersed between the continuations.
+  # Example: The following is a legal continuation of the w: field, although the usage not recommended (the change of font could also be achieved by font specifiers - see font directives).
+  # %%vocalfont Times-Roman 14
+  # w:nor-mal
+  # % legal, but not recommended
+  # %%vocalfont Times-Italic *
+  # +:i-ta-lic
+  # %%vocalfont Times-Roman *
+  # +:nor-mal
+
+  rule field_space do
+    space / line_ender '+:'
+  end
   
-   rule string_field_content do
-     start:(!line_ender .)+ extra:(line_ender '+:' content:string_field_content)? {
-       def value
-         if extra.empty?
-           start.text_value
-         else
-           start.text_value + ' ' + extra.content.value
-         end
-       end
-     }
-   end
+  rule string_field_content do
+    start:(!line_ender .)+ extra:(line_ender '+:' content:string_field_content)? {
+      def value
+        if extra.empty?
+          start.text_value
+        else
+          start.text_value + ' ' + extra.content.value
+        end
+      end
+    }
+  end
 
   # FIELDS
 
@@ -273,16 +354,11 @@ grammar ABC do
   end
 
   rule raw_body_field do
-     symbol_line / meter_field / tempo_field / unit_length_field / key_field / lyrics_field / voice_inline_field / other_body_field
+    symbol_line / meter_field / tempo_field / unit_length_field / key_field / lyrics_field / voice_inline_field / other_body_field
   end
 
   # TODO: don't fail to parse unrecognized fields
   # but enforce fields not allowed in one or other section...
-
-  rule other_file_field do
-    # M already found by earlier rule
-    label:[ABCDFGHImNORrSTUZ] ':' content:string_field_content <Field>
-  end
 
   rule other_header_field do
     # KMLQV already found by earlier rule
@@ -334,6 +410,9 @@ grammar ABC do
 
   # UNIT LENGTH FIELD
 
+  rule unit_note_length_field do
+    unit_length_field
+  end
   rule unit_length_field do
     label:'L' ':' content:((num:digit+ "/" denom:digit+) / digit+) <Field> {
       def value
@@ -346,7 +425,7 @@ grammar ABC do
     }
   end
 
- 
+  
   # TEMPO FIELD
 
   rule tempo_field do
@@ -472,48 +551,48 @@ grammar ABC do
 
   rule key do
     tonic:([A-G] [\#b]?) 
-    mode:(space* value:mode?) 
-    extra:(space* items:key_accidental*) 
-    clef:(space* node:clef?) {  # TODO should't this be space+?
-      def tonic
-        super.text_value if super
-      end
-      def mode
-        super.value.text_value if super.value
-      end
-      def extra_accidentals
-        result = {}
-        extra.items.elements.each do |acc|
-          result[acc.note_letter] = acc.accidental.value
-        end
-        result
-      end
-      def clef
-        super.node.clef unless super.node.empty?
-      end
-      def key
-        if !@key
-          @key = Key.new tonic, mode, extra_accidentals
-          @key.clef = clef if clef
-        end
-        @key
-      end
-    }
-  end
+                  mode:(space* value:mode?) 
+                  extra:(space* items:key_accidental*) 
+                  clef:(space* node:clef?) {  # TODO should't this be space+?
+                    def tonic
+                      super.text_value if super
+                    end
+                    def mode
+                      super.value.text_value if super.value
+                    end
+                    def extra_accidentals
+                      result = {}
+                      extra.items.elements.each do |acc|
+                        result[acc.note_letter] = acc.accidental.value
+                      end
+                      result
+                    end
+                    def clef
+                      super.node.clef unless super.node.empty?
+                    end
+                    def key
+                      if !@key
+                        @key = Key.new tonic, mode, extra_accidentals
+                        @key.clef = clef if clef
+                      end
+                      @key
+                    end
+                  }
+                end
 
-  # maj min m ion aeo mix dor phr lyd loc
-  # a bit ugly here because no case-insensitivity support in treetop
-  rule mode do
-    ( [mM] [aA] [jJ] /
-      [mM] [iI] [nN] /
-      [iI] [oO] [nN] /
-      [aA] [eE] [oO] /
-      [mM] [iI] [xX] /
-      [dD] [oO] [rR] /
-      [pP] [hH] [rR] /
-      [lL] [yY] [dD] /
-      [lL] [oO] [cC] )
-    [A-Za-z]* / 'm' ![A-Za-z]
+                # maj min m ion aeo mix dor phr lyd loc
+                # a bit ugly here because no case-insensitivity support in treetop
+                rule mode do
+                  ( [mM] [aA] [jJ] /
+                    [mM] [iI] [nN] /
+                    [iI] [oO] [nN] /
+                    [aA] [eE] [oO] /
+                    [mM] [iI] [xX] /
+                    [dD] [oO] [rR] /
+                    [pP] [hH] [rR] /
+                    [lL] [yY] [dD] /
+                    [lL] [oO] [cC] )
+                  [A-Za-z]* / 'm' ![A-Za-z]
   end
 
   rule key_accidental do
@@ -527,8 +606,8 @@ grammar ABC do
   # "3.3 Extended information fields"
   # "They start with the characters %%, possibly followed by spaces, after which the name
   #  of the field follows, followed by a space and the contents of the field."
-  rule info_field do
-    '%%' space* label:info_field_name space+ value:(!end_of_line .)+ end_of_line <InfoField> {
+  rule extended_info_field do
+    '%%' space* label:extended_info_field_name space+ value:(!end_of_line .)+ end_of_line <InfoField> {
       def label
         super.text_value
       end
@@ -539,7 +618,7 @@ grammar ABC do
   end
 
   # not specified in the draft, but seems to be alphanumeric plus hyphen
-  rule info_field_name do
+  rule extended_info_field_name do
     # "abc-copyright" / "abc-version" / "abc-creator" / "abc-charset" / "abc-include" / "abc-edited-by" / "score"
     [A-Za-z\-_]+
   end
@@ -572,28 +651,28 @@ grammar ABC do
        def hard?
          true
        end
-    }
-  end
-  
-  # "# $ * ; ? @
-  #  To ensure forward compatibility, current software should ignore these characters
-  #  when they appear inside or between note groups, possibly giving a warning."
-  #
-  # "Back quotes ` may be used freely between beamed notes to increase legibility. 
-  #  They are ignored by computer programs."
-  rule ignored_char do
-    "`" / "#" / "$" / "*" / "?" / "@" # TODO: issue warning?
-  end
+     }
+   end
+   
+   # "# $ * ; ? @
+   #  To ensure forward compatibility, current software should ignore these characters
+   #  when they appear inside or between note groups, possibly giving a warning."
+   #
+   # "Back quotes ` may be used freely between beamed notes to increase legibility. 
+   #  They are ignored by computer programs."
+   rule ignored_char do
+     "`" / "#" / "$" / "*" / "?" / "@" # TODO: issue warning?
+   end
 
-  # need to keep track of this to figure out beaming
-  rule tune_space do
-    space+ <TuneSpace>
-  end
-  
-  # NOTES AND RESTS
+   # need to keep track of this to figure out beaming
+   rule tune_space do
+     space+ <TuneSpace>
+   end
+   
+   # NOTES AND RESTS
 
-  rule notelike_thing do
-    grace_note_and_or_broken_rhythm? space* chord_annotation:chord_annotation? space* modifiers:(node:(annotation / decoration) space*)* stroke:stroke <NoteOrRest> {
+   rule notelike_thing do
+     grace_note_and_or_broken_rhythm? space* chord_annotation:chord_annotation? space* modifiers:(node:(annotation / decoration) space*)* stroke:stroke <NoteOrRest> {
        def broken_rhythm_marker
          child(BrokenRhythm)
        end
@@ -621,87 +700,87 @@ grammar ABC do
        def notes
          stroke.notes if stroke.respond_to? :notes
        end
-    }
-  end
+     }
+   end
 
    rule grace_note_and_or_broken_rhythm do
      grace_note space* broken_rhythm? / broken_rhythm space* grace_note?
    end
- 
-  rule stroke do
+   
+   rule stroke do
      chord / note
-  end
+   end
 
-  rule note do
-    pitch note_length_node <Note>
-  end
+   rule note do
+     pitch note_length_node <Note>
+   end
 
-  rule pitch do
+   rule pitch do
      accidental:accidental? note_letter octave_shift <PitchNode> {
        def accidental
          super.value if !super.empty?
        end
      } 
-  end
-  
-  ## "The symbols '^', '=' and '_' are used (before a note) to notate respectively a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
-  rule accidental do
-    ("^^" / "^" / "__" / "_" / "=") '' {
-      def value
-        { "^^" => 2, "^" => 1, "=" => 0, "_" => -1, "__" => -2 }[text_value]
-      end
-    }
-  end
+   end
+   
+   ## "The symbols '^', '=' and '_' are used (before a note) to notate respectively a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
+   rule accidental do
+     ("^^" / "^" / "__" / "_" / "=") '' {
+       def value
+         { "^^" => 2, "^" => 1, "=" => 0, "_" => -1, "__" => -2 }[text_value]
+       end
+     }
+   end
 
-  rule note_letter do
-    [A-Ga-g] {
-      def octave
-        if text_value =~ /[AB]/
-          -1
-        elsif text_value =~ /[c-g]/
-          1
-        else
-          0
-        end
-      end
-    }
-  end
+   rule note_letter do
+     [A-Ga-g] {
+       def octave
+         if text_value =~ /[AB]/
+           -1
+         elsif text_value =~ /[c-g]/
+           1
+         else
+           0
+         end
+       end
+     }
+   end
 
-  # "Lower octaves are reached by using 2 commas, 3 commas and so on. 
-  #  Higher octaves are written using 2 apostrophes, 3 apostrophes and so on."
-  rule octave_shift do
-    ("'" / ",")* {
-      def value
-        text_value.count("'") - text_value.count(",")
-      end
-    }
-  end
+   # "Lower octaves are reached by using 2 commas, 3 commas and so on. 
+   #  Higher octaves are written using 2 apostrophes, 3 apostrophes and so on."
+   rule octave_shift do
+     ("'" / ",")* {
+       def value
+         text_value.count("'") - text_value.count(",")
+       end
+     }
+   end
 
-  rule rest do
-    note_rest / measure_rest
-  end
+   rule rest do
+     note_rest / measure_rest
+   end
 
-  rule note_rest do
-    [xz] note_length_node <Rest>
-  end
-  
-  rule measure_rest do
-    "Z" measure_count:digit+ <MeasureRest> {
-      attr_accessor :measure_length
-      def measure_count
-        super.text_value.to_i
-      end
-      def note_length
-        measure_length * measure_count if measure_length
-      end
-      def broken_rhythm_marker
-        nil
-      end
-    }
-  end
-  
-  rule note_length_node do
-    numerator:digit* denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
+   rule note_rest do
+     [xz] note_length_node <Rest>
+   end
+   
+   rule measure_rest do
+     "Z" measure_count:digit+ <MeasureRest> {
+       attr_accessor :measure_length
+       def measure_count
+         super.text_value.to_i
+       end
+       def note_length
+         measure_length * measure_count if measure_length
+       end
+       def broken_rhythm_marker
+         nil
+       end
+     }
+   end
+   
+   rule note_length_node do
+     numerator:digit* denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
       def numerator
         if !super || super.empty?
           1
@@ -759,189 +838,189 @@ grammar ABC do
   ## ABC parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of '|' (thin bar line), '[' or ']' (thick bar line), and ':' (dots). Ex: '|[|', '[|:::'.
 
   rule bar_line
-    repeat_before:':'* bar repeat_after:':'* variant_number:wholenum? <BarLine> {
-      def type
-        bar.type
-      end
-      def repeat_before
-        super.text_value.length
-      end
-      def repeat_after
-        super.text_value.length
-      end
-      def variant_number
-        super.value if !super.empty?
-      end
-    } /
+  repeat_before:':'* bar repeat_after:':'* variant_number:wholenum? <BarLine> {
+    def type
+      bar.type
+    end
+    def repeat_before
+      super.text_value.length
+    end
+    def repeat_after
+      super.text_value.length
+    end
+    def variant_number
+      super.value if !super.empty?
+    end
+  } /
     '::' <BarLine> {
-      def type
-        :thin
-      end
-      def repeat_before
-        1
-      end
-      def repeat_after
-        1
-      end
-    }
-  end
-  
-  rule bar do
-    ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
-      def type
-        bar_types = { 
-          '[|]' => :invisible,
-          '.|' => :dotted,
-          '||' => :double,
-          '[|' => :thick_thin,
-          '|]' => :thin_thick,
-          '|' => :thin,
-        }
-        bar_types[text_value]
-      end
-    }
-  end
+    def type
+      :thin
+    end
+    def repeat_before
+      1
+    end
+    def repeat_after
+      1
+    end
+  }
+end
+
+rule bar do
+  ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
+    def type
+      bar_types = { 
+        '[|]' => :invisible,
+        '.|' => :dotted,
+        '||' => :double,
+        '[|' => :thick_thin,
+        '|]' => :thin_thick,
+        '|' => :thin,
+      }
+      bar_types[text_value]
+    end
+  }
+end
 
 
-  ## 4.9. FIRST AND SECOND REPEATS
-  ## First and second repeats can be notated with the symbols [1 and [2, e.g.
-  ##   faf gfe|[1 dfe dBA:|[2 d2e dcB|].
-  ## When adjacent to bar lines, these can be shortened to |1 and :|2, but with regard to spaces
-  ##   | [1
-  ## is legal, while
-  ##   | 1
-  ## is not.
-  ## Thus, a tune with different ending for the first and second repeats has the general form:
-  ##   |:  common body of tune  |1  first ending  :|2  second ending  ||
-  ## Again, note that in many ABC files the |: will not be present.
+## 4.9. FIRST AND SECOND REPEATS
+## First and second repeats can be notated with the symbols [1 and [2, e.g.
+##   faf gfe|[1 dfe dBA:|[2 d2e dcB|].
+## When adjacent to bar lines, these can be shortened to |1 and :|2, but with regard to spaces
+##   | [1
+## is legal, while
+##   | 1
+## is not.
+## Thus, a tune with different ending for the first and second repeats has the general form:
+##   |:  common body of tune  |1  first ending  :|2  second ending  ||
+## Again, note that in many ABC files the |: will not be present.
 
-  # ** This is implemented by the repeat_number feature of bar_line, above, and by variant_ending, below
-
-
-  ## 4.10. VARIANT ENDINGS
-  ## In combination with P part notation, it is possible to notate more than two variant endings for a section that is to be repeated a number of times.
-  ## For example, if the header of the tune contains P:A4.B4 then parts A and B will each be played 4 times. To play a different ending each time, you could write in the tune:
-  ##    P:A
-  ##    <notes> | [1  <notes>  || [2 <notes> || [3 <notes> || [4 <notes> ||
-  ## The Nth ending starts with [N and ends with one of '||', ':|' '|]' or '[|'. You can also mark a section as being used for more than one ending e.g.
-  ##    [1,3 <notes> ||
-  ## plays on the 1st and 3rd endings and
-  ##    [1-3 <notes> ||
-  ## plays on endings 1, 2 and 3. In general, '[' can be followed by any list of numbers and ranges as long as it contains no spaces e.g.
-  ##    [1,3,5-7  <notes>  || [2,4,8 <notes> ||
-
-  # TODO implement variant endings
-  rule variant_ending do
-    '[' (range / wholenum) (',' (range / wholenum))* space+
-  end
-
-  ## 4.11. TIES AND SLURS
-  ## You can tie two notes together either across or within a bar with a '-' symbol, e.g. abc-|cba or abc-cba. More general slurs can be put in with () symbols. Thus (DEFG) puts a slur over the four notes. Spaces within a slur are OK, e.g. ( D E F G ) .
-  ## Slurs may be nested:
-  ##   (c (d e f) g a)
-  ## and they may also start and end on the same note:
-  ##   (c d (e) f g a)
-  ## An unnested slur on a singe note, e.g. |c d (e) f g a| is legal, but will be ignored.
-  ## A dotted slur may be notated by preceding the opening brace with a dot, e.g. .(cde); it is optional to dot the closing brace. Likewise, a dotted tie can be transcribed by preceding it with a dot, e.g. C.-C. This is especially useful in parts with multiple verses: some verses may require a slur, some may not.
-  ## It should be noted that although the tie '-' and slur '()' produce similar symbols in staff notation they have completely different meanings to player programs and should not be interchanged. Ties connect two successive notes of the same pitch, causing them to be played as a single note, while slurs connect the first and last note of any series of notes, and may be used to indicate phrasing, or that the group should be played legato. Both ties and slurs may be used into, out of and between chords, and in this case the distinction between them is particularly important.
-
-  rule tie do
-    '-' <Tie>
-  end
-
-  rule slur do
-    ('(' / ')') '' <Slur> {
-      def start_slur
-        text_value == '('
-      end
-      def end_slur
-        text_value == ')'
-      end
-    }
-  end
-
-  ## 4.12. GRACE NOTES  
-  ## Grace notes can be written by enclosing them in curly braces, '{}'. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some packages may ignore them. The unit duration to use for gracenotes is not specified by the ABC file, but by the package, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
-  ## To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
-  # TODO implement this:
-  ## The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
-
-  rule grace_note do
-    '{' '/'? note (broken_rhythm? note)* '}'
-  end
-
-  # TODO allow broken rhythm notation inside gracenote brackets eg {a>b}
+# ** This is implemented by the repeat_number feature of bar_line, above, and by variant_ending, below
 
 
+## 4.10. VARIANT ENDINGS
+## In combination with P part notation, it is possible to notate more than two variant endings for a section that is to be repeated a number of times.
+## For example, if the header of the tune contains P:A4.B4 then parts A and B will each be played 4 times. To play a different ending each time, you could write in the tune:
+##    P:A
+##    <notes> | [1  <notes>  || [2 <notes> || [3 <notes> || [4 <notes> ||
+## The Nth ending starts with [N and ends with one of '||', ':|' '|]' or '[|'. You can also mark a section as being used for more than one ending e.g.
+##    [1,3 <notes> ||
+## plays on the 1st and 3rd endings and
+##    [1-3 <notes> ||
+## plays on endings 1, 2 and 3. In general, '[' can be followed by any list of numbers and ranges as long as it contains no spaces e.g.
+##    [1,3,5-7  <notes>  || [2,4,8 <notes> ||
 
-  # DUPLETS, TRIPLETS, QUADRUPLETS, ETC.
-  
-  ## These can be simply coded with the notation (2ab for a duplet, (3abc for a triplet or (4abcd for a quadruplet, etc, up to (9. The musical meanings are:
-  ## (2  2 notes in the time of 3
-  ## (3  3 notes in the time of 2
-  ## (4  4 notes in the time of 3
-  ## (5  5 notes in the time of n
-  ## (6  6 notes in the time of 2
-  ## (7  7 notes in the time of n
-  ## (8  8 notes in the time of 3
-  ## (9  9 notes in the time of n
-  ## If the time signature is compound (6/8, 9/8, 12/8) then n is three, otherwise n is two.
-  ## More general tuplets can be specified using the syntax (p:q:r which means 'put p notes into the time of q for the next r notes'. If q is not given, it defaults as above. If r is not given, it defaults to p. 
+# TODO implement variant endings
+rule variant_ending do
+  '[' (range / wholenum) (',' (range / wholenum))* space+
+end
 
-  rule tuplet_symbol do
-    '(' p:wholenum extra:(':' q:wholenum? extra:(':' r:wholenum?)?)? <TupletMarker> {
-      attr_accessor :compound_meter
-      def ratio
-        pval = p.value
-        if !extra.empty? && !extra.q.empty?
-          qval = extra.q.value
+## 4.11. TIES AND SLURS
+## You can tie two notes together either across or within a bar with a '-' symbol, e.g. abc-|cba or abc-cba. More general slurs can be put in with () symbols. Thus (DEFG) puts a slur over the four notes. Spaces within a slur are OK, e.g. ( D E F G ) .
+## Slurs may be nested:
+##   (c (d e f) g a)
+## and they may also start and end on the same note:
+##   (c d (e) f g a)
+## An unnested slur on a singe note, e.g. |c d (e) f g a| is legal, but will be ignored.
+## A dotted slur may be notated by preceding the opening brace with a dot, e.g. .(cde); it is optional to dot the closing brace. Likewise, a dotted tie can be transcribed by preceding it with a dot, e.g. C.-C. This is especially useful in parts with multiple verses: some verses may require a slur, some may not.
+## It should be noted that although the tie '-' and slur '()' produce similar symbols in staff notation they have completely different meanings to player programs and should not be interchanged. Ties connect two successive notes of the same pitch, causing them to be played as a single note, while slurs connect the first and last note of any series of notes, and may be used to indicate phrasing, or that the group should be played legato. Both ties and slurs may be used into, out of and between chords, and in this case the distinction between them is particularly important.
+
+rule tie do
+  '-' <Tie>
+end
+
+rule slur do
+  ('(' / ')') '' <Slur> {
+    def start_slur
+      text_value == '('
+    end
+    def end_slur
+      text_value == ')'
+    end
+  }
+end
+
+## 4.12. GRACE NOTES  
+## Grace notes can be written by enclosing them in curly braces, '{}'. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some packages may ignore them. The unit duration to use for gracenotes is not specified by the ABC file, but by the package, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
+## To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
+# TODO implement this:
+## The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
+
+rule grace_note do
+  '{' '/'? note (broken_rhythm? note)* '}'
+end
+
+# TODO allow broken rhythm notation inside gracenote brackets eg {a>b}
+
+
+
+# DUPLETS, TRIPLETS, QUADRUPLETS, ETC.
+
+## These can be simply coded with the notation (2ab for a duplet, (3abc for a triplet or (4abcd for a quadruplet, etc, up to (9. The musical meanings are:
+## (2  2 notes in the time of 3
+## (3  3 notes in the time of 2
+## (4  4 notes in the time of 3
+## (5  5 notes in the time of n
+## (6  6 notes in the time of 2
+## (7  7 notes in the time of n
+## (8  8 notes in the time of 3
+## (9  9 notes in the time of n
+## If the time signature is compound (6/8, 9/8, 12/8) then n is three, otherwise n is two.
+## More general tuplets can be specified using the syntax (p:q:r which means 'put p notes into the time of q for the next r notes'. If q is not given, it defaults as above. If r is not given, it defaults to p. 
+
+rule tuplet_symbol do
+  '(' p:wholenum extra:(':' q:wholenum? extra:(':' r:wholenum?)?)? <TupletMarker> {
+    attr_accessor :compound_meter
+    def ratio
+      pval = p.value
+      if !extra.empty? && !extra.q.empty?
+        qval = extra.q.value
+      else
+        # TODO raise error unless p is 2-9
+        qval = "  323n2n3n"[pval]
+        if qval != 'n'
+          qval = qval.to_i
+        elsif compound_meter
+          qval = 3
         else
-          # TODO raise error unless p is 2-9
-          qval = "  323n2n3n"[pval]
-          if qval != 'n'
-            qval = qval.to_i
-          elsif compound_meter
-            qval = 3
-          else
-            qval = 2
-          end
-        end
-        Rational(qval, pval);
-      end
-      def num_notes
-        if !extra.empty? && !extra.extra.empty? && !extra.extra.r.empty?
-          extra.extra.r.value
-        else
-          p.value
+          qval = 2
         end
       end
-    }
-  end
-
-  # DECORATIONS
-
-  ## Staccato marks (a small dot above or below the note head) can be notated by a dot before the note, i.e. a staccato triplet is written as (3.a.b.c
-  ## For fiddlers, the letters u and v can be used to denote up-bow and down-bow, e.g. vAuBvA
-  ## Other common symbols are available such as
-  ##   ~       Irish roll
-  ##   T       trill
-  ##   H       fermata
-  ##   L       accent or emphasis
-  ##   M       lowermordent
-  ##   P       uppermordent
-  ##   S       segno
-  ##   O       coda
-  ## However these characters (~.uvTHLMPSO) are just short cuts for commonly used decorations and can even be redefined (see section Redefinable symbols). More generally, symbols can be entered using the syntax +symbol+, e.g. +trill+A4 for a trill symbol (tr).
-  rule decoration do
-    '+' label:[^+]+ '+' <SymbolUnit> {
-      def type
-        :decoration
+      Rational(qval, pval);
+    end
+    def num_notes
+      if !extra.empty? && !extra.extra.empty? && !extra.extra.r.empty?
+        extra.extra.r.value
+      else
+        p.value
       end
-      def symbol
-        label.text_value
-      end
-    }
-    /
+    end
+  }
+end
+
+# DECORATIONS
+
+## Staccato marks (a small dot above or below the note head) can be notated by a dot before the note, i.e. a staccato triplet is written as (3.a.b.c
+## For fiddlers, the letters u and v can be used to denote up-bow and down-bow, e.g. vAuBvA
+## Other common symbols are available such as
+##   ~       Irish roll
+##   T       trill
+##   H       fermata
+##   L       accent or emphasis
+##   M       lowermordent
+##   P       uppermordent
+##   S       segno
+##   O       coda
+## However these characters (~.uvTHLMPSO) are just short cuts for commonly used decorations and can even be redefined (see section Redefinable symbols). More generally, symbols can be entered using the syntax +symbol+, e.g. +trill+A4 for a trill symbol (tr).
+rule decoration do
+  '+' label:[^+]+ '+' <SymbolUnit> {
+    def type
+      :decoration
+    end
+    def symbol
+      label.text_value
+    end
+  }
+  /
     [.~H-Wh-w] {
       attr_accessor :user_defined_symbols
       def user_defined_symbols
@@ -1012,7 +1091,7 @@ grammar ABC do
     [A-G] 
     ('b' / '#')? 
     ('m' / 'min' / 'maj' / 'dim' / 'aug' / '+' / 'sus' / wholenum / space)*
-    ('/' [A-Ga-g])?
+      ('/' [A-Ga-g])?
   end
 
 
@@ -1085,180 +1164,180 @@ grammar ABC do
   # SYMBOL LINES
   rule symbol_line do
     's' ':' (field_space+ / symbol_skip / chord_annotation / annotation / decoration )+ <SymbolLine>
-  end
+    end
 
-  rule symbol_skip do
-    ('*' / '|') '' <SymbolUnit> {
-      def skip
-        if text_value == '*'
-          :note
-        else
-          :bar
+    rule symbol_skip do
+      ('*' / '|') '' <SymbolUnit> {
+        def skip
+          if text_value == '*'
+            :note
+          else
+            :bar
+          end
         end
-      end
-    }
-  end
+      }
+    end
 
 
-  ## 6. CLEFS
-  ## A clef line specification may be provided in K: and V: fields. The general syntax is:
-  ##   [clef=]<clef name>[<line number>][+8 | -8]
-  ##     [middle=<pitch>] [transpose=<semitones>]
-  ##     [stafflines=<lines>]
+    ## 6. CLEFS
+    ## A clef line specification may be provided in K: and V: fields. The general syntax is:
+    ##   [clef=]<clef name>[<line number>][+8 | -8]
+    ##     [middle=<pitch>] [transpose=<semitones>]
+    ##     [stafflines=<lines>]
 
-  rule clef_transpose do
-    ('transpose'/'t') '=' transpose:integer {
-      def set_clef_opts(opts)
-        opts[:transpose] = transpose.value 
-      end
-    }
-  end
+    rule clef_transpose do
+      ('transpose'/'t') '=' transpose:integer {
+        def set_clef_opts(opts)
+          opts[:transpose] = transpose.value 
+        end
+      }
+    end
 
-  rule clef_stafflines do
-    'stafflines' '=' stafflines:wholenum {
-      def set_clef_opts(opts)
-        opts[:stafflines] = stafflines.value 
-      end
-    }
-  end
+    rule clef_stafflines do
+      'stafflines' '=' stafflines:wholenum {
+        def set_clef_opts(opts)
+          opts[:stafflines] = stafflines.value 
+        end
+      }
+    end
 
-  rule clef_name do
-    'clef='? name:[a-zA-Z]+ line_number:wholenum? octave:('+8'/'-8')? {
-      def set_clef_opts(opts)
-        opts[:name] = name.text_value
-        opts[:line_number] = line_number.value unless line_number.empty? 
-        opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
-      end
-    }
-  end
+    rule clef_name do
+      'clef='? name:[a-zA-Z]+ line_number:wholenum? octave:('+8'/'-8')? {
+        def set_clef_opts(opts)
+          opts[:name] = name.text_value
+          opts[:line_number] = line_number.value unless line_number.empty? 
+          opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
+        end
+      }
+    end
 
-  rule clef_middle do
-    ('middle'/'m') '=' middle:pitch {
+    rule clef_middle do
+      ('middle'/'m') '=' middle:pitch {
         def set_clef_opts(opts)
           opts[:middle] = middle
         end
-    }
-  end
+      }
+    end
 
-  rule clef_app_specific do
+    rule clef_app_specific do
       app:alphanum+ ':' field:alphanum+ '=' value:alphanum+ {
         def set_clef_opts(opts)
           # TODO pass this data to the clef object
         end
       }
-  end
+    end
 
-  rule clef_specifier do
-    clef_transpose / clef_stafflines / clef_middle / clef_app_specific / clef_name
-  end
+    rule clef_specifier do
+      clef_transpose / clef_stafflines / clef_middle / clef_app_specific / clef_name
+    end
 
-  rule clef do
-    first:clef_specifier extras:(space+ specifier:clef_specifier)* {
-      def clef
-        unless @clef
-          opts = {}
-          first.set_clef_opts(opts)
-          extras.elements.each do |node| 
-            node.specifier.set_clef_opts(opts)
+    rule clef do
+      first:clef_specifier extras:(space+ specifier:clef_specifier)* {
+        def clef
+          unless @clef
+            opts = {}
+            first.set_clef_opts(opts)
+            extras.elements.each do |node| 
+              node.specifier.set_clef_opts(opts)
+            end
+            @clef = Clef.new(opts)
           end
-          @clef = Clef.new(opts)
+          @clef
         end
-        @clef
-      end
-    }
-  end
+      }
+    end
 
-  # MULTIPLE VOICES
+    # MULTIPLE VOICES
 
-  rule voice_name do
-    ('name' / 'nm') '=' name:quoted_string {
+    rule voice_name do
+      ('name' / 'nm') '=' name:quoted_string {
         def set_voice_opts(opts)
           opts[:name] = name.value
         end
       }
-  end
+    end
 
-  rule voice_subname do
-    ('subname' / 'snm') '=' subname:quoted_string {
+    rule voice_subname do
+      ('subname' / 'snm') '=' subname:quoted_string {
         def set_voice_opts(opts)
           opts[:subname] = subname.value
         end
       }
-  end
-  
-  rule voice_stem do
-    'stem' '=' stem:('up' / 'down') {
+    end
+    
+    rule voice_stem do
+      'stem' '=' stem:('up' / 'down') {
         def set_voice_opts(opts)
           opts[:stem] = stem.text_value.to_sym
         end
       }
-  end
+    end
 
-  rule voice_specifier do
-    voice_name / voice_subname / voice_stem / clef_specifier
-  end
+    rule voice_specifier do
+      voice_name / voice_subname / voice_stem / clef_specifier
+    end
 
-  rule voice_header_field do
-    label:'V' ':' id:alphanum+ specifiers:(space+ specifier:voice_specifier)* <Field> {
-      def id
-        super.text_value[0..19] # first 20 chars only
-      end
-      def voice
-        opts = {}
-        specifiers.elements.each do |node|
-          node.specifier.set_voice_opts(opts) if node.specifier.respond_to?(:set_voice_opts)
+    rule voice_header_field do
+      label:'V' ':' id:alphanum+ specifiers:(space+ specifier:voice_specifier)* <Field> {
+        def id
+          super.text_value[0..19] # first 20 chars only
         end
-        v = Voice.new(id, opts)
-        v.clef = clef
-        v
-      end
-      def clef
-        unless @clef
+        def voice
           opts = {}
           specifiers.elements.each do |node|
-            node.specifier.set_clef_opts(opts) if node.specifier.respond_to?(:set_clef_opts)
+            node.specifier.set_voice_opts(opts) if node.specifier.respond_to?(:set_voice_opts)
           end
-          @clef = Clef.new(opts)
+          v = Voice.new(id, opts)
+          v.clef = clef
+          v
         end
-        @clef
-      end
-    }
+        def clef
+          unless @clef
+            opts = {}
+            specifiers.elements.each do |node|
+              node.specifier.set_clef_opts(opts) if node.specifier.respond_to?(:set_clef_opts)
+            end
+            @clef = Clef.new(opts)
+          end
+          @clef
+        end
+      }
+    end
+
+    rule voice_inline_field do
+      label:'V' ':' id:alphanum+ <Field> {
+        def id
+          super.text_value[0..19] # first 20 chars only
+        end
+      }
+    end
+
+    # VOICE OVERLAYS
+
+    rule overlay_delimiter do
+      '&' <OverlayDelimiter> 
+    end
+
+
+    # TODO find a better place for this
+    # TODO spacer should be a stroke in the note definition
+
+    rule spacer do
+      "y" <Spacer>
+    end
+
+    # BASICS
+
+    rule alphanum do
+      [A-Za-z0-9_\-]
+    end
+
+    rule abc_string do
+      (!line_ender .)* <ABCString>
+    end
+
+    rule digit do
+      [0-9]
+    end
+
   end
-
-  rule voice_inline_field do
-    label:'V' ':' id:alphanum+ <Field> {
-      def id
-        super.text_value[0..19] # first 20 chars only
-      end
-    }
-  end
-
-  # VOICE OVERLAYS
-
-  rule overlay_delimiter do
-    '&' <OverlayDelimiter> 
-  end
-
-
-  # TODO find a better place for this
-  # TODO spacer should be a stroke in the note definition
-
-  rule spacer do
-    "y" <Spacer>
-  end
-
-  # BASICS
-
-  rule alphanum do
-    [A-Za-z0-9_\-]
-  end
-
-  rule abc_string do
-    (!line_ender .)* <ABCString>
-  end
-
-  rule digit do
-    [0-9]
-  end
-
-end

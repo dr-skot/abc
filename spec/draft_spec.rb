@@ -151,8 +151,8 @@ describe "abc 2.0 draft 4" do
       p.items[3].pitch.height.should == 14 # d
     end
     it "ignores remarks in header lines" do
-      p = parse "T:Jingle Bells % jingle all the way y'all!\n\nX:1\nT:JB\nK:C"
-      p.title.should == "Jingle Bells"
+      p = parse "H:Jingle Bells % jingle all the way y'all!\n\nX:1\nT:JB\nK:C"
+      p.history.should == "Jingle Bells"
     end
     it "allows [r: remarks] in music" do
       p = parse_fragment "def [r: remarks] abc"

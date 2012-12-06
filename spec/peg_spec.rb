@@ -59,7 +59,7 @@ describe "abc-2.0-draft4 PEG" do
     end
     
     it "differentiates file header from tune header" do
-      p = parse "T:File\n\nX:1\nT:Tune\nK:C"
+      p = parse "H:File\n\nX:1\nT:Tune\nK:C"
       p.header.should_not == nil
       p.tunes.count.should == 1
       p.tunes[0].header.should_not == nil
