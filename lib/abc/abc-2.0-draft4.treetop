@@ -168,6 +168,21 @@ grammar ABC do
   # Note that, with the exception of abc music code, continuations are unlikely to be needed often. Indeed in most cases it should be possible, although not necessarily desirable, to write very long input lines, since most abc editing software will display them as wrapped within the text editor window.
   # Recommendation: Despite there being no limit on line length in abc files, it is recommended that users avoid writing abc code with very long lines. In particular, judiciously applied line-breaks can aid the (human) readability of abc code. More importantly, users who send abc tunes with long lines should be aware that email software sometimes introduces additional line-breaks into lines with more than 72 characters and these may even cause errors when the resulting tune is processed.
 
+  rule music_line_ender do
+    tune_space? (music_line_break / music_line_continuation)
+  end
+
+  rule music_line_break do
+     '' line_ender <TuneLineBreak> {
+       def hard?
+         false
+       end
+     }
+  end
+
+  rule music_line_continuation do
+     '\\' line_ender
+  end
 
 
   # 2.3.1 Embedded abc fragment
@@ -201,15 +216,48 @@ grammar ABC do
   # Recommendation for developers: Software which writes abc files is recommended to offer users the possibility to manage X: field numbering automatically. GUI applications may even hide the X: field from users although they should always allow the user access to the raw abc file.
 
   rule refnum_field do
-    label:'X' ':' value:integer? <Field>
+    label:'X' ':' content:integer? <Field>
   end
 
   rule title_field do
-    label:'T' ':' value:(!line_ender .)+ <Field>
+     label:'T' ':' content:string_field_content <Field>
   end
 
 
+   # 3.3 Field continuation
+   # A field that is too long for one line may be continued by prefixing +: at the start of the following line. For string-type information fields (see the information fields table for a list of string-type fields), the continuation is considered to add a space between the two half lines.
+   # Example: The following two excerpts are considered equivalent.
+   # w:Sa-ys my au-l' wan to your aul' wan,
+   # +:will~ye come to the Wa-x-ies dar-gle?
+   # w:Sa-ys my au-l' wan to your aul' wan, will~ye come to the Wa-x-ies dar-gle?
+   # Comment: This is most useful for continuing long w:(aligned lyrics) and H:(history) fields. However, it can also be useful for preventing automatic wrapping by email software (see continuation of input lines).
+   # Recommendation for GUI developers: Sometimes users may wish to paste paragraphs of text into an abc file, particularly in the H:(history) field. GUI developers are recommended to provide tools for reformatting such paragraphs, for example by splitting them into several lines each prefixed by +:.
+   # There is no limit to the number of times a field may be continued and comments and stylesheet directives may be interspersed between the continuations.
+   # Example: The following is a legal continuation of the w: field, although the usage not recommended (the change of font could also be achieved by font specifiers - see font directives).
+   # %%vocalfont Times-Roman 14
+   # w:nor-mal
+   # % legal, but not recommended
+   # %%vocalfont Times-Italic *
+   # +:i-ta-lic
+   # %%vocalfont Times-Roman *
+   # +:nor-mal
+
+   rule field_space do
+     space / line_ender '+:'
+   end
   
+   rule string_field_content do
+     start:(!line_ender .)+ extra:(line_ender '+:' content:string_field_content)? {
+       def value
+         if extra.empty?
+           start.text_value
+         else
+           start.text_value + ' ' + extra.content.value
+         end
+       end
+     }
+   end
+
   # FIELDS
 
   rule file_field do
@@ -233,48 +281,30 @@ grammar ABC do
 
   rule other_file_field do
     # M already found by earlier rule
-    label:[ABCDFGHImNORrSTUZ] ':' value:(!line_ender .)+ <Field>
+    label:[ABCDFGHImNORrSTUZ] ':' content:string_field_content <Field>
   end
 
   rule other_header_field do
     # KMLQV already found by earlier rule
-    label:[ABCDFGHImNORRrSTUWXZ] ':' value:(!line_ender .)+ <Field>
+    label:[ABCDFGHImNORRrSTUWXZ] ':' content:string_field_content <Field>
   end
 
   rule other_body_field do
     # KMLQVw already found by earlier rule
-    label:[ImNRRrTUWw] ':' space* value:rest_of_tune_field <Field> {
-      def value
-        super.value
-      end
-    }
+    label:[ImNRRrTUWw] ':' space* content:rest_of_tune_field <Field>
   end
 
   rule rest_of_tune_field do
-    (!(line_ender/']'/'\\') .)+ {
-      def value
-        text_value
-      end
-    }
-  end
-
-  rule rest_of_tune_field2 do
-    line:(!(line_ender/']'/'\\') .)+ extra:('\\' line_ender recursive:rest_of_tune_field)? {
-      def value
-        result = line.text_value
-        result += extra.recursive.value unless extra.empty?
-        result
-      end
-    }
+    (!(line_ender/']'/'\\') .)+
   end
 
 
 
   # METER FIELD
   rule meter_field do
-    label:'M' ':' value:(fractional_meter / named_meter) <Field> {
+    label:'M' ':' content:(fractional_meter / named_meter) <Field> {
       def meter
-        value.meter
+        content.meter
       end
     }
   end
@@ -305,12 +335,12 @@ grammar ABC do
   # UNIT LENGTH FIELD
 
   rule unit_length_field do
-    label:'L' ':' value:((num:digit+ "/" denom:digit+) / digit+) <Field> {
+    label:'L' ':' content:((num:digit+ "/" denom:digit+) / digit+) <Field> {
       def value
-        if super.respond_to? :num
-          Rational(super.num.text_value.to_i, super.denom.text_value.to_i)
+        if content.respond_to? :num
+          Rational(content.num.text_value.to_i, content.denom.text_value.to_i)
         else
-          Rational(super.text_value.to_i, 1)
+          Rational(content.text_value.to_i, 1)
         end
       end    
     }
@@ -320,12 +350,12 @@ grammar ABC do
   # TEMPO FIELD
 
   rule tempo_field do
-    label:'Q' ':' value_node:tempo_field_value <Field> {
+    label:'Q' ':' content:tempo_field_value <Field> {
       def value
         v = Tempo.new
-        v.beat_parts = value_node.beat_parts
-        v.bpm = value_node.bpm
-        v.label = value_node.label
+        v.beat_parts = content.beat_parts
+        v.bpm = content.bpm
+        v.label = content.label
         v
       end
     }
@@ -429,12 +459,12 @@ grammar ABC do
   # KEY
 
   rule key_field do
-    label:'K' ':' value:(key/"none") <Field> {
+    label:'K' ':' content:(key/"none") <Field> {
       def key
-        if value.text_value == "none"
+        if content.text_value == "none"
           Key::NONE
         else
-          value.key
+          content.key
         end
       end
     }
@@ -528,22 +558,6 @@ grammar ABC do
 
   rule music_line do
     (tune_space? tune_element)+ music_line_ender
-  end
-
-  rule music_line_ender do
-    tune_space? (music_line_break / music_line_continuation)
-  end
-
-  rule music_line_break do
-     '' line_ender <TuneLineBreak> {
-       def hard?
-         false
-       end
-     }
-  end
-
-  rule music_line_continuation do
-     '\\' line_ender
   end
 
 
@@ -1027,7 +1041,7 @@ grammar ABC do
   # LYRICS
 
   rule lyrics_field do
-    label:'w' ':' space* lyrics <LyricsLine> {
+    label:'w' ':' (field_space* lyric_unit)+ <LyricsLine> {
       def units
         children(LyricUnit)
       end
@@ -1037,12 +1051,8 @@ grammar ABC do
     }
   end
 
-  rule lyrics do
-    lyric_unit+
-  end
-
   rule lyric_unit do
-    word:("\\-" / [^ _\-\*\|\n])+ hyphen:(space? '-'+)? stretch:'_'* space* <LyricUnit> {
+    word:("\\-" / [^ _\-\*\|\n])+ hyphen:(space? '-'+)? stretch:'_'* <LyricUnit> {
       attr_reader :skip
       def text
         word.text_value.gsub('\\-', '-').gsub('~', ' ')

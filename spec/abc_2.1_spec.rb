@@ -296,10 +296,17 @@ describe "abc 2.1" do
       p.lines.count.should == 2
       p.lines[1].items[0].is_a?(Field).should == true
     end
-    it "recognizes lyrics" do
-      p = parse_fragment "abc\nw:my dog has\n"
-      p.lines.count.should == 1
-      # p.items[].is_a?(LyricsLine).should == true
+  end
+
+  # TODO move this to proper section
+  describe "information field continuation" do
+    it "combines string-based lines with '+:'" do
+      p = parse_fragment "H:let me tell you a little\n+:about this song"
+      p.history.should == "let me tell you a little about this song"
+    end
+    it "combines lyric lines with '+:'" do
+      p = parse_fragment "GCEA\nw:my dog\n+:has fleas"
+      p.notes[3].lyric.text.should == "fleas"
     end
   end
 

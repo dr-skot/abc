@@ -204,11 +204,11 @@ module ABC
     end
     # returns the values for all headers whose labels match regex
     def values(regex)
-      fields(regex).map { |f| f.value.text_value }
+      fields(regex).map { |f| f.value }
     end
     def value(regex)
       if (f = field(regex))
-        f.value.text_value
+        f.value
       else
         nil
       end
@@ -221,6 +221,15 @@ module ABC
   # FIELDS
 
   class Field < ABCNode
+    def value
+      if content.respond_to? :value
+        content.value
+      elsif content.respond_to? :text_value
+        content.text_value
+      else
+        content
+      end
+    end
   end
 
   class InfoField < Field
