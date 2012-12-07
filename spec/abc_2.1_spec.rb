@@ -627,5 +627,44 @@ describe "abc 2.1" do
   end
 
 
+  # 3.1.9 P: - parts
+  # VOLATILE: For music with more than one voice, interaction between the P: and V: fields will be clarified when multi-voice music is addressed in abc 2.2. The use of P: for single voice music will be revisited at the same time.
+  # The P: field can be used in the tune header to state the order in which the tune parts are played, i.e. P:ABABCDCD, and then inside the tune body to mark each part, i.e. P:A or P:B. (In this context part refers to a section of the tune, rather than a voice in multi-voice music.)
+  # Within the tune header, you can give instruction to repeat a part by following it with a number: e.g. P:A3 is equivalent to P:AAA. You can make a sequence repeat by using parentheses: e.g. P:(AB)3 is equivalent to P:ABABAB. Nested parentheses are permitted; dots may be placed anywhere within the header P: field to increase legibility: e.g. P:((AB)3.(CD)3)2. These dots are ignored by computer programs.
+  # See variant endings and lyrics for possible uses of P: notation.
+  # Player programs should use the P: field if possible to render a complete playback of the tune; typesetting programs should include the P: field values in the printed score.
+# See typesetting information fields for details of how the part information may be included in the printed score.
+
+  describe "parts header field" do
+    it "can be a single part" do
+      p = parse_fragment "X:1\nP:A\nK:C\nabc"
+      p.parts.list.should == ['A']
+    end
+    it "can be two parts" do
+      p = parse_fragment "X:1\nP:AB\nK:C\nabc"
+      p.parts.list.should == ['A', 'B']
+    end
+    it "can be one part repeating" do
+      p = parse_fragment "X:1\nP:A3\nK:C\nabc"
+      p.parts.list.should == ['A', 'A', 'A']
+    end
+    it "can be two parts with one repeating" do
+      p = parse_fragment "X:1\nP:A2B\nK:C\nabc"
+      p.parts.list.should == ['A', 'A', 'B']
+    end
+    it "can be two parts repeating" do
+      p = parse_fragment "X:1\nP:(AB)3\nK:C\nabc"
+      p.parts.list.should == ['A', 'B', 'A', 'B', 'A', 'B']
+    end
+    it "can have nested repeats" do
+      p = parse_fragment "X:1\nP:(A2B)3\nK:C\nabc"
+      p.parts.list.join('').should == 'AABAABAAB'
+    end
+    it "can contain dots anywhere" do
+      p = parse_fragment "X:1\nP:.(.A.2.B.).3.\nK:C\nabc"
+      p.parts.list.join('').should == 'AABAABAAB'
+    end
+  end
+
 end
 

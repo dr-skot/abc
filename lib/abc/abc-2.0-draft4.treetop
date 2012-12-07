@@ -1,5 +1,6 @@
 # based on
 # http://abc.sourceforge.net/standard/abc2-draft.html
+# http://abcnotation.com/wiki/abc:standard:v2.1
 
 # TODO free text
 grammar ABC do
@@ -524,6 +525,33 @@ grammar ABC do
   end
 
 
+  # 3.1.9 P: - parts
+  # VOLATILE: For music with more than one voice, interaction between the P: and V: fields will be clarified when multi-voice music is addressed in abc 2.2. The use of P: for single voice music will be revisited at the same time.
+  # The P: field can be used in the tune header to state the order in which the tune parts are played, i.e. P:ABABCDCD, and then inside the tune body to mark each part, i.e. P:A or P:B. (In this context part refers to a section of the tune, rather than a voice in multi-voice music.)
+  # Within the tune header, you can give instruction to repeat a part by following it with a number: e.g. P:A3 is equivalent to P:AAA. You can make a sequence repeat by using parentheses: e.g. P:(AB)3 is equivalent to P:ABABAB. Nested parentheses are permitted; dots may be placed anywhere within the header P: field to increase legibility: e.g. P:((AB)3.(CD)3)2. These dots are ignored by computer programs.
+  # See variant endings and lyrics for possible uses of P: notation.
+  # Player programs should use the P: field if possible to render a complete playback of the tune; typesetting programs should include the P: field values in the printed score.
+# See typesetting information fields for details of how the part information may be included in the printed score.
+
+  rule parts_field do
+    label:'P' ':' value:parts <Field>
+  end
+
+  rule parts do
+    dots? ((parts_atom / parts_group) dots?)+ <Parts>
+  end
+
+  rule parts_atom do
+    part:[A-Z] dots? repeat_node:wholenum? <PartsAtom>
+  end
+
+  rule parts_group do
+    '(' parts ')' dots? repeat_node:wholenum? <PartsGroup>
+  end
+
+  rule dots do
+    '.'+
+  end
 
 
   rule instruction_field do
@@ -531,10 +559,6 @@ grammar ABC do
   end
 
   rule macro_field do
-    'not implemented'
-  end
-
-  rule parts_field do
     'not implemented'
   end
 
