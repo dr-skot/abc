@@ -120,7 +120,7 @@ describe "abc-2.0-draft4 PEG" do
         p.propagate_tunebook_header
         p.send(name).should == "File Header"
         p.tunes[0].send(name).should == "File Header"
-        p.tunes[1].send(name).should == "Tune Header\nagain"
+        p.tunes[1].send(name).should == ["Tune Header", "again"]
       end
     end
 

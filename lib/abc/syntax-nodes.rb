@@ -56,7 +56,7 @@ module ABC
 
   # these fields have unprocessed string values
   STRING_FIELDS = {
-    :author => /A/,
+    :area => /A/,
     :book => /B/,
     :composer => /C/,
     :disc => /D/,
@@ -117,10 +117,12 @@ module ABC
       return nil unless header
       if label
         values = header.values(label)
-        if values.count > 0 
-          values.join("\n")
-        else
+        if values.count == 0 
           master_node.field_value(label) if master_node
+        elsif values.count == 1
+          values[0]
+        else
+          values
         end
       end
     end
@@ -246,7 +248,11 @@ module ABC
     attr_accessor :free_text
     def refnum
       if header && (value = header.value(/X/))
-        value.to_i
+        if value == ""
+          nil # TODO should this default to 1?
+        else
+          value.to_i
+        end
       else
         1
       end

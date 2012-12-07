@@ -230,7 +230,7 @@ grammar ABC do
   end
 
   rule string_field_content do
-    start:(!line_ender .)+ extra:(line_ender '+:' content:string_field_content)? {
+    start:(!line_ender .)* extra:(line_ender '+:' content:string_field_content)? {
       def value
         if extra.empty?
           start.text_value

@@ -411,13 +411,70 @@ describe "abc 2.1" do
   # Comment: The above example should not generate an error message. The user may legitimately wish to test the effect of two such instructions; having them both makes switching from one to another easy just by changing their order.
   # Other instruction-type information fields in the tune header also override the previous occurrence of that field.
   # Within the tune body each line of code is processed in sequence. Therefore, with the exception of s:(symbol line), w:(words) and W:(words) which have their own syntax, the same information field may occur a number of times, for example to change key, meter, tempo or voice, and each occurrence has the effect of overriding the previous one, either for the remainder of the tune, or until the next occurrence. See use of fields within the tune body for more details.
-  # Order of information fields
-  # Recommendation for users: Although information fields in the tune header may be written in any order (subject to X:, T: and K: coming first, second and last, respectively), it does make sense for users to stick to a common ordering, if for no other reason than it makes public domain abc code more readable. Typical ordering of the tune header puts fundamental tune identification details first (X, T, C, O, R), with information fields relating to how the tune is played last (P, V, M, L, Q, K). Background information (B, D, F, G, H, N, S, Z) and information on how the abc code should be interpreted (I, m, U) then tends to appear in the middle of the tune header. Words (W) may be included in the tune header but are usually placed at the end of the tune body.
 
   describe "information field repeating" do
-    it "cannot be done with X field" do
+    it "indicates multiple values for string fields" do
+      p = parse "C:John Lennon\nC:Paul McCartney\n\nX:1\nT:\nK:C"
+      p.composer.should == ["John Lennon", "Paul McCartney"]
+    end
+    it "overrides previous value for meter fields" do
+      p = parse "M:C\nM:3/4\n\nX:1\nT:\nK:C"
+      p.meter.measure_length.should == Rational(3, 4)
+   end
+  end
+
+
+  # 3.1.1 X: - reference number
+  # The X: (reference number) field is used to assign to each tune within a tunebook a unique reference number (a positive integer), for example: X:23.
+  # The X: field is also used to indicate the start of the tune (and hence the tune header), so all tunes must start with an X: field and only one X: field is allowed per tune.
+  # The X: field may be empty, although this is not recommended.
+
+  describe "reference number field" do
+    it "cannot be repeated" do
       fail_to_parse "X:1\nT:Title\nX:2\nK:C"
       # TODO error message
+    end
+    it "must be an integer" do
+      fail_to_parse "X:one\nT:Title\nK:C"
+      # TODO error message
+    end
+    it "can be empty" do
+      p = parse "X:\nT:Title\nK:C"
+      p.tunes[0].refnum.should == nil
+    end
+  end
+
+
+  # 3.1.2 T: - tune title
+  # A T: (title) field must follow immediately after the X: field; it is the human identifier for the tune (although it may be empty).
+  # Some tunes have more than one title and so this field can be used more than once per tune to indicate alternative titles.
+  # The T: field can also be used within a tune to name parts of a tune - in this case it should come before any key or meter changes.
+  # See typesetting information fields for details of how the title and alternatives are included in the printed score.
+
+  describe "tune title" do
+    it "can be empty" do
+      p = parse "X:1\nT:\nK:C"
+      p.tunes[0].title.should == ""
+    end
+    it "can be repeated" do
+      p = parse "X:1\nT:T1\nT:T2\nK:C"
+      p.tunes[0].title.should == ["T1", "T2"]
+    end
+    it "can be used within a tune" do
+      p = parse "X:1\nT:T\nK:C\nT:Part1\nabc\nT:Part2\ndef"
+      p.tunes[0].items[0].is_a?(Field).should == true
+      p.tunes[0].items[0].value.should == "Part1"
+    end
+  end
+
+  # 3.1.3 C: - composer
+  # The C: field is used to indicate the composer(s).
+  # See typesetting information fields for details of how the composer is included in the printed score.
+
+  describe "composer field" do
+    it "is recognized" do
+      p = parse_fragment "C:Brahms"
+      p.composer.should == "Brahms"
     end
   end
 
