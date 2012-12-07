@@ -556,6 +556,71 @@ describe "abc 2.1" do
   end
 
 
+  # 3.1.7 L: - unit note length
+  # The L: field specifies the unit note length - the length of a note as represented by a single letter in abc - see note lengths for more details.
+  # Commonly used values for unit note length are L:1/4 - quarter note (crotchet), L:1/8 - eighth note (quaver) and L:1/16 - sixteenth note (semi-quaver). L:1 (whole note) - or equivalently L:1/1, L:1/2 (minim), L:1/32 (demi-semi-quaver), L:1/64, L:1/128, L:1/256 and L:1/512 are also available, although L:1/64 and shorter values are optional and may not be provided by all software packages.
+  # If there is no L: field defined, a unit note length is set by default, based on the meter field M:. This default is calculated by computing the meter as a decimal: if it is less than 0.75 the default unit note length is a sixteenth note; if it is 0.75 or greater, it is an eighth note. For example, 2/4 = 0.5, so, the default unit note length is a sixteenth note, while for 4/4 = 1.0, or 6/8 = 0.75, or 3/4= 0.75, it is an eighth note. For M:C (4/4), M:C| (2/2) and M:none (free meter), the default unit note length is 1/8.
+  # A meter change within the body of the tune will not change the unit note length.
+  
+  describe "L: (unit note length) field" do
+    it "knows its value" do
+      p = parse_fragment "L:1/4"
+      p.unit_note_length.should == Rational(1, 4)
+    end
+    it "accepts whole numbers" do
+      p = parse_fragment "L:1\nabc"
+      p.unit_note_length.should == 1
+    end
+    it "defaults to 1/16 if meter is less than 0.75" do
+      p = parse_fragment "M:74/100\n"
+      p.unit_note_length.should == Rational(1, 16)
+    end
+    it "defaults to 1/8 if meter is 0.75 or greater" do
+      p = parse_fragment "M:3/4\n"
+      p.unit_note_length.should == Rational(1, 8)
+    end
+  end
+
+
+  # 3.1.8 Q: - tempo
+  # The Q: field defines the tempo in terms of a number of beats per minute, e.g. Q:1/2=120 means 120 half-note beats per minute.
+  # There may be up to 4 beats in the definition, e.g:
+  # Q:1/4 3/8 1/4 3/8=40
+  # This means: play the tune as if Q:5/4=40 was written, but print the tempo indication using separate notes as specified by the user.
+  # The tempo definition may be preceded or followed by an optional text string, enclosed by quotes, e.g.
+  # Q: "Allegro" 1/4=120
+  # Q: 3/8=50 "Slowly"
+  # It is OK to give a string without an explicit tempo indication, e.g. Q:"Andante".
+  # Finally note that some previous Q: field syntax is now deprecated (see outdated information field syntax).
+
+  describe "Q: (tempo) field" do
+    it "can be of the simple form beat=bpm" do
+      p = parse_fragment "X:1\nQ:1/4=120"
+      p.tempo.beat_length.should == Rational(1, 4)
+      p.tempo.beat_parts.should == [Rational(1, 4)]
+      p.tempo.bpm.should == 120
+    end
+    it "can divide the beat into parts" do
+      p = parse_fragment "X:1\nQ:1/4 3/8 1/4 3/8=40"
+      p.tempo.beat_length.should == Rational(5, 4)
+      p.tempo.beat_parts.should == 
+        [Rational(1, 4), Rational(3, 8), Rational(1, 4), Rational(3, 8)]
+      p.tempo.bpm.should == 40
+    end
+    it "can take a label before the tempo indicator" do
+      p = parse_fragment "X:1\nQ:\"Allegro\" 1/4=120"
+      p.tempo.label.should == "Allegro"
+    end
+    it "can take a label after the tempo indicator" do
+      p = parse_fragment "X:1\nQ:3/8=50 \"Slowly\""
+      p.tempo.label.should == "Slowly"
+    end
+    it "can take a label without an explicit tempo indication" do
+      p = parse_fragment "Q:\"Andante\""
+      p.tempo.label.should == "Andante"
+    end    
+  end
+
 
 end
 

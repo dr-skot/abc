@@ -425,6 +425,112 @@ grammar ABC do
   end
 
 
+  # 3.1.7 L: - unit note length
+  # The L: field specifies the unit note length - the length of a note as represented by a single letter in abc - see note lengths for more details.
+  # Commonly used values for unit note length are L:1/4 - quarter note (crotchet), L:1/8 - eighth note (quaver) and L:1/16 - sixteenth note (semi-quaver). L:1 (whole note) - or equivalently L:1/1, L:1/2 (minim), L:1/32 (demi-semi-quaver), L:1/64, L:1/128, L:1/256 and L:1/512 are also available, although L:1/64 and shorter values are optional and may not be provided by all software packages.
+  # If there is no L: field defined, a unit note length is set by default, based on the meter field M:. This default is calculated by computing the meter as a decimal: if it is less than 0.75 the default unit note length is a sixteenth note; if it is 0.75 or greater, it is an eighth note. For example, 2/4 = 0.5, so, the default unit note length is a sixteenth note, while for 4/4 = 1.0, or 6/8 = 0.75, or 3/4= 0.75, it is an eighth note. For M:C (4/4), M:C| (2/2) and M:none (free meter), the default unit note length is 1/8.
+  # A meter change within the body of the tune will not change the unit note length.
+  
+  rule unit_note_length_field do
+    label:'L' ':' content:((num:digit+ "/" denom:digit+) / digit+) <Field> {
+      def value
+        if content.respond_to? :num
+          Rational(content.num.text_value.to_i, content.denom.text_value.to_i)
+        else
+          Rational(content.text_value.to_i, 1)
+        end
+      end    
+    }
+  end
+
+
+  # 3.1.8 Q: - tempo
+  # The Q: field defines the tempo in terms of a number of beats per minute, e.g. Q:1/2=120 means 120 half-note beats per minute.
+  # There may be up to 4 beats in the definition, e.g:
+  # Q:1/4 3/8 1/4 3/8=40
+  # This means: play the tune as if Q:5/4=40 was written, but print the tempo indication using separate notes as specified by the user.
+  # The tempo definition may be preceded or followed by an optional text string, enclosed by quotes, e.g.
+  # Q: "Allegro" 1/4=120
+  # Q: 3/8=50 "Slowly"
+  # It is OK to give a string without an explicit tempo indication, e.g. Q:"Andante".
+  # Finally note that some previous Q: field syntax is now deprecated (see outdated information field syntax).
+
+  rule tempo_field do
+    label:'Q' ':' content:tempo_field_content <Field> {
+      def value
+        @tempo ||= content.tempo
+      end
+    }
+  end
+  
+  rule tempo_field_content do
+    tempo_with_leading_label / tempo_with_trailing_label
+  end
+
+  rule tempo_with_leading_label do
+    label:quoted_string field_space* specifier:tempo_specifier? {
+      def tempo
+        if specifier.empty?
+          t = Tempo.new
+        else
+          t = specifier.tempo
+        end
+        t.label = label.value
+        t
+      end
+    }
+  end
+  
+  rule tempo_with_trailing_label do
+    tempo_specifier field_space* label:quoted_string? {
+      def tempo
+        t = tempo_specifier.tempo
+        t.label = label.value if label && !label.empty?
+        t
+      end
+    }
+  end
+  
+  rule tempo_label_only do
+    quoted_string {
+      def tempo
+        t = Tempo.new
+        t.label = value
+        t
+      end
+    }
+  end
+  
+  rule tempo_specifier do
+    beat_node:((rationals/'C') '=')? bpm_node:wholenum 
+    {
+      def tempo
+        t = Tempo.new
+        t.beat_parts = beat_parts
+        t.bpm = bpm
+        t
+      end
+      def beat_parts
+        if beat_node.empty?
+          nil
+        else        
+          b = beat_node.elements[0]
+          if b.text_value == 'C'
+            [ Rational(1, 4) ]
+          else
+            b.value
+          end
+        end
+      end
+      def bpm
+        bpm_node.value
+      end
+    }
+  end
+
+
+
+
   rule instruction_field do
     'not implemented'
   end
@@ -470,67 +576,7 @@ grammar ABC do
   # FIELDS
 
 
-  # UNIT LENGTH FIELD
-
-  rule unit_note_length_field do
-    unit_length_field
-  end
-  rule unit_length_field do
-    label:'L' ':' content:((num:digit+ "/" denom:digit+) / digit+) <Field> {
-      def value
-        if content.respond_to? :num
-          Rational(content.num.text_value.to_i, content.denom.text_value.to_i)
-        else
-          Rational(content.text_value.to_i, 1)
-        end
-      end    
-    }
-  end
-
-  
   # TEMPO FIELD
-
-  rule tempo_field do
-    label:'Q' ':' content:tempo_field_value <Field> {
-      def value
-        v = Tempo.new
-        v.beat_parts = content.beat_parts
-        v.bpm = content.bpm
-        v.label = content.label
-        v
-      end
-    }
-  end
-  
-  rule tempo_field_value do
-    label1:(label:quoted_string space+)? 
-    beat_node:((rationals/'C') '=')? bpm_node:wholenum 
-    label2:(space+ label:quoted_string)? 
-    {
-      def label
-        if !label2.empty?
-          label2.label.value
-        elsif !label1.empty?
-          label1.label.value
-        end
-      end
-      def beat_parts
-        if beat_node.empty?
-          nil
-        else        
-          b = beat_node.elements[0]
-          if b.text_value == 'C'
-            [ Rational(1, 4) ]
-          else
-            b.value
-          end
-        end
-      end
-      def bpm
-        bpm_node.value
-      end
-    }
-  end
 
   # TODO: deal with escaped " ?
   rule quoted_string do
