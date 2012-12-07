@@ -579,6 +579,11 @@ describe "abc 2.1" do
       p = parse_fragment "M:3/4\n"
       p.unit_note_length.should == Rational(1, 8)
     end
+    it "will not change note lengths when the meter changes in the tune" do
+      p = parse_fragment "M:3/4\nK:C\na\nM:2/4\nb"
+      p.notes[0].note_length.should == Rational(1, 8)
+      p.notes[1].note_length.should == Rational(1, 8)
+    end
   end
 
 

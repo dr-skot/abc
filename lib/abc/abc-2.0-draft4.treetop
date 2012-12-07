@@ -471,12 +471,12 @@ grammar ABC do
     label:quoted_string field_space* specifier:tempo_specifier? {
       def tempo
         if specifier.empty?
-          t = Tempo.new
+          Tempo.new(:label => label.value)
         else
           t = specifier.tempo
+          t.label = label.value
+          t
         end
-        t.label = label.value
-        t
       end
     }
   end
@@ -485,7 +485,7 @@ grammar ABC do
     tempo_specifier field_space* label:quoted_string? {
       def tempo
         t = tempo_specifier.tempo
-        t.label = label.value if label && !label.empty?
+        t.label = label.value if !label.empty?
         t
       end
     }
@@ -494,9 +494,7 @@ grammar ABC do
   rule tempo_label_only do
     quoted_string {
       def tempo
-        t = Tempo.new
-        t.label = value
-        t
+        Tempo.new(:label => value)
       end
     }
   end
@@ -505,10 +503,7 @@ grammar ABC do
     beat_node:((rationals/'C') '=')? bpm_node:wholenum 
     {
       def tempo
-        t = Tempo.new
-        t.beat_parts = beat_parts
-        t.bpm = bpm
-        t
+        Tempo.new(:beat_parts => beat_parts, :bpm => bpm)
       end
       def beat_parts
         if beat_node.empty?

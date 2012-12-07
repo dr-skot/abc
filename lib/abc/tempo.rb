@@ -42,6 +42,12 @@ module ABC
     attr_accessor :bpm
     attr_accessor :label
     
+    def initialize(options={})
+      @beat_parts = options[:beat_parts]
+      @bpm = options[:bpm]
+      @label = options[:label]
+    end
+
     def unit_length
       @unit_length || 1
     end
