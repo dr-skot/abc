@@ -49,10 +49,7 @@ grammar ABC do
   end
 
   rule tune_header do
-    refnum_field line_ender
-    title_field line_ender
-    (extended_info_field / header_field)* 
-      key_field line_ender <TuneHeader>
+    refnum_field_line title_field_line (extended_info_field / tune_header_line)* key_field_line <TuneHeader>
   end
 
 
@@ -202,11 +199,11 @@ grammar ABC do
   # Note for developers: For processing as an abc tune, the parsing code is notionally assumed to add empty X:, T: and K: fields, if these are missing. However, since the processing generally takes place internally within a software package, these need not be added in actuality.
 
   rule abc_fragment do
-    '' (partial_header tune_body? / tune_body) <Tune>
+    '' (partial_tune_header tune_body? / tune_body) <Tune>
   end
 
-  rule partial_header do
-    '' (header_field* key_field line_ender / header_field+) <TuneHeader>
+  rule partial_tune_header do
+    '' (refnum_field_line? (tune_header_line* key_field_line / tune_header_line+) / refnum_field_line) <TuneHeader>
   end
 
 
@@ -232,6 +229,18 @@ grammar ABC do
     label:[A-Za-z] ':' content:string_field_content <Field>
   end
 
+  rule string_field_content do
+    start:(!line_ender .)+ extra:(line_ender '+:' content:string_field_content)? {
+      def value
+        if extra.empty?
+          start.text_value
+        else
+          start.text_value + ' ' + extra.content.value
+        end
+      end
+    }
+  end
+
   rule file_header_field_excludes do
     [KPQsTVWwX]
   end
@@ -240,35 +249,50 @@ grammar ABC do
     [swXK]
   end
 
-  rule tune_body_field_exludes do
-    [A-a-gX-Zx-zHOS]
+  rule tune_body_field_excludes do
+    [A-Ga-gX-Zx-zHOS]
   end
   
-  rule inline_field_excludes do
-    [A-a-gX-Zx-zHOSsTWw]
-  end
-
   rule file_header_field do
     !file_header_field_excludes any_field
   end
-
-  rule other_file_field do
-    # M already found by earlier rule
-    label:[ABCDFGHImNORrSTUZ] ':' content:string_field_content <Field>
-  end
-
-
+  
   rule tune_header_field do
-    !tune_header_field_excludes any_field
+    voice_header_field / !tune_header_field_excludes any_field
   end
 
+  rule tune_header_line do
+    tune_header_field line_ender
+  end
+  
   rule tune_body_field do
-    !tune_body_field_excludes any_field
+    voice_body_field / !tune_body_field_excludes any_field
+  end
+
+  rule tune_body_field_line do
+    tune_body_field line_ender
+  end
+
+  # TODO move these to later section
+
+  rule inline_field_excludes do
+    [A-Ga-gX-Zx-zHOSsTWw]
+  end
+
+  rule any_inline_field do
+    voice_body_field / special_field / inline_string_field
+  end
+
+  rule inline_string_field do
+    label:[A-Za-z] ':' content:inline_string_field_content <Field>
+  end
+
+  rule inline_string_field_content do
+    (!(']'/line_ender) .)+ 
   end
 
   rule inline_field do
-    # TODO info field needs to terminate at ']'
-    '[' !inline_field_excludes any_field ']'
+    '[' (!inline_field_excludes any_inline_field) ']'
   end
   
 
@@ -282,10 +306,17 @@ grammar ABC do
     label:'X' ':' content:integer? <Field>
   end
 
+  rule refnum_field_line do
+    refnum_field line_ender
+  end
+
   rule title_field do
     label:'T' ':' content:string_field_content <Field>
   end
 
+  rule title_field_line do
+    title_field line_ender
+  end
 
   rule instruction_field do
     'not implemented'
@@ -327,53 +358,9 @@ grammar ABC do
     space / line_ender '+:'
   end
   
-  rule string_field_content do
-    start:(!line_ender .)+ extra:(line_ender '+:' content:string_field_content)? {
-      def value
-        if extra.empty?
-          start.text_value
-        else
-          start.text_value + ' ' + extra.content.value
-        end
-      end
-    }
-  end
+
 
   # FIELDS
-
-  rule file_field do
-    (meter_field / other_file_field) line_ender
-  end
-
-  rule header_field do
-    (meter_field / tempo_field/ unit_length_field / voice_header_field / other_header_field) line_ender
-  end
-  
-  rule inline_body_field do
-    "[" raw_body_field "]"
-  end
-
-  rule raw_body_field do
-    symbol_line / meter_field / tempo_field / unit_length_field / key_field / lyrics_field / voice_inline_field / other_body_field
-  end
-
-  # TODO: don't fail to parse unrecognized fields
-  # but enforce fields not allowed in one or other section...
-
-  rule other_header_field do
-    # KMLQV already found by earlier rule
-    label:[ABCDFGHImNORRrSTUWXZ] ':' content:string_field_content <Field>
-  end
-
-  rule other_body_field do
-    # KMLQVw already found by earlier rule
-    label:[ImNRRrTUWw] ':' space* content:rest_of_tune_field <Field>
-  end
-
-  rule rest_of_tune_field do
-    (!(line_ender/']'/'\\') .)+
-  end
-
 
 
   # METER FIELD
@@ -549,6 +536,11 @@ grammar ABC do
     }
   end
 
+  rule key_field_line do
+    key_field line_ender
+  end
+
+
   rule key do
     tonic:([A-G] [\#b]?) 
                   mode:(space* value:mode?) 
@@ -632,7 +624,7 @@ grammar ABC do
   end
 
   rule tune_line do
-    raw_body_field line_ender / music_line
+    tune_body_field_line / music_line
   end
 
   rule music_line do
@@ -641,7 +633,7 @@ grammar ABC do
 
 
   rule tune_element do
-    inline_body_field /
+    inline_field /
     tuplet_symbol / slur / variant_ending / notelike_thing / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
     ignored_char
   end
@@ -1304,7 +1296,7 @@ rule decoration do
       }
     end
 
-    rule voice_inline_field do
+    rule voice_body_field do
       label:'V' ':' id:alphanum+ <Field> {
         def id
           super.text_value[0..19] # first 20 chars only

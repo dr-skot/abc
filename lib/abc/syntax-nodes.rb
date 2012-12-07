@@ -112,17 +112,21 @@ module ABC
         master_node.info(label) if master_node
       end
     end
-    
-    def method_missing(meth, *args, &block)
+
+    def field_value(label)
       return nil unless header
-      if STRING_FIELDS[meth]
-        values = header.values(STRING_FIELDS[meth])
+      if label
+        values = header.values(label)
         if values.count > 0 
           values.join("\n")
         else
-          master_node.send(meth) if master_node
+          master_node.field_value(label) if master_node
         end
       end
+    end
+    
+    def method_missing(meth, *args, &block)
+      field_value(STRING_FIELDS[meth])
     end
 
     def meter

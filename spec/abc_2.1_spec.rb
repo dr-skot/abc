@@ -379,10 +379,46 @@ describe "abc 2.1" do
   # The table illustrates how the information fields may be used in the tune header and whether they may also be used in the tune body (see use of fields within the tune body for details) or in the file header (see abc file structure).
   
   describe "information field" do
-    it "can have an unrecognized identifier" do
+    it "can have an unrecognized identifier in the file header" do
       p = parse "J:unknown field\n\nX:1\nT:T\nK:C"
+      # TODO use a string for this instead of regex
+      p.field_value(/J/).should == 'unknown field'
     end
+    it "can have an unrecognized identifier in the tune header" do
+      p = parse "X:1\nT:T\nJ:unknown field\nK:C"
+      p.tunes[0].field_value(/J/).should == 'unknown field'
+    end
+    it "can have an unrecognized identifier in the tune body" do
+      p = parse "X:1\nT:T\nK:C\nabc\nJ:unknown field\ndef"
+      p.tunes[0].items[3].is_a?(Field).should == true
+      p.tunes[0].items[3].value.should == 'unknown field'
+    end
+    it "can have an unrecognized identifier inline in the tune" do
+      p = parse "X:1\nT:T\nK:C\nabc[J:unknown field]def"
+      p.tunes[0].items[3].is_a?(Field).should == true
+      p.tunes[0].items[3].value.should == 'unknown field'
+    end
+  end
 
+
+  # Repeated information fields
+  # All information fields, with the exception of X:, may appear more than once in an abc tune.
+  # In the case of all string-type information fields, repeated use in the tune header can be regarded as additional information - for example, a tune may be known by many titles and an abc tune transcription may appear at more than one URL (using the F: field). Typesetting software which prints this information out may concatenate all string-type information fields of the same kind, separated by semi-colons (;), although the initial T:(title) field should be treated differently, as should W:(words) fields - see typesetting information fields.
+  # Certain instruction-type information fields, in particular I:, m:, U: and V:, may also be used multiple times in the tune header to set up different instructions, macros, user definitions and voices. However, if two such fields set up the same value, then the second overrides the first.
+  # Example: The second I:linebreak instruction overrides the first.
+  # I:linebreak <EOL>
+  # I:linebreak <none>
+  # Comment: The above example should not generate an error message. The user may legitimately wish to test the effect of two such instructions; having them both makes switching from one to another easy just by changing their order.
+  # Other instruction-type information fields in the tune header also override the previous occurrence of that field.
+  # Within the tune body each line of code is processed in sequence. Therefore, with the exception of s:(symbol line), w:(words) and W:(words) which have their own syntax, the same information field may occur a number of times, for example to change key, meter, tempo or voice, and each occurrence has the effect of overriding the previous one, either for the remainder of the tune, or until the next occurrence. See use of fields within the tune body for more details.
+  # Order of information fields
+  # Recommendation for users: Although information fields in the tune header may be written in any order (subject to X:, T: and K: coming first, second and last, respectively), it does make sense for users to stick to a common ordering, if for no other reason than it makes public domain abc code more readable. Typical ordering of the tune header puts fundamental tune identification details first (X, T, C, O, R), with information fields relating to how the tune is played last (P, V, M, L, Q, K). Background information (B, D, F, G, H, N, S, Z) and information on how the abc code should be interpreted (I, m, U) then tends to appear in the middle of the tune header. Words (W) may be included in the tune header but are usually placed at the end of the tune body.
+
+  describe "information field repeating" do
+    it "cannot be done with X field" do
+      fail_to_parse "X:1\nT:Title\nX:2\nK:C"
+      # TODO error message
+    end
   end
 
 end
