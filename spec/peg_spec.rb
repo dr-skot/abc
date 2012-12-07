@@ -113,7 +113,7 @@ describe "abc-2.0-draft4 PEG" do
 
     it "knows the string fields" do
       %w{Bbook Ccomposer Ddisc Furl Ggroup Hhistory Ncomments Oorigin 
-         Rrhythm rremark Ssource Ztranscriber}.each do |field|
+         Rrhythm rremark Ssource Ztranscription}.each do |field|
         label = field[0]
         name = field[1..-1]
         p = parse "#{label}:File Header\n\nX:1\nT:T1\nK:C\n\nX:2\nT:T2\n#{label}:Tune Header\n#{label}:again\nK:D"

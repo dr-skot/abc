@@ -86,7 +86,7 @@ describe "abc 2.0 draft 4" do
     it "recognizes a file header" do
       p = parse "C:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
       p.composer.should == "Madonna"
-      p.transcriber.should == "me"
+      p.transcription.should == "me"
     end
 
     it "does not consider it a file header if it has tune fields in it" do

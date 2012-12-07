@@ -69,7 +69,7 @@ module ABC
     :remark => /r/,
     :source => /S/,
     :title => /T/,
-    :transcriber => /Z/,
+    :transcription => /Z/,
   }
 
   DEFAULT_USER_DEFINED_SYMBOLS = {

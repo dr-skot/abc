@@ -73,7 +73,7 @@ describe "abc 2.1" do
     it "can include a file header" do
       p = parse "C:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
       p.composer.should == "Madonna"
-      p.transcriber.should == "me"
+      p.transcription.should == "me"
     end
     it "can include free text" do
       p = parse "free text\n\nX:1\nT:T\nK:C"
@@ -141,17 +141,17 @@ describe "abc 2.1" do
     it "can contain comment lines" do
       p = parse "C:Madonna\n%comment\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
       p.composer.should == "Madonna"
-      p.transcriber.should == "me"
+      p.transcription.should == "me"
     end
     it "can start with comment lines" do
       p = parse "%comment\n%comment\nC:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
       p.composer.should == "Madonna"
-      p.transcriber.should == "me"
+      p.transcription.should == "me"
     end
     it "can end with comment lines" do
       p = parse "C:Madonna\nZ:me\n%comment\n%comment\n\nX:1\nT:Like a Prayer\nK:Dm"
       p.composer.should == "Madonna"
-      p.transcriber.should == "me"
+      p.transcription.should == "me"
     end
     it "cannot contain tune fields" do
       fail_to_parse "C:Madonna\nZ:me\nK:C\n\nX:1\nT:Like a Prayer\nK:Dm" # note: K field is only allowed in tune headers
@@ -691,6 +691,35 @@ describe "abc 2.1" do
       p.next_part.should == p.parts['B']
     end
   end
+
+  # TODO think about how parts works with voices, and esp what about voice overlays, measures etc
+
+
+  # 3.1.10 Z: - transcription
+  # Typically the Z: field contains the name(s) of the person(s) who transcribed the tune into abc, and possibly some contact information, e.g. an (e-)mail address or homepage URL.
+  # Example: Simple transcription notes.
+  # Z:John Smith, <j.s@mail.com>
+  # However, it has also taken over the role of the %%abc-copyright and %%abc-edited-by since they have been deprecated (see outdated directives).
+  # Example: Detailed transcription notes.
+  # Z:abc-transcription John Smith, <j.s@mail.com>, 1st Jan 2010
+  # Z:abc-edited-by Fred Bloggs, <f.b@mail.com>, 31st Dec 2010
+  # Z:abc-copyright &copy; John Smith
+  # This new usage means that an update history can be recorded in collections which are collaboratively edited by a number of users.
+  # Note that there is no formal syntax for the contents of this field, although users are strongly encouraged to be consistent, but, by convention, Z:abc-copyright refers to the copyright of the abc transcription rather than the tune.
+  # See typesetting information fields for details of how the transcription information may be included in the printed score.
+  # Comment: If required, software may even choose to interpret specific Z: strings, for example to print out the string which follows after Z:abc-copyright.
+
+  describe "Z: (transcription) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "Z:abc-copyright &copy; John Smith"
+      p.transcription.should == "abc-copyright &copy; John Smith"
+    end
+    it "can appear in the file header" do
+      p = parse "Z:abc-copyright &copy; John Smith\n\nX:1\nT:\nK:C"
+      p.transcription.should == "abc-copyright &copy; John Smith"
+    end
+  end
+
 
 end
 
