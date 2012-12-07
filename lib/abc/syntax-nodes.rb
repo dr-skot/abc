@@ -179,6 +179,9 @@ module ABC
     def divvy_voices
       tunes.each { |tune| tune.divvy_voices }
     end
+    def divvy_parts
+      tunes.each { |tune| tune.divvy_parts }
+    end
     def collect_measures
       tunes.each { |tune| tune.collect_measures }
     end
@@ -355,9 +358,42 @@ module ABC
       end
       @key
     end
-    def parts
+    def part_sequence
       if header && (field = header.field(/P/))
         field.value
+      end
+    end
+    def parts
+      @parts ||= {}
+    end
+    def next_part
+      p = part_sequence.next_part
+      parts[p]
+    end
+    def divvy_parts
+      if part_sequence
+        part_sequence.reset
+        part_id = part_sequence.next_part
+        @first_part = parts[part_id] = Part.new(part_id) if part_id
+        part_sequence.reset
+      end
+      part = nil
+      items.each do |item|
+        # TODO lose text_value here, label should already be a string
+        if item.is_a?(Field) && item.label.text_value == 'P'
+          id = item.id
+          parts[id] = Part.new(id) if !parts[id]
+          part = parts[id]
+          @first_part = part if !@first_part
+        else
+          if !part
+            if !@first_part
+              @first_part = parts[""] = Part.new("")  # create default part if necessary
+            end
+            part = @first_part
+          end
+          part.items << item
+        end
       end
     end
     def apply_key_signatures()
@@ -668,7 +704,7 @@ module ABC
     end
   end
   
-  class Parts < PartsUnit
+  class PartSequence < PartsUnit
     def next_part
       @child_index ||= 0
       kids = children(PartsUnit)

@@ -14,6 +14,7 @@ module ABC
         p.assign_free_text
         p.propagate_tunebook_header
         p.divvy_voices
+        p.divvy_parts
         p.apply_note_lengths
         p.apply_chord_lengths
         p.apply_broken_rhythms
@@ -30,6 +31,7 @@ module ABC
       p = @parser.parse(input, :root => :abc_fragment)
       if p
         p.divvy_voices
+        p.divvy_parts
         p.apply_note_lengths
         p.apply_chord_lengths
         p.apply_broken_rhythms

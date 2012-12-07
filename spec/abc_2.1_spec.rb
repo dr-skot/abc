@@ -5,6 +5,7 @@ require 'lib/abc/abc-2.0-draft4.treetop'
 require 'lib/abc/syntax-nodes.rb'
 require 'lib/abc/parser.rb'
 require 'lib/abc/voice.rb'
+require 'lib/abc/part.rb'
 require 'lib/abc/measure.rb'
 require 'lib/abc/meter.rb'
 require 'lib/abc/key.rb'
@@ -638,31 +639,56 @@ describe "abc 2.1" do
   describe "parts header field" do
     it "can be a single part" do
       p = parse_fragment "X:1\nP:A\nK:C\nabc"
-      p.parts.list.should == ['A']
+      p.part_sequence.list.should == ['A']
     end
     it "can be two parts" do
       p = parse_fragment "X:1\nP:AB\nK:C\nabc"
-      p.parts.list.should == ['A', 'B']
+      p.part_sequence.list.should == ['A', 'B']
     end
     it "can be one part repeating" do
       p = parse_fragment "X:1\nP:A3\nK:C\nabc"
-      p.parts.list.should == ['A', 'A', 'A']
+      p.part_sequence.list.should == ['A', 'A', 'A']
     end
     it "can be two parts with one repeating" do
       p = parse_fragment "X:1\nP:A2B\nK:C\nabc"
-      p.parts.list.should == ['A', 'A', 'B']
+      p.part_sequence.list.should == ['A', 'A', 'B']
     end
     it "can be two parts repeating" do
       p = parse_fragment "X:1\nP:(AB)3\nK:C\nabc"
-      p.parts.list.should == ['A', 'B', 'A', 'B', 'A', 'B']
+      p.part_sequence.list.should == ['A', 'B', 'A', 'B', 'A', 'B']
     end
     it "can have nested repeats" do
       p = parse_fragment "X:1\nP:(A2B)3\nK:C\nabc"
-      p.parts.list.join('').should == 'AABAABAAB'
+      p.part_sequence.list.join('').should == 'AABAABAAB'
     end
     it "can contain dots anywhere" do
       p = parse_fragment "X:1\nP:.(.A.2.B.).3.\nK:C\nabc"
-      p.parts.list.join('').should == 'AABAABAAB'
+      p.part_sequence.list.join('').should == 'AABAABAAB'
+    end
+  end
+
+  describe "parts body field" do
+    it "separates parts" do
+      p = parse_fragment "K:C\nP:A\nabc2\nP:B\ndefg"
+      p.parts['A'].notes.count.should == 3
+      p.parts['B'].notes.count.should == 4
+    end
+    it "works as an inline field" do
+      p = parse_fragment "[P:A]abc2[P:B]defg"
+      p.parts['A'].notes.count.should == 3
+      p.parts['B'].notes.count.should == 4
+    end
+  end
+
+  describe "next_parts method" do
+    it "works" do
+      p = parse_fragment "P:BA2\nK:C\n[P:A]abc2[P:B]defg"
+      p.next_part.should == p.parts['B']
+      p.next_part.should == p.parts['A']
+      p.next_part.should == p.parts['A']
+      p.next_part.should == nil
+      p.part_sequence.reset
+      p.next_part.should == p.parts['B']
     end
   end
 

@@ -234,7 +234,7 @@ grammar ABC do
   end
 
   rule special_field do
-    instruction_field / key_field / unit_note_length_field / meter_field / macro_field / parts_field / tempo_field / symbol_line / user_defined_field / lyrics_field / refnum_field
+    instruction_field / key_field / unit_note_length_field / meter_field / macro_field / tempo_field / symbol_line / user_defined_field / lyrics_field / refnum_field
   end
 
   rule string_field do
@@ -274,7 +274,7 @@ grammar ABC do
   end
   
   rule tune_header_field do
-    voice_header_field / !tune_header_field_excludes any_field
+    parts_header_field / voice_header_field / !tune_header_field_excludes any_field
   end
 
   rule tune_header_line do
@@ -282,7 +282,7 @@ grammar ABC do
   end
   
   rule tune_body_field do
-    voice_body_field / !tune_body_field_excludes any_field
+    parts_body_field / voice_body_field / !tune_body_field_excludes any_field
   end
 
   rule tune_body_field_line do
@@ -296,11 +296,11 @@ grammar ABC do
   end
 
   rule any_inline_field do
-    voice_body_field / special_field / inline_string_field
+    parts_body_field / voice_body_field / special_field / inline_string_field
   end
 
   rule inline_string_field do
-    label:[A-Za-z] ':' content:inline_string_field_content <Field>
+    !special_field_identifier label:[A-Za-z] ':' content:inline_string_field_content <Field>
   end
 
   rule inline_string_field_content do
@@ -533,12 +533,12 @@ grammar ABC do
   # Player programs should use the P: field if possible to render a complete playback of the tune; typesetting programs should include the P: field values in the printed score.
 # See typesetting information fields for details of how the part information may be included in the printed score.
 
-  rule parts_field do
+  rule parts_header_field do
     label:'P' ':' value:parts <Field>
   end
 
   rule parts do
-    dots? ((parts_atom / parts_group) dots?)+ <Parts>
+    dots? ((parts_atom / parts_group) dots?)+ <PartSequence>
   end
 
   rule parts_atom do
@@ -548,6 +548,15 @@ grammar ABC do
   rule parts_group do
     '(' parts ')' dots? repeat_node:wholenum? <PartsGroup>
   end
+
+  rule parts_body_field do
+    label:'P' ':' id:[A-Za-z] <Field> {
+      def id
+        super.text_value
+      end
+    }
+  end
+
 
   rule dots do
     '.'+
