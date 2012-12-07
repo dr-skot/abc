@@ -217,6 +217,17 @@ grammar ABC do
   # The information fields are summarised in the following table and discussed in description of information fields and elsewhere.
   # The table illustrates how the information fields may be used in the tune header and whether they may also be used in the tune body (see use of fields within the tune body for details) or in the file header (see abc file structure).
   
+  # Repeated information fields
+  # All information fields, with the exception of X:, may appear more than once in an abc tune.
+  # In the case of all string-type information fields, repeated use in the tune header can be regarded as additional information - for example, a tune may be known by many titles and an abc tune transcription may appear at more than one URL (using the F: field). Typesetting software which prints this information out may concatenate all string-type information fields of the same kind, separated by semi-colons (;), although the initial T:(title) field should be treated differently, as should W:(words) fields - see typesetting information fields.
+  # Certain instruction-type information fields, in particular I:, m:, U: and V:, may also be used multiple times in the tune header to set up different instructions, macros, user definitions and voices. However, if two such fields set up the same value, then the second overrides the first.
+  # Example: The second I:linebreak instruction overrides the first.
+  # I:linebreak <EOL>
+  # I:linebreak <none>
+  # Comment: The above example should not generate an error message. The user may legitimately wish to test the effect of two such instructions; having them both makes switching from one to another easy just by changing their order.
+  # Other instruction-type information fields in the tune header also override the previous occurrence of that field.
+  # Within the tune body each line of code is processed in sequence. Therefore, with the exception of s:(symbol line), w:(words) and W:(words) which have their own syntax, the same information field may occur a number of times, for example to change key, meter, tempo or voice, and each occurrence has the effect of overriding the previous one, either for the remainder of the tune, or until the next occurrence. See use of fields within the tune body for more details.
+
   rule any_field do
     special_field / string_field
   end
@@ -226,7 +237,7 @@ grammar ABC do
   end
 
   rule string_field do
-    label:[A-Za-z] ':' content:string_field_content <Field>
+    !special_field_identifier label:[A-Za-z] ':' content:string_field_content <Field>
   end
 
   rule string_field_content do
@@ -239,6 +250,10 @@ grammar ABC do
         end
       end
     }
+  end
+
+  rule special_field_identifier do
+    [IKLMmPQsUWwX]
   end
 
   rule file_header_field_excludes do
@@ -310,6 +325,13 @@ grammar ABC do
     refnum_field line_ender
   end
 
+
+  # 3.1.2 T: - tune title
+  # A T: (title) field must follow immediately after the X: field; it is the human identifier for the tune (although it may be empty).
+  # Some tunes have more than one title and so this field can be used more than once per tune to indicate alternative titles.
+  # The T: field can also be used within a tune to name parts of a tune - in this case it should come before any key or meter changes.
+  # See typesetting information fields for details of how the title and alternatives are included in the printed score.
+
   rule title_field do
     label:'T' ':' content:string_field_content <Field>
   end
@@ -317,6 +339,91 @@ grammar ABC do
   rule title_field_line do
     title_field line_ender
   end
+
+  # 3.1.3 C: - composer
+  # The C: field is used to indicate the composer(s).
+  # See typesetting information fields for details of how the composer is included in the printed score.
+  # 3.1.4 O: - origin
+  # The O: field indicates the geographical origin(s) of a tune.
+  # If possible, enter the data in a hierarchical way, like:
+  # O:Canada; Nova Scotia; Halifax.
+  # O:England; Yorkshire; Bradford and Bingley.
+  # Recommendation: It is recommended to always use a ";" (semi-colon) as the separator, so that software may parse the field. However, abc 2.0 recommended the use of a comma, so legacy files may not be parse-able under abc 2.1.
+  # This field may be especially useful for traditional tunes with no known composer.
+  # See typesetting information fields for details of how the origin information is included in the printed score.
+  # 3.1.5 A: - area
+  # Historically, the A: field has been used to contain area information (more specific details of the tune origin). However this field is now deprecated and it is recommended that such information be included in the O: field.
+
+  # ^^ all covered under string fields
+
+
+  # 3.1.6 M: - meter
+  # The M: field indicates the meter. Apart from standard meters, e.g. M:6/8 or M:4/4, the symbols M:C and M:C| give common time (4/4) and cut time (2/2) respectively. The symbol M:none omits the meter entirely (free meter).
+  # It is also possible to specify a complex meter, e.g. M:(2+3+2)/8, to make explicit which beats should be accented. The parentheses around the numerator are optional.
+  # The example given will be typeset as:
+  # 2 + 3 + 2
+  #     8
+  # When there is no M: field defined, free meter is assumed (in free meter, bar lines can be placed anywhere you want).
+
+  rule meter_field do
+    label:'M' ':' content:(named_meter / fractional_meter / complex_meter) <Field> {
+      def meter
+        content.meter
+      end
+    }
+  end
+
+  rule fractional_meter do
+    num:integer "/" denom:integer {
+      def meter
+        @meter ||= Meter.new num.value, denom.value
+      end
+    }
+  end
+
+  rule named_meter do
+    ("C|" / "C" / "none") {
+      def meter
+        return @meter if @meter
+        if text_value == "C"
+          @meter = Meter.new :common
+        elsif text_value == "C|"
+          @meter = Meter.new :cut
+        else
+          @meter = Meter.new :free
+        end
+      end
+    }
+  end
+  
+  rule complex_meter do
+   num:sum_maybe_parenthesized '/' denom:integer {
+      def meter
+        @meter ||= Meter.new(num.addends, denom.value)
+      end
+    }
+  end
+
+  rule sum_maybe_parenthesized do
+    '(' s:sum ')' { 
+      def addends
+        s.addends
+      end
+      }
+      / sum
+  end
+
+  rule sum do
+    first:(number:integer '+')+ last:integer {
+      def addends
+        result = []
+        first.elements.each { |el| result << el.number.value }
+        result << last.value
+        result
+      end
+    }
+  end
+
 
   rule instruction_field do
     'not implemented'
@@ -362,38 +469,6 @@ grammar ABC do
 
   # FIELDS
 
-
-  # METER FIELD
-  rule meter_field do
-    label:'M' ':' content:(fractional_meter / named_meter) <Field> {
-      def meter
-        content.meter
-      end
-    }
-  end
-
-  rule fractional_meter do
-    num:digit+ "/" denom:digit+ {
-      def meter
-        @meter ||= Meter.new num.text_value.to_i, denom.text_value.to_i
-      end
-    }
-  end
-
-  rule named_meter do
-    ("C|" / "C" / "none") {
-      def meter
-        return @meter if @meter
-        if text_value == "C"
-          @meter = Meter.new :common
-        elsif text_value == "C|"
-          @meter = Meter.new :cut
-        else
-          @meter = Meter.new :free
-        end
-      end
-    }
-  end
 
   # UNIT LENGTH FIELD
 

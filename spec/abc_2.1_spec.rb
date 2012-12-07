@@ -429,7 +429,7 @@ describe "abc 2.1" do
   # The X: field is also used to indicate the start of the tune (and hence the tune header), so all tunes must start with an X: field and only one X: field is allowed per tune.
   # The X: field may be empty, although this is not recommended.
 
-  describe "reference number field" do
+  describe "X: (reference number) field" do
     it "cannot be repeated" do
       fail_to_parse "X:1\nT:Title\nX:2\nK:C"
       # TODO error message
@@ -451,7 +451,7 @@ describe "abc 2.1" do
   # The T: field can also be used within a tune to name parts of a tune - in this case it should come before any key or meter changes.
   # See typesetting information fields for details of how the title and alternatives are included in the printed score.
 
-  describe "tune title" do
+  describe "T: (title) field" do
     it "can be empty" do
       p = parse "X:1\nT:\nK:C"
       p.tunes[0].title.should == ""
@@ -471,12 +471,91 @@ describe "abc 2.1" do
   # The C: field is used to indicate the composer(s).
   # See typesetting information fields for details of how the composer is included in the printed score.
 
-  describe "composer field" do
+  describe "C: (composer) field" do
     it "is recognized" do
       p = parse_fragment "C:Brahms"
       p.composer.should == "Brahms"
     end
   end
+
+
+  # 3.1.4 O: - origin
+  # The O: field indicates the geographical origin(s) of a tune.
+  # If possible, enter the data in a hierarchical way, like:
+  # O:Canada; Nova Scotia; Halifax.
+  # O:England; Yorkshire; Bradford and Bingley.
+  # Recommendation: It is recommended to always use a ";" (semi-colon) as the separator, so that software may parse the field. However, abc 2.0 recommended the use of a comma, so legacy files may not be parse-able under abc 2.1.
+  # This field may be especially useful for traditional tunes with no known composer.
+  # See typesetting information fields for details of how the origin information is included in the printed score.
+
+  describe "O: (origin) field" do
+    it "is recognized" do
+      p = parse_fragment "O:Canada; Nova Scotia; Halifax.\nO:England; Yorkshire; Bradford and Bingley."
+      p.origin.should == ["Canada; Nova Scotia; Halifax.", "England; Yorkshire; Bradford and Bingley."]
+    end
+  end
+
+
+  # 3.1.5 A: - area
+  # Historically, the A: field has been used to contain area information (more specific details of the tune origin). However this field is now deprecated and it is recommended that such information be included in the O: field.
+
+  describe "A: (area) field" do
+    it "is recognized" do
+      p = parse_fragment "O:Nova Scotia\nA:Halifax"
+      p.area.should == "Halifax"
+    end
+  end
+
+
+  # 3.1.6 M: - meter
+  # The M: field indicates the meter. Apart from standard meters, e.g. M:6/8 or M:4/4, the symbols M:C and M:C| give common time (4/4) and cut time (2/2) respectively. The symbol M:none omits the meter entirely (free meter).
+  # It is also possible to specify a complex meter, e.g. M:(2+3+2)/8, to make explicit which beats should be accented. The parentheses around the numerator are optional.
+  # The example given will be typeset as:
+  # 2 + 3 + 2
+  #     8
+  # When there is no M: field defined, free meter is assumed (in free meter, bar lines can be placed anywhere you want).
+
+  describe "M: (meter) field" do
+    it "can be a numerator and denominator" do
+      p = parse_fragment "M:6/8\nabc"
+      p.meter.numerator.should == 6
+      p.meter.denominator.should == 8
+    end
+    it "can be \"C\", meaning common time" do
+      p = parse_fragment "M:C\nabc"
+      p.meter.numerator.should == 4
+      p.meter.denominator.should == 4
+      p.meter.symbol.should == :common
+    end
+    it "can be \"C|\", meaning cut time" do
+      p = parse_fragment "M:C|\nabc"
+      p.meter.numerator.should == 2
+      p.meter.denominator.should == 4
+      p.meter.symbol.should == :cut
+    end
+    it "can handle complex meter with parentheses" do
+      p = parse_fragment "M:(2+3+2)/8\nabc"
+      p.meter.complex_numerator.should == [2,3,2]
+      p.meter.numerator.should == 7
+      p.meter.denominator.should == 8
+    end
+    it "can handle complex meter without parentheses" do
+      p = parse_fragment "M:2+3+2/8\nabc"
+      p.meter.complex_numerator.should == [2,3,2]
+      p.meter.numerator.should == 7
+      p.meter.denominator.should == 8
+    end
+    it "defaults to free meter" do
+      p = parse_fragment "abc"
+      p.meter.symbol.should == :free
+    end
+    it "can be explicitly defined as none" do
+      p = parse_fragment "M:none\nabc"
+      p.meter.symbol.should == :free
+    end
+  end
+
+
 
 end
 
