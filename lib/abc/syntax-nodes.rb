@@ -63,7 +63,7 @@ module ABC
     :url => /F/, # (think F for file url)
     :group => /G/,
     :history => /H/,
-    :comments => /N/,
+    :notations => /N/,
     :origin => /O/,
     :rhythm => /R/,
     :remark => /r/,

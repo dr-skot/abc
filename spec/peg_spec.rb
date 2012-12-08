@@ -112,7 +112,7 @@ describe "abc-2.0-draft4 PEG" do
     end
 
     it "knows the string fields" do
-      %w{Bbook Ccomposer Ddisc Furl Ggroup Hhistory Ncomments Oorigin 
+      %w{Bbook Ccomposer Ddisc Furl Ggroup Hhistory Nnotations Oorigin 
          Rrhythm rremark Ssource Ztranscription}.each do |field|
         label = field[0]
         name = field[1..-1]
@@ -140,7 +140,7 @@ describe "abc-2.0-draft4 PEG" do
       p = parse_fragment "K:Ebminor=e^c"
       p.key.mode.should == "minor"
       p = parse_fragment "K:A Mixolydian"
-      p.key.mode.should == "Mixolydian"
+      p.key.mode.should == "mixolydian"
     end
     it "parses the extra accidentals" do
       p = parse_fragment "K:Ebminor=e^c"
@@ -170,8 +170,8 @@ describe "abc-2.0-draft4 PEG" do
 
     it "allows K:none" do
       p = parse_fragment "K:none"
-      p.key.tonic.should == ""
-      p.key.mode.should == ""
+      p.key.tonic.should == nil
+      p.key.mode.should == nil
       p.key.signature.should == {}
     end
 

@@ -245,8 +245,8 @@ describe "Key" do
   end
 
   it "supports highland pipes" do
-    Key.signature("HP").should == {}
-    Key.signature("Hp").should == { 'C' => 0, 'F' => 1, 'G' => 1 }
+    Key.signature("HP").should == { 'C' => 1, 'F' => 1, 'G' => 0 }
+    Key.signature("Hp").should == { 'C' => 1, 'F' => 1, 'G' => 0 }
   end
 
 end

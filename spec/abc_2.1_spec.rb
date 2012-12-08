@@ -718,8 +718,248 @@ describe "abc 2.1" do
       p = parse "Z:abc-copyright &copy; John Smith\n\nX:1\nT:\nK:C"
       p.transcription.should == "abc-copyright &copy; John Smith"
     end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "K:C\nZ:abc-copyright &copy; John Smith\nabc"
+    end
+    # TODO specific support for abc-copyright and abc-edited-by
   end
 
+
+  # 3.1.11 N: - notes
+  # Contains general annotations, such as references to other tunes which are similar, details on how the original notation of the tune was converted to abc, etc.
+  # See typesetting information fields for details of how notes may be included in the printed score.
+
+  describe "N: (notes) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "N:notes are called notations"
+      p.notations.should == "notes are called notations"
+    end
+    it "can appear in the file header" do
+      p = parse "N:notes are called notations\n\nX:1\nT:\nK:C"
+      p.notations.should == "notes are called notations"
+    end
+    it "can appear in the tune body" do
+      p = parse_fragment "abc\nN:notes are called notations\ndef"
+      p.items[3].value.should == "notes are called notations"
+    end
+    it "can appear as an inline field" do
+      p = parse_fragment "abc[N:notes are called notations]def"
+      p.items[3].value.should == "notes are called notations"
+    end
+  end
+
+
+  # 3.1.12 G: - group
+  # Database software may use this field to group together tunes (for example by instruments) for indexing purposes. It can also be used for creating medleys - however, this usage is not standardised.
+
+  describe "G: (group) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "G:group"
+      p.group.should == "group"
+    end
+    it "can appear in the file header" do
+      p = parse "G:group\n\nX:1\nT:\nK:C"
+      p.group.should == "group"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nG:group\ndef"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[G:group]def"
+    end
+  end
+
+
+  # 3.1.13 H: - history
+  # Designed for multi-line notes, stories and anecdotes.
+  # Although the H: fields are typically not typeset, the correct usage for multi-line input is to use field continuation syntax (+:), rather than H: at the start of each subsequent line of a multi-line note. This allows, for example, database applications to distinguish between two different anecdotes.
+  # Examples:
+  # H:this is considered
+  # +:as a single entry
+  # H:this usage is considered as two entries
+  # H:rather than one
+  # The original usage of H: (where subsequent lines need no field indicator) is now deprecated (see outdated information field syntax).
+  # See typesetting information fields for details of how the history may be included in the printed score.
+
+  describe "H: (history) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "H:history"
+      p.history.should == "history"
+    end
+    it "can appear in the file header" do
+      p = parse "H:history\n\nX:1\nT:\nK:C"
+      p.history.should == "history"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nH:history\ndef"
+    end
+     it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[H:history]def"
+    end
+    it "differentiates between continuation and separate anecdotes" do 
+      p = parse_fragment "H:this is considered\n+:as a single entry\nH:this usage is considered as two entries\nH:rather than one"
+      p.history.should == ["this is considered as a single entry", "this usage is considered as two entries", "rather than one"]
+    end
+  end
+
+
+  # 3.1.14 K: - key
+
+  # The key signature should be specified with a capital letter (A-G) which may be followed by a # or b for sharp or flat respectively. In addition the mode should be specified (when no mode is indicated, major is assumed).
+
+  # For example, K:C major, K:A minor, K:C ionian, K:A aeolian, K:G mixolydian, K:D dorian, K:E phrygian, K:F lydian and K:B locrian would all produce a staff with no sharps or flats. The spaces can be left out, capitalisation is ignored for the modes and in fact only the first three letters of each mode are parsed so that, for example, K:F# mixolydian is the same as K:F#Mix or even K:F#MIX. As a special case, minor may be abbreviated to m.
+
+  # This table sums up how the same key signatures can be written in different ways:
+
+  # Mode	 Ionian	 Aeolian	 Mixolydian	 Dorian	 Phrygian	 Lydian	 Locrian
+  # Key Signature	 Major	 Minor					
+  # 7 sharps	C#	A#m	G#Mix	D#Dor	E#Phr	F#Lyd	B#Loc
+  # 6 sharps	F#	D#m	C#Mix	G#Dor	A#Phr	BLyd	E#Loc
+  # 5 sharps	B	G#m	F#Mix	C#Dor	D#Phr	ELyd	A#Loc
+  # 4 sharps	E	C#m	BMix	F#Dor	G#Phr	ALyd	D#Loc
+  # 3 sharps	A	F#m	EMix	BDor	C#Phr	DLyd	G#Loc
+  # 2 sharps	D	Bm	AMix	EDor	F#Phr	GLyd	C#Loc
+  # 1 sharp	G	Em	DMix	ADor	BPhr	CLyd	F#Loc
+  # 0 sharps/flats	C	Am	GMix	DDor	EPhr	FLyd	BLoc
+  # 1 flat	F	Dm	CMix	GDor	APhr	BbLyd	ELoc
+  # 2 flats	Bb	Gm	FMix	CDor	DPhr	EbLyd	ALoc
+  # 3 flats	Eb	Cm	BbMix	FDor	GPhr	AbLyd	DLoc
+  # 4 flats	Ab	Fm	EbMix	BbDor	CPhr	DbLyd	GLoc
+  # 5 flats	Db	Bbm	AbMix	EbDor	FPhr	GbLyd	CLoc
+  # 6 flats	Gb	Ebm	DbMix	AbDor	BbPhr	CbLyd	FLoc
+  # 7 flats	Cb	Abm	GbMix	DbDor	EbPhr	FbLyd	BbLoc
+  # By specifying an empty K: field, or K:none, it is possible to use no key signature at all.
+
+  # The key signatures may be modified by adding accidentals, according to the format K:<tonic> <mode> <accidentals>. For example, K:D Phr ^f would give a key signature with two flats and one sharp, which designates a very common mode in Klezmer (Ahavoh Rabboh) and in Arabic music (Maqam Hedjaz). Likewise, "K:D maj =c" or "K:D =c" will give a key signature with F sharp and c natural (the D mixolydian mode). Note that there can be several modifying accidentals, separated by spaces, each beginning with an accidental sign (__, _, =, ^ or ^^), followed by a note letter. The case of the letter is used to determine on which line the accidental is placed.
+  # It is possible to use the format K:<tonic> exp <accidentals> to explicitly define all the accidentals of a key signature. Thus K:D Phr ^f could also be notated as K:D exp _b _e ^f, where 'exp' is an abbreviation of 'explicit'. Again, the case of the letter is used to determine on which line the accidental is placed.
+  # Software that does not support explicit key signatures should mark the individual notes in the tune with the accidentals that apply to them.
+  # Scottish highland pipes typically have the scale G A B ^c d e ^f g a and highland pipe music primarily uses the modes D major and A mixolyian (plus B minor and E dorian). Therefore there are two additional keys specifically for notating highland bagpipe tunes; K:HP doesn't put a key signature on the music, as is common with many tune books of this music, while K:Hp marks the stave with F sharp, C sharp and G natural. Both force all the beams and stems of normal notes to go downwards, and of grace notes to go upwards.
+  # By default, the abc tune will be typeset with a treble clef. You can add special clef specifiers to the K: field, with or without a key signature, to change the clef and various other staff properties, such as transposition. K: clef=bass, for example, would indicate the bass clef. See clefs and transposition for full details.
+  # Note that the first occurrence of the K: field, which must appear in every tune, finishes the tune header. All following lines are considered to be part of the tune body.
+
+  describe "K: (key) field" do
+    it "can be a simple letter" do
+      p = parse_fragment "K:D"
+      p.key.tonic.should == "D"
+    end
+    it "can have a flat in the tonic" do
+      p = parse_fragment "K:Eb"
+      p.key.tonic.should == "Eb"
+    end
+    it "can have a sharp in the tonic" do
+      p = parse_fragment "K:F#"
+      p.key.tonic.should == "F#"
+    end
+    it "defaults to major mode" do
+      p = parse_fragment "K:D"
+      p.key.mode.should == "major"
+    end
+    it "recognizes maj as major" do
+      p = parse_fragment "K:D maj"
+      p.key.mode.should == "major"
+    end
+    it "recognizes m as minor" do
+      p = parse_fragment "K:Dm"
+      p.key.mode.should == "minor"
+    end
+    it "recognizes min as minor" do
+      p = parse_fragment "K:D min"
+      p.key.mode.should == "minor"
+    end
+    it "recognizes mixolydian" do
+      p = parse_fragment "K:D mix"
+      p.key.mode.should == "mixolydian"
+    end
+    it "recognizes dorian" do
+      p = parse_fragment "K:D dor"
+      p.key.mode.should == "dorian"
+    end
+    it "recognizes locrian" do
+      p = parse_fragment "K:D loc"
+      p.key.mode.should == "locrian"
+    end
+    it "recognizes phrygian" do
+      p = parse_fragment "K:D phrygian"
+      p.key.mode.should == "phrygian"
+    end
+    it "recognizes lydian" do
+      p = parse_fragment "K:D lydian"
+      p.key.mode.should == "lydian"
+    end
+    it "recognizes aeolian" do
+      p = parse_fragment "K:D loc"
+      p.key.mode.should == "locrian"
+    end
+    it "recognizes ionian" do
+      p = parse_fragment "K:D ion"
+      p.key.mode.should == "ionian"
+    end
+    it "ignores all but the first 3 letters of the mode" do
+      p = parse_fragment "K:D mixdkafjeaadkfafipqinv"
+      p.key.mode.should == "mixolydian"
+    end
+    it "ignores capitalization of the mode" do
+      p = parse_fragment "K:D Mix"
+      p.key.mode.should == "mixolydian"
+      p = parse_fragment "K:DMIX"
+      p.key.mode.should == "mixolydian"
+      p = parse_fragment "K:DmIX"
+      p.key.mode.should == "mixolydian"
+    end
+    it "delivers accidentals for major key" do
+      p = parse_fragment "K:Eb"
+      sig = p.key.signature
+      sig.should include 'A' => -1, 'B' => -1, 'E' => -1
+      sig.should_not include 'C', 'D', 'F', 'G'
+    end
+    it "delivers accidentals for key with mode" do
+      p = parse_fragment "K:A# Phr"
+      sig = p.key.signature
+      sig.should include 'C' => 1, 'D' => 1, 'E' => 1, 'F' => 1, 'G' => 1, 'A' => 1
+      sig.should_not include 'B'
+    end
+    it "can take extra accidentals" do
+      p = parse_fragment "K:Ebminor=e^c"
+      p.key.extra_accidentals.should include 'E' => 0, 'C' => 1
+    end
+    it "delivers accidentals for key with extra accidentals" do
+      p = parse_fragment "K:F =b ^C"
+      sig = p.key.signature
+      sig.should include 'C' => 1
+      sig.should_not include %w{D E F G A B}
+    end
+    it "allows explicitly defined signatures" do
+      p = parse_fragment "K:D exp _b _e ^f"
+      p.key.tonic.should == "D"
+      p.key.mode.should == nil
+      p.key.signature.should == {'B' => -1, 'E' => -1, 'F' => 1}
+    end
+    # TODO case of the accidental determines on which line the accidental should be drawn
+    it "allows K:none" do
+      p = parse_fragment "K:none"
+      p.key.tonic.should == nil
+      p.key.mode.should == nil
+      p.key.signature.should == {}
+    end
+    it "uses signature C#, F#, G natural for highland pipes" do
+      p = parse_fragment "K:HP"
+      p.key.highland_pipes?.should == true
+      p.key.tonic.should == nil
+      p.key.signature.should == {'C'=> 1, 'F' => 1, 'G' => 0}
+      p = parse_fragment "K:Hp"
+      p.key.highland_pipes?.should == true
+      p.key.tonic.should == nil
+      p.key.signature.should == {'C'=> 1, 'F' => 1, 'G' => 0}
+    end
+    it "will not show accidentals for K:HP" do
+      p = parse_fragment "K:HP"
+      p.key.show_accidentals?.should == false
+    end
+    it "will show accidentals for K:Hp" do
+      p = parse_fragment "K:Hp"
+      p.key.show_accidentals?.should == true
+    end
+  end
 
 end
 

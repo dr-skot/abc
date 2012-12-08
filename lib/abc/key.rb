@@ -12,6 +12,10 @@ module ABC
       list = hash.keys.map { |keygroup| keygroup.split.map { |key| [key, hash[keygroup]] } }
       Hash[*list.flatten]
     end
+
+    def self.three_letter_index(list)
+      list.inject({}) { |result, item| result[item[0,3]] = item; result }
+    end
     
     # maps <tonic><mode> to signature
     SIGNATURES = split_keys(
@@ -30,31 +34,60 @@ module ABC
       "Db Bbm Abmix Ebdor Fphr Gblyd Cloc" => split_keys("D E G A B" => -1),
       "Gb Ebm Dbmix Abdor Bbphr Cblyd Floc" => split_keys("C D E G A B" => -1),
       "Cb Abm Gbmix Dbdor Ebphr Fblyd Bbloc" => split_keys("C D E F G A B" => -1),
-      "Hp" => { 'C' => 0, 'F' => 1, 'G' => 1 },
+      "HP Hp" => { 'C' => 1, 'F' => 1, 'G' => 0 },
     )
+
+    MODES = three_letter_index("major minor ionian aeolean mixolydian dorian phrygian lydian locrian".split)
 
     # static method for convenience
     def self.signature(tonic, mode="", extra_accidentals={})
       self.new(tonic, mode, extra_accidentals).signature      
     end
 
-    attr_reader :tonic
-    attr_reader :mode
     attr_reader :extra_accidentals
     attr_accessor :clef
 
-    def initialize(tonic, mode="", extra_accidentals={})
-      @tonic = tonic
-      @mode = mode
+    def initialize(tonic_or_hp=nil, mode="", extra_accidentals={})
+      @tonic_or_hp = tonic_or_hp
+      @original_mode = mode
       @extra_accidentals = extra_accidentals
+    end
+
+    def tonic
+      if highland_pipes?
+        nil
+      else
+        @tonic_or_hp
+      end
+    end
+
+    def mode
+      if !@mode
+        if @tonic_or_hp == nil
+          @mode = nil
+        else
+          mode = @original_mode.downcase[0,3]
+          mode = "maj" if mode == ""
+          mode = "min" if mode == "m"
+          @mode = MODES[mode]
+        end
+      end
+      @mode
+    end
+
+    def short_mode
+      if !@short_mode
+        mode = @original_mode.downcase[0,3]
+        mode = "" if mode == "maj" || mode == "ion"
+        mode = "m" if mode == "min" || mode == "aeo"
+        @short_mode = mode
+      end
+      @short_mode
     end
 
     def base_signature
       if !@base_signature
-        mode = @mode.downcase[0,3]
-        mode = "" if mode == "maj" || mode == "ion"
-        mode = "m" if mode == "min" || mode == "aeo"
-        @base_signature = SIGNATURES["#{tonic}#{mode}"] || {}
+        @base_signature = SIGNATURES["#{@tonic_or_hp}#{short_mode}"] || {}
       end
       @base_signature
     end
@@ -67,7 +100,15 @@ module ABC
       @clef || Clef::DEFAULT
     end
 
-    NONE = Key.new ""
+    def highland_pipes?
+      @tonic_or_hp == "Hp" || @tonic_or_hp == "HP"
+    end
+
+    def show_accidentals?
+      @tonic_or_hp != "HP"
+    end
+
+    NONE = Key.new
 
   end
 

@@ -557,10 +557,145 @@ grammar ABC do
     }
   end
 
-
   rule dots do
     '.'+
   end
+
+
+  # 3.1.10 Z: - transcription
+  # Typically the Z: field contains the name(s) of the person(s) who transcribed the tune into abc, and possibly some contact information, e.g. an (e-)mail address or homepage URL.
+  # Example: Simple transcription notes.
+  # Z:John Smith, <j.s@mail.com>
+  # However, it has also taken over the role of the %%abc-copyright and %%abc-edited-by since they have been deprecated (see outdated directives).
+  # Example: Detailed transcription notes.
+  # Z:abc-transcription John Smith, <j.s@mail.com>, 1st Jan 2010
+  # Z:abc-edited-by Fred Bloggs, <f.b@mail.com>, 31st Dec 2010
+  # Z:abc-copyright &copy; John Smith
+  # This new usage means that an update history can be recorded in collections which are collaboratively edited by a number of users.
+  # Note that there is no formal syntax for the contents of this field, although users are strongly encouraged to be consistent, but, by convention, Z:abc-copyright refers to the copyright of the abc transcription rather than the tune.
+  # See typesetting information fields for details of how the transcription information may be included in the printed score.
+  # Comment: If required, software may even choose to interpret specific Z: strings, for example to print out the string which follows after Z:abc-copyright.
+
+  # 3.1.11 N: - notes
+  # Contains general annotations, such as references to other tunes which are similar, details on how the original notation of the tune was converted to abc, etc.
+  # See typesetting information fields for details of how notes may be included in the printed score.
+
+  # 3.1.12 G: - group
+  # Database software may use this field to group together tunes (for example by instruments) for indexing purposes. It can also be used for creating medleys - however, this usage is not standardised.
+
+  # 3.1.13 H: - history
+  # Designed for multi-line notes, stories and anecdotes.
+  # Although the H: fields are typically not typeset, the correct usage for multi-line input is to use field continuation syntax (+:), rather than H: at the start of each subsequent line of a multi-line note. This allows, for example, database applications to distinguish between two different anecdotes.
+  # Examples:
+  # H:this is considered
+  # +:as a single entry
+  # H:this usage is considered as two entries
+  # H:rather than one
+  # The original usage of H: (where subsequent lines need no field indicator) is now deprecated (see outdated information field syntax).
+  # See typesetting information fields for details of how the history may be included in the printed score.
+
+  # ^^ all covered under string fields
+
+
+  # 3.1.14 K: - key
+  # The key signature should be specified with a capital letter (A-G) which may be followed by a # or b for sharp or flat respectively. In addition the mode should be specified (when no mode is indicated, major is assumed).
+  # For example, K:C major, K:A minor, K:C ionian, K:A aeolian, K:G mixolydian, K:D dorian, K:E phrygian, K:F lydian and K:B locrian would all produce a staff with no sharps or flats. The spaces can be left out, capitalisation is ignored for the modes and in fact only the first three letters of each mode are parsed so that, for example, K:F# mixolydian is the same as K:F#Mix or even K:F#MIX. As a special case, minor may be abbreviated to m.
+  # This table sums up how the same key signatures can be written in different ways:
+
+  # Mode	 Ionian	 Aeolian	 Mixolydian	 Dorian	 Phrygian	 Lydian	 Locrian
+  # Key Signature	 Major	 Minor					
+  # 7 sharps	C#	A#m	G#Mix	D#Dor	E#Phr	F#Lyd	B#Loc
+  # 6 sharps	F#	D#m	C#Mix	G#Dor	A#Phr	BLyd	E#Loc
+  # 5 sharps	B	G#m	F#Mix	C#Dor	D#Phr	ELyd	A#Loc
+  # 4 sharps	E	C#m	BMix	F#Dor	G#Phr	ALyd	D#Loc
+  # 3 sharps	A	F#m	EMix	BDor	C#Phr	DLyd	G#Loc
+  # 2 sharps	D	Bm	AMix	EDor	F#Phr	GLyd	C#Loc
+  # 1 sharp	G	Em	DMix	ADor	BPhr	CLyd	F#Loc
+  # 0 sharps/flats	C	Am	GMix	DDor	EPhr	FLyd	BLoc
+  # 1 flat	F	Dm	CMix	GDor	APhr	BbLyd	ELoc
+  # 2 flats	Bb	Gm	FMix	CDor	DPhr	EbLyd	ALoc
+  # 3 flats	Eb	Cm	BbMix	FDor	GPhr	AbLyd	DLoc
+  # 4 flats	Ab	Fm	EbMix	BbDor	CPhr	DbLyd	GLoc
+  # 5 flats	Db	Bbm	AbMix	EbDor	FPhr	GbLyd	CLoc
+  # 6 flats	Gb	Ebm	DbMix	AbDor	BbPhr	CbLyd	FLoc
+  # 7 flats	Cb	Abm	GbMix	DbDor	EbPhr	FbLyd	BbLoc
+
+  # By specifying an empty K: field, or K:none, it is possible to use no key signature at all.
+  # The key signatures may be modified by adding accidentals, according to the format K:<tonic> <mode> <accidentals>. For example, K:D Phr ^f would give a key signature with two flats and one sharp, which designates a very common mode in Klezmer (Ahavoh Rabboh) and in Arabic music (Maqam Hedjaz). Likewise, "K:D maj =c" or "K:D =c" will give a key signature with F sharp and c natural (the D mixolydian mode). Note that there can be several modifying accidentals, separated by spaces, each beginning with an accidental sign (__, _, =, ^ or ^^), followed by a note letter. The case of the letter is used to determine on which line the accidental is placed.
+  # It is possible to use the format K:<tonic> exp <accidentals> to explicitly define all the accidentals of a key signature. Thus K:D Phr ^f could also be notated as K:D exp _b _e ^f, where 'exp' is an abbreviation of 'explicit'. Again, the case of the letter is used to determine on which line the accidental is placed.
+  # Software that does not support explicit key signatures should mark the individual notes in the tune with the accidentals that apply to them.
+  # Scottish highland pipes typically have the scale G A B ^c d e ^f g a and highland pipe music primarily uses the modes D major and A mixolyian (plus B minor and E dorian). Therefore there are two additional keys specifically for notating highland bagpipe tunes; K:HP doesn't put a key signature on the music, as is common with many tune books of this music, while K:Hp marks the stave with F sharp, C sharp and G natural. Both force all the beams and stems of normal notes to go downwards, and of grace notes to go upwards.
+  # By default, the abc tune will be typeset with a treble clef. You can add special clef specifiers to the K: field, with or without a key signature, to change the clef and various other staff properties, such as transposition. K: clef=bass, for example, would indicate the bass clef. See clefs and transposition for full details.
+  # Note that the first occurrence of the K: field, which must appear in every tune, finishes the tune header. All following lines are considered to be part of the tune body.
+
+rule key_field do
+    label:'K' ':' content:(key/"none") <Field> {
+      def key
+        if content.text_value == "none"
+          Key::NONE
+        else
+          content.key
+        end
+      end
+    }
+  end
+
+  rule key_field_line do
+    key_field line_ender
+  end
+
+
+  rule key do
+    tonic:([A-G] ('#' / 'b')? / 'HP' / 'Hp')? space* mode:mode? space* extra:key_accidental* space* clef:clef? {  
+      def tonic
+        super.text_value if super
+      end
+      def mode
+        super.text_value if super
+      end
+      def extra_accidentals
+        result = {}
+        extra.elements.each do |acc|
+          result[acc.note_letter] = acc.accidental.value
+        end
+        result
+      end
+      def clef
+        super.clef unless super.empty?
+      end
+      def key
+        if !@key
+          @key = Key.new tonic, mode, extra_accidentals
+          @key.clef = clef if clef
+        end
+        @key
+      end
+    }
+  end
+
+  # maj min m ion aeo mix dor phr lyd loc
+  # a bit ugly here because no case-insensitivity support in treetop
+  rule mode do
+    ( [mM] [aA] [jJ] /
+      [mM] [iI] [nN] /
+      [iI] [oO] [nN] /
+      [aA] [eE] [oO] /
+      [mM] [iI] [xX] /
+      [dD] [oO] [rR] /
+      [pP] [hH] [rR] /
+      [lL] [yY] [dD] /
+      [lL] [oO] [cC] )
+    [A-Za-z]* / 'm' ![A-Za-z] / 'exp'
+  end
+
+  rule key_accidental do
+    accidental note_letter space* {
+      def note_letter
+        super.text_value.upcase
+      end
+    }
+  end
+
 
 
   rule instruction_field do
@@ -671,79 +806,7 @@ grammar ABC do
   end
 
 
-  # KEY
-
-  rule key_field do
-    label:'K' ':' content:(key/"none") <Field> {
-      def key
-        if content.text_value == "none"
-          Key::NONE
-        else
-          content.key
-        end
-      end
-    }
-  end
-
-  rule key_field_line do
-    key_field line_ender
-  end
-
-
-  rule key do
-    tonic:([A-G] [\#b]?) 
-                  mode:(space* value:mode?) 
-                  extra:(space* items:key_accidental*) 
-                  clef:(space* node:clef?) {  # TODO should't this be space+?
-                    def tonic
-                      super.text_value if super
-                    end
-                    def mode
-                      super.value.text_value if super.value
-                    end
-                    def extra_accidentals
-                      result = {}
-                      extra.items.elements.each do |acc|
-                        result[acc.note_letter] = acc.accidental.value
-                      end
-                      result
-                    end
-                    def clef
-                      super.node.clef unless super.node.empty?
-                    end
-                    def key
-                      if !@key
-                        @key = Key.new tonic, mode, extra_accidentals
-                        @key.clef = clef if clef
-                      end
-                      @key
-                    end
-                  }
-                end
-
-                # maj min m ion aeo mix dor phr lyd loc
-                # a bit ugly here because no case-insensitivity support in treetop
-                rule mode do
-                  ( [mM] [aA] [jJ] /
-                    [mM] [iI] [nN] /
-                    [iI] [oO] [nN] /
-                    [aA] [eE] [oO] /
-                    [mM] [iI] [xX] /
-                    [dD] [oO] [rR] /
-                    [pP] [hH] [rR] /
-                    [lL] [yY] [dD] /
-                    [lL] [oO] [cC] )
-                  [A-Za-z]* / 'm' ![A-Za-z]
-  end
-
-  rule key_accidental do
-    accidental note_letter space* {
-      def note_letter
-        super.text_value.upcase
-      end
-    }
-  end
-
+  
   # "3.3 Extended information fields"
   # "They start with the characters %%, possibly followed by spaces, after which the name
   #  of the field follows, followed by a space and the contents of the field."
