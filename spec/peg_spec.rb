@@ -2,10 +2,10 @@ $LOAD_PATH << './'
 
 require 'polyglot'
 require 'treetop'
-require 'lib/abc/abc-2.0-draft4.treetop'
+require 'lib/abc/abc-2.1.treetop'
 require 'lib/abc/syntax-nodes.rb'
 
-describe "abc-2.0-draft4 PEG" do
+describe "abc-2.1 PEG" do
 
   before do
     @parser = ABCParser.new

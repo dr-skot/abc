@@ -2,7 +2,7 @@ $LOAD_PATH << './'
 
 require 'polyglot'
 require 'treetop'
-require 'lib/abc/abc-2.0-draft4.treetop'
+require 'lib/abc/abc-2.1.treetop'
 require 'lib/abc/syntax-nodes.rb'
 
 include Treetop::Runtime

@@ -1,7 +1,7 @@
 $LOAD_PATH << './'
 require 'polyglot'
 require 'treetop'
-require 'lib/abc/abc-2.0-draft4.treetop'
+require 'lib/abc/abc-2.1.treetop'
 require 'lib/abc/syntax-nodes.rb'
 require 'lib/abc/parser.rb'
 require 'lib/abc/voice.rb'
@@ -804,11 +804,8 @@ describe "abc 2.1" do
 
 
   # 3.1.14 K: - key
-
   # The key signature should be specified with a capital letter (A-G) which may be followed by a # or b for sharp or flat respectively. In addition the mode should be specified (when no mode is indicated, major is assumed).
-
   # For example, K:C major, K:A minor, K:C ionian, K:A aeolian, K:G mixolydian, K:D dorian, K:E phrygian, K:F lydian and K:B locrian would all produce a staff with no sharps or flats. The spaces can be left out, capitalisation is ignored for the modes and in fact only the first three letters of each mode are parsed so that, for example, K:F# mixolydian is the same as K:F#Mix or even K:F#MIX. As a special case, minor may be abbreviated to m.
-
   # This table sums up how the same key signatures can be written in different ways:
 
   # Mode	 Ionian	 Aeolian	 Mixolydian	 Dorian	 Phrygian	 Lydian	 Locrian
@@ -828,8 +825,8 @@ describe "abc 2.1" do
   # 5 flats	Db	Bbm	AbMix	EbDor	FPhr	GbLyd	CLoc
   # 6 flats	Gb	Ebm	DbMix	AbDor	BbPhr	CbLyd	FLoc
   # 7 flats	Cb	Abm	GbMix	DbDor	EbPhr	FbLyd	BbLoc
-  # By specifying an empty K: field, or K:none, it is possible to use no key signature at all.
 
+  # By specifying an empty K: field, or K:none, it is possible to use no key signature at all.
   # The key signatures may be modified by adding accidentals, according to the format K:<tonic> <mode> <accidentals>. For example, K:D Phr ^f would give a key signature with two flats and one sharp, which designates a very common mode in Klezmer (Ahavoh Rabboh) and in Arabic music (Maqam Hedjaz). Likewise, "K:D maj =c" or "K:D =c" will give a key signature with F sharp and c natural (the D mixolydian mode). Note that there can be several modifying accidentals, separated by spaces, each beginning with an accidental sign (__, _, =, ^ or ^^), followed by a note letter. The case of the letter is used to determine on which line the accidental is placed.
   # It is possible to use the format K:<tonic> exp <accidentals> to explicitly define all the accidentals of a key signature. Thus K:D Phr ^f could also be notated as K:D exp _b _e ^f, where 'exp' is an abbreviation of 'explicit'. Again, the case of the letter is used to determine on which line the accidental is placed.
   # Software that does not support explicit key signatures should mark the individual notes in the tune with the accidentals that apply to them.
