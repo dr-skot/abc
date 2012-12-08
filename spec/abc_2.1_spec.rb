@@ -958,5 +958,175 @@ describe "abc 2.1" do
     end
   end
 
+
+  # 3.1.15 R: - rhythm
+  # Contains an indication of the type of tune (e.g. hornpipe, double jig, single jig, 48-bar polka, etc). This gives the musician some indication of how a tune should be interpreted as well as being useful for database applications (see background information). It has also been used experimentally by playback software (in particular, abcmus) to provide more realistic playback by altering the stress on particular notes within a bar.
+  # See typesetting information fields for details of how the rhythm may be included in the printed score.
+
+  describe "R: (rhythm) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "R:rhythm"
+      p.rhythm.should == "rhythm"
+    end
+    it "can appear in the file header" do
+      p = parse "R:rhythm\n\nX:1\nT:\nK:C"
+      p.rhythm.should == "rhythm"
+    end
+    it "can appear in the tune body" do
+      p = parse_fragment "abc\nR:rhythm\ndef"
+      p.items[3].value.should == "rhythm"
+    end
+    it "can appear as an inline field" do
+      p = parse_fragment "abc[R:rhythm]def"
+      p.items[3].value.should == "rhythm"
+    end
+  end
+
+
+  # 3.1.16 B:, D:, F:, S: - background information
+  # The information fields B:book (i.e. printed tune book), D:discography (i.e. a CD or LP where the tune can be heard), F:file url (i.e. where the either the abc tune or the abc file can be found on the web) and S:source (i.e. the circumstances under which a tune was collected or learned), as well as the fields H:history, N:notes, O:origin and R:rhythm mentioned above, are used for providing structured background information about a tune. These are particularly aimed at large tune collections (common in abc since its inception) and, if used in a systematic way, mean that abc database software can sort, search and filter on specific fields (for example, to sort by rhythm or filter out all the tunes on a particular CD).
+  # The abc standard does not prescribe how these fields should be used, but it is typical to employ several fields of the same type each containing one piece of information, rather than one field containing several pieces of information (see English.abc for some examples).
+  # See typesetting information fields for details of how background information may be included in the printed score.
+
+  describe "B: (book) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "B:book"
+      p.book.should == "book"
+    end
+    it "can appear in the file header" do
+      p = parse "B:book\n\nX:1\nT:\nK:C"
+      p.book.should == "book"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nB:book\ndef"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[B:book]def"
+    end
+  end
+
+  describe "D: (discography) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "D:discography"
+      p.discography.should == "discography"
+    end
+    it "can appear in the file header" do
+      p = parse "D:discography\n\nX:1\nT:\nK:C"
+      p.discography.should == "discography"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nD:discography\ndef"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[D:discography]def"
+    end
+  end
+
+  describe "F: (file url) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "F:file url"
+      p.url.should == "file url"
+    end
+    it "can appear in the file header" do
+      p = parse "F:file url\n\nX:1\nT:\nK:C"
+      p.url.should == "file url"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nF:file url\ndef"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[F:file url]def"
+    end
+  end
+
+  describe "S: (source) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "S:source"
+      p.source.should == "source"
+    end
+    it "can appear in the file header" do
+      p = parse "S:source\n\nX:1\nT:\nK:C"
+      p.source.should == "source"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nS:source\ndef"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[S:source]def"
+    end
+  end
+
+
+  # 3.1.17 I: - instruction
+  # The I:(instruction) field is used for an extended set of instruction directives concerned with how the abc code is to be interpreted.
+  # The I: field can be used interchangeably with stylesheet directives so that any I:directive may instead be written %%directive, and vice-versa. However, to use the inline version, the I: version must be used.
+  # Despite this interchangeability, certain directives have been adopted as part of the standard (indicated by I: in this document) and must be implemented by software confirming to this version of the standard; conversely, the stylesheet directives (indicated by %% in this document) are optional.
+  # Comment: Since stylesheet directives are optional, and not necessarily portable from one program to another, this means that I: fields containing stylesheet directives should be treated liberally by abc software and, in particular, that I: fields which are not recognised should be ignored.
+  # The following table contains a list of the I: field directives adopted as part of the abc standard, with links to further information:
+
+  # directive	     section
+  # I:abc-charset    charset field
+  # I:abc-version    version field
+  # I:abc-include    include field
+  # I:abc-creator    creator field
+  # I:linebreak      typesetting line breaks
+  # I:decoration     decoration dialects
+
+  # Typically, instruction fields are for use in the file header, to set defaults for the file, or (in most cases) in the tune header, but not in the tune body. The occurrence of an instruction field in a tune header overrides that in the file header.
+  # Comment: Remember that abc software which extracts separate tunes from a file must insert the fields of the original file header into the header of the extracted tune: this is also true for the fields defined in this section.
+
+  describe "I: (instruction) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "I:name value"
+      p.instructions['name'].should == "value"
+    end
+    it "can appear in the file header" do
+      p = parse "I:name value\n\nX:1\nT:\nK:C"
+      p.instructions['name'].should == "value"
+    end
+    it "can appear in the tune body" do
+      p = parse_fragment "abc\nI:name value\ndef"
+      p.items[3].name.should == "name"
+      p.items[3].value.should == "value"
+    end
+    it "can appear as an inline field" do
+      p = parse_fragment "abc[I:name value]def"
+      p.items[3].name.should == "name"
+      p.items[3].value.should == "value"
+    end
+  end
+
+
+  # Charset field
+  # The I:abc-charset <value> field indicates the character set in which text strings are coded. Since this affects how the file is read, it should appear as early as possible in the file header. It may not be changed further on in the file.
+  # Example:
+  # I:abc-charset utf-8
+  # Legal values for the charset field are iso-8859-1 through to iso-8859-10, us-ascii and utf-8 (the default).
+  # Software that exports abc tunes conforming to this standard should include a charset field if an encoding other than utf-8 is used. All conforming abc software must be able to handle text strings coded in utf-8 and us-ascii. Support for the other charsets is optional.
+  # Extensive information about UTF-8 and ISO-8859 can be found on wikipedia.
+
+  # Version field
+  # Every abc file conforming to this standard should start with the line
+  # %abc-2.1
+  # (see abc file identification).
+  # However to indicate tunes conforming to a different standard it is possible to use the I:abc-version <value> field, either in the tune header (for individual tunes) or in the file header.
+  # Example:
+  # I:abc-version 2.0
+
+  # Include field
+  # The I:abc-include <filename.abh> imports the definitions found in a separate abc header file (.abh), and inserts them into the file header or tune header.
+  # Example:
+  # I:abc-include mydefs.abh
+  # The included file may contain information fields, stylesheet directives and comments, but no other abc constructs.
+  # If the header file cannot be found, the I:abc-include instruction should be ignored with a non-fatal error message.
+  # Comment: If you use this construct and distribute your abc files, make sure that you distribute the .abh files with them.
+
+  # Creator field
+  # The I:abc-creator <value> field contains the name and version number of the program that created the abc file.
+  # Example:
+  # I:abc-creator xml2abc-2.7
+  # Software that exports abc tunes conforming to this standard must include a creator field.
+
+
 end
 

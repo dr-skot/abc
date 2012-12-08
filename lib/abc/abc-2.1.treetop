@@ -296,7 +296,11 @@ grammar ABC do
   end
 
   rule any_inline_field do
-    parts_body_field / voice_body_field / special_field / inline_string_field
+    parts_body_field / voice_body_field / inline_special_field / inline_string_field
+  end
+  
+  rule inline_special_field do
+    inline_instruction_field / !('I'/'%%') special_field
   end
 
   rule inline_string_field do
@@ -697,10 +701,64 @@ rule key_field do
   end
 
 
+  # 3.1.15 R: - rhythm
+  # Contains an indication of the type of tune (e.g. hornpipe, double jig, single jig, 48-bar polka, etc). This gives the musician some indication of how a tune should be interpreted as well as being useful for database applications (see background information). It has also been used experimentally by playback software (in particular, abcmus) to provide more realistic playback by altering the stress on particular notes within a bar.
+  # See typesetting information fields for details of how the rhythm may be included in the printed score.
+
+  # 3.1.16 B:, D:, F:, S: - background information
+  # The information fields B:book (i.e. printed tune book), D:discography (i.e. a CD or LP where the tune can be heard), F:file url (i.e. where the either the abc tune or the abc file can be found on the web) and S:source (i.e. the circumstances under which a tune was collected or learned), as well as the fields H:history, N:notes, O:origin and R:rhythm mentioned above, are used for providing structured background information about a tune. These are particularly aimed at large tune collections (common in abc since its inception) and, if used in a systematic way, mean that abc database software can sort, search and filter on specific fields (for example, to sort by rhythm or filter out all the tunes on a particular CD).
+  # The abc standard does not prescribe how these fields should be used, but it is typical to employ several fields of the same type each containing one piece of information, rather than one field containing several pieces of information (see English.abc for some examples).
+  # See typesetting information fields for details of how background information may be included in the printed score.
+
+  # ^^ covered under string fields
+
+
+  # 3.1.17 I: - instruction
+  # The I:(instruction) field is used for an extended set of instruction directives concerned with how the abc code is to be interpreted.
+  # The I: field can be used interchangeably with stylesheet directives so that any I:directive may instead be written %%directive, and vice-versa. However, to use the inline version, the I: version must be used.
+  # Despite this interchangeability, certain directives have been adopted as part of the standard (indicated by I: in this document) and must be implemented by software confirming to this version of the standard; conversely, the stylesheet directives (indicated by %% in this document) are optional.
+  # Comment: Since stylesheet directives are optional, and not necessarily portable from one program to another, this means that I: fields containing stylesheet directives should be treated liberally by abc software and, in particular, that I: fields which are not recognised should be ignored.
+  # The following table contains a list of the I: field directives adopted as part of the abc standard, with links to further information:
+
+  # directive	     section
+  # I:abc-charset    charset field
+  # I:abc-version    version field
+  # I:abc-include    include field
+  # I:abc-creator    creator field
+  # I:linebreak      typesetting line breaks
+  # I:decoration     decoration dialects
+
+  # Typically, instruction fields are for use in the file header, to set defaults for the file, or (in most cases) in the tune header, but not in the tune body. The occurrence of an instruction field in a tune header overrides that in the file header.
+  # Comment: Remember that abc software which extracts separate tunes from a file must insert the fields of the original file header into the header of the extracted tune: this is also true for the fields defined in this section.
 
   rule instruction_field do
-    'not implemented'
+    label:'I' ':' directive value:(tune_space+ text:string_field_content) <Field> {
+      def name
+        directive.text_value
+      end
+      def value
+        super.text.value if !super.empty?
+      end
+    }
   end
+
+  rule directive do
+    [a-z\-]+
+  end
+
+  rule inline_instruction_field do
+    label:'I' ':' directive value:(tune_space+ text:inline_string_field_content) <Field> {
+      def name
+        directive.text_value
+      end
+      def value
+        super.text.text_value if !super.empty?
+      end
+    }
+  end
+
+
+
 
   rule macro_field do
     'not implemented'

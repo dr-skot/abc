@@ -60,7 +60,9 @@ module ABC
     :book => /B/,
     :composer => /C/,
     :disc => /D/,
-    :url => /F/, # (think F for file url)
+    :discography => /D/,
+    :file_url => /F/,
+    :url => /F/, 
     :group => /G/,
     :history => /H/,
     :notations => /N/,
@@ -125,6 +127,17 @@ module ABC
           values
         end
       end
+    end
+
+    def instructions
+      if !@instructions
+        @instructions = {}
+        if header
+          fields = header.fields(/I/)
+          fields.each { |f| @instructions[f.name] = f.value }
+        end
+      end
+      @instructions
     end
     
     def method_missing(meth, *args, &block)
