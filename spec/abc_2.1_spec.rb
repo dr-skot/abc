@@ -1105,6 +1105,23 @@ describe "abc 2.1" do
   # Software that exports abc tunes conforming to this standard should include a charset field if an encoding other than utf-8 is used. All conforming abc software must be able to handle text strings coded in utf-8 and us-ascii. Support for the other charsets is optional.
   # Extensive information about UTF-8 and ISO-8859 can be found on wikipedia.
 
+  describe "I:abc-charset utf-8" do
+    it "can't appear in the tune header" do
+      fail_to_parse_fragment "I:abc-charset utf-8"
+    end
+    it "can appear in the file header" do
+      p = parse "I:abc-charset utf-8\n\nX:1\nT:\nK:C"
+      p.instructions['abc-charset'].should == "utf-8"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nI:abc-charset utf-8\ndef"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[I:abc-charset utf-8]def"
+    end
+  end
+
+
   # Version field
   # Every abc file conforming to this standard should start with the line
   # %abc-2.1
@@ -1113,6 +1130,24 @@ describe "abc 2.1" do
   # Example:
   # I:abc-version 2.0
 
+  describe "I:abc-version instruction" do
+    it "can appear in the tune header" do
+      p = parse_fragment "I:abc-version 2.0"
+      p.instructions['abc-version'].should == "2.0"
+    end
+    it "can appear in the file header" do
+      p = parse "I:abc-version 2.0\n\nX:1\nT:\nK:C"
+      p.instructions['abc-version'].should == "2.0"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nI:abc-version 2.0\ndef"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[I:abc-version 2.0]def"
+    end
+  end
+
+
   # Include field
   # The I:abc-include <filename.abh> imports the definitions found in a separate abc header file (.abh), and inserts them into the file header or tune header.
   # Example:
@@ -1120,6 +1155,25 @@ describe "abc 2.1" do
   # The included file may contain information fields, stylesheet directives and comments, but no other abc constructs.
   # If the header file cannot be found, the I:abc-include instruction should be ignored with a non-fatal error message.
   # Comment: If you use this construct and distribute your abc files, make sure that you distribute the .abh files with them.
+
+  describe "I:abc-include instruction" do
+    it "can appear in the tune header" do
+      p = parse_fragment "I:abc-include include.abh"
+      p.instructions['abc-include'].should == "include.abh"
+    end
+    it "can appear in the file header" do
+      p = parse "I:abc-include include.abh\n\nX:1\nT:\nK:C"
+      p.instructions['abc-include'].should == "include.abh"
+    end
+    it "can't appear in the tune body" do
+      fail_to_parse_fragment "abc\nI:abc-include include.abh\ndef"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[I:abc-include include.abh]def"
+    end
+  end
+
+
 
   # Creator field
   # The I:abc-creator <value> field contains the name and version number of the program that created the abc file.

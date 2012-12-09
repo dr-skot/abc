@@ -9,6 +9,48 @@
 require 'treetop'
 
 
+module Treetop
+
+  module Runtime
+
+    class InitHash < Hash
+      def []=(k, v)
+        super(k, v)
+        v.init_once if v.respond_to?(:init)
+      end
+    end
+
+    class CompiledParser
+      alias_method :instantiate_node_original, :instantiate_node
+      def instantiate_node(node_type, *args)
+        # puts node_type
+        node = instantiate_node_original(node_type, *args)
+        node.parser = self
+        node
+      end
+
+      alias_method :prepare_to_parse_original, :prepare_to_parse
+      def prepare_to_parse(input)
+        prepare_to_parse_original(input)
+        @node_cache = Hash.new {|hash, key| hash[key] = InitHash.new}
+      end
+      
+    end
+    
+    class SyntaxNode
+      attr_accessor :parser
+      
+      def init_once
+        init unless @init_has_happened
+        @init_has_happened = true
+      end
+
+    end
+    
+  end
+end
+
+
 class Treetop::Runtime::SyntaxNode
 
   # TODO mother, descendants, left_sister, right_sister

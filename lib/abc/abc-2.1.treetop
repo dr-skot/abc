@@ -262,11 +262,11 @@ grammar ABC do
   end
 
   rule tune_header_field_excludes do
-    [swXK]
+    [swXK] / tune_header_instruction_field_excludes
   end
 
   rule tune_body_field_excludes do
-    [A-Ga-gX-Zx-zHOS]
+    [A-Ga-gX-Zx-zHOS] / tune_body_instruction_field_excludes
   end
   
   rule file_header_field do
@@ -747,7 +747,7 @@ rule key_field do
   end
 
   rule inline_instruction_field do
-    label:'I' ':' directive value:(tune_space+ text:inline_string_field_content) <Field> {
+    !tune_body_instruction_field_excludes label:'I' ':' directive value:(tune_space+ text:inline_string_field_content) <Field> {
       def name
         directive.text_value
       end
@@ -757,7 +757,13 @@ rule key_field do
     }
   end
 
+  rule tune_header_instruction_field_excludes do
+    'I:' ('abc-charset') !directive
+  end
 
+  rule tune_body_instruction_field_excludes do
+    'I:' ('abc-charset' / 'abc-include' / 'abc-version') !directive
+  end
 
 
   rule macro_field do
