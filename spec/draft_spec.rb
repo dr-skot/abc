@@ -1,9 +1,5 @@
-$LOAD_PATH << './'
-
-# TODO figure out the right way to deal with these dependencies
-require 'lib/abc/parser.rb'
-require 'lib/abc/voice.rb'
-require 'lib/abc/measure.rb'
+$LOAD_PATH.unshift File.expand_path('../lib')
+require 'abc/parser'
 
 describe "abc 2.0 draft 4" do
 

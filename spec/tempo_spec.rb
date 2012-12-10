@@ -1,6 +1,5 @@
-$LOAD_PATH << './'
-
-require 'lib/abc/tempo.rb'
+$LOAD_PATH.unshift File.expand_path('../lib')
+require 'abc/parser/parsed_elements/tempo'
 
 include ABC
 

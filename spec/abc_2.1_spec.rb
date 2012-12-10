@@ -1,14 +1,9 @@
-$LOAD_PATH << './'
 require 'polyglot'
 require 'treetop'
-require 'lib/abc/abc-2.1.treetop'
-require 'lib/abc/syntax-nodes.rb'
-require 'lib/abc/parser.rb'
-require 'lib/abc/voice.rb'
-require 'lib/abc/part.rb'
-require 'lib/abc/measure.rb'
-require 'lib/abc/meter.rb'
-require 'lib/abc/key.rb'
+
+$LOAD_PATH.unshift File.expand_path('../lib')
+require 'abc/parser'
+include ABC
 
 
 describe "abc 2.1" do
@@ -1255,7 +1250,6 @@ describe "abc 2.1" do
 
   # 4.1 Pitch
   # The following letters are used to represent notes using the treble clef:
-
   #                                                       d'
   #                                                 -c'- ----
   #                                              b
@@ -1276,6 +1270,13 @@ describe "abc 2.1" do
   #  ---- -A,-
   #   G,
   # a
+  # and by extension other lower and higher notes are available.
+  # Lower octaves are reached by using commas and higher octaves are written using apostrophes; each extra comma/apostrophe lowers/raises the note by an octave.
+  # Programs should be able to to parse any combinations of , and ' signs appearing after the note. For example C,', (C comma apostrophe comma) has the the same meaning as C, (C comma) and (uppercase) C' (C apostrophe) should have the same meaning as (lowercase) c.
+  # Alternatively, it is possible to raise or lower a section of music code using the octave parameter of the K: or V: fields.
+  # Comment: The English note names C-B, which are used in the abc system, correspond to the note names do-si, which are used in many other languages: do=C, re=D, mi=E, fa=F, sol=G, la=A, si=B.
+
+  
 
 end
 

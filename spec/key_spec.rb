@@ -1,6 +1,5 @@
-$LOAD_PATH << './'
-
-require 'lib/abc/key.rb'
+$LOAD_PATH.unshift File.expand_path('../lib')
+require 'abc/parser/parsed_elements/key'
 
 include ABC
 
