@@ -13,10 +13,10 @@ module Treetop
 
   module Runtime
 
-    class InitHash < Hash
+    class ChristeningHash < Hash
       def []=(k, v)
         super(k, v)
-        v.init_once if v.respond_to?(:init)
+        v.christen_once if v.respond_to?(:christen)
       end
     end
 
@@ -32,17 +32,28 @@ module Treetop
       alias_method :prepare_to_parse_original, :prepare_to_parse
       def prepare_to_parse(input)
         prepare_to_parse_original(input)
-        @node_cache = Hash.new {|hash, key| hash[key] = InitHash.new}
+        @node_cache = Hash.new {|hash, key| hash[key] = ChristeningHash.new}
       end
       
     end
     
     class SyntaxNode
       attr_accessor :parser
+      attr_reader :inclusion
       
-      def init_once
-        init unless @init_has_happened
-        @init_has_happened = true
+      def christen_once
+        christen unless @christened
+        @christened = true
+      end
+
+      def text_value_with_inclusions
+        if inclusion
+          inclusion
+        elsif terminal?
+          text_value
+        else
+          elements.map { |elem| elem.text_value_with_inclusions }.join("")
+        end
       end
 
     end
@@ -809,6 +820,15 @@ module ABC
     end
     def reset
       @index = 0
+    end
+  end
+
+  class InstructionField < Field
+    def christen
+      include_file(value) if name == 'abc-include'
+    end
+    def include_file(filename)
+      @inclusion = IO.read(filename)
     end
   end
 

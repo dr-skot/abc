@@ -732,7 +732,7 @@ rule key_field do
   # Comment: Remember that abc software which extracts separate tunes from a file must insert the fields of the original file header into the header of the extracted tune: this is also true for the fields defined in this section.
 
   rule instruction_field do
-    label:'I' ':' directive value:(tune_space+ text:string_field_content) <Field> {
+    label:'I' ':' directive value:(tune_space+ text:string_field_content) <InstructionField> {
       def name
         directive.text_value
       end

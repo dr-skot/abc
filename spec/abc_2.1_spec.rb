@@ -1157,20 +1157,30 @@ describe "abc 2.1" do
   # Comment: If you use this construct and distribute your abc files, make sure that you distribute the .abh files with them.
 
   describe "I:abc-include instruction" do
+    before do
+      @filename = "test-include.abh"
+      IO.write(@filename, "C:Bach")
+    end
+
+    after do
+      File.delete(@filename)
+    end
+
     it "can appear in the tune header" do
-      p = parse_fragment "I:abc-include include.abh"
-      p.instructions['abc-include'].should == "include.abh"
+      p = parse_fragment "I:abc-include #{@filename}\nK:C"
+      p.composer.should == 'Bach'
     end
     it "can appear in the file header" do
-      p = parse "I:abc-include include.abh\n\nX:1\nT:\nK:C"
-      p.instructions['abc-include'].should == "include.abh"
+      p = parse "I:abc-include #{@filename}\n\nX:1\nT:\nK:C"
+      p.composer.should == 'Bach'
     end
     it "can't appear in the tune body" do
-      fail_to_parse_fragment "abc\nI:abc-include include.abh\ndef"
+      fail_to_parse_fragment "abc\nI:abc-include #{@filename}\ndef"
     end
     it "can't appear as an inline field" do
-      fail_to_parse_fragment "abc[I:abc-include include.abh]def"
+      fail_to_parse_fragment "abc[I:abc-include #{@filename}]def"
     end
+    # TODO test header files with linefeeds at the end
   end
 
 
