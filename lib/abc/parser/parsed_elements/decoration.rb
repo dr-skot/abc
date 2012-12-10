@@ -1,4 +1,5 @@
 module ABC
+
   class Decoration
     attr_reader :symbol
     def initialize(symbol)
@@ -8,4 +9,5 @@ module ABC
       :decoration
     end
   end
+
 end
