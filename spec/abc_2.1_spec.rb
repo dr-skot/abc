@@ -299,22 +299,6 @@ describe "abc 2.1" do
     end
   end
 
-  # TODO move this to proper section
-  describe "information field continuation" do
-    it "combines string-based fields with '+:'" do
-      p = parse_fragment "H:let me tell you a little\n+:about this song"
-      p.history.should == "let me tell you a little about this song"
-    end
-    it "combines lyric lines with '+:'" do
-      p = parse_fragment "GCEA\nw:my dog\n+:has fleas"
-      p.notes[3].lyric.text.should == "fleas"
-    end
-    it "combines symbol lines with '+:'" do
-      p = parse_fragment "GCEA\ns:**\n+:*+f+"
-      p.notes[3].decorations[0].symbol.should == "f"
-    end
-  end
-
 
   # 2.3.1 Embedded abc fragment
   # An abc fragment is a partial abc tune. It may contain a partial tune header with no body or a tune body with optional tune header information fields.
@@ -1180,13 +1164,12 @@ describe "abc 2.1" do
     it "can't appear as an inline field" do
       fail_to_parse_fragment "abc[I:abc-include #{@filename}]def"
     end
-    it "ignores linefeeds at the end of the include file" do
-      IO.write(@filename, "C:Bach\n\n")
+    it "ignores whiespace at the end of the include file" do
+      IO.write(@filename, "C:Bach\n\n\n   \n     ")
       p = parse_fragment "I:abc-include #{@filename}\nK:C"
       p.composer.should == 'Bach'
     end
   end
-
 
 
   # Creator field
@@ -1195,6 +1178,104 @@ describe "abc 2.1" do
   # I:abc-creator xml2abc-2.7
   # Software that exports abc tunes conforming to this standard must include a creator field.
 
+
+  # 3.2 Use of fields within the tune body
+  # It is often desired to change the key (K), meter (M), or unit note length (L) mid-tune. These, and most other information fields which can be legally used within the tune body, can be specified as an inline field by placing them within square brackets in a line of music
+  # Example: The following two excerpts are considered equivalent - either variant is equally acceptable.
+  # E2E EFE|E2E EFG|[M:9/8] A2G F2E D2|]
+  # E2E EFE|E2E EFG|\
+  # M:9/8
+  # A2G F2E D2|]
+  # The first bracket, field identifier and colon must be written without intervening spaces. Only one field may be placed within a pair of brackets; however, multiple bracketed fields may be placed next to each other. Where appropriate, inline fields (especially clef changes) can be used in the middle of a beam without breaking it.
+  # See information fields for a table showing the fields that may appear within the body and those that may be used inline.
+
+  # ^^ already covered
+
+
+  # 3.3 Field continuation
+  # A field that is too long for one line may be continued by prefixing +: at the start of the following line. For string-type information fields (see the information fields table for a list of string-type fields), the continuation is considered to add a space between the two half lines.
+  # Example: The following two excerpts are considered equivalent.
+  #   w:Sa-ys my au-l' wan to your aul' wan,
+  #   +:will~ye come to the Wa-x-ies dar-gle?
+  #   w:Sa-ys my au-l' wan to your aul' wan, will~ye come to the Wa-x-ies dar-gle?
+  # Comment: This is most useful for continuing long w:(aligned lyrics) and H:(history) fields. However, it can also be useful for preventing automatic wrapping by email software (see continuation of input lines).
+  # Recommendation for GUI developers: Sometimes users may wish to paste paragraphs of text into an abc file, particularly in the H:(history) field. GUI developers are recommended to provide tools for reformatting such paragraphs, for example by splitting them into several lines each prefixed by +:.
+  # There is no limit to the number of times a field may be continued and comments and stylesheet directives may be interspersed between the continuations.
+  # Example: The following is a legal continuation of the w: field, although the usage not recommended (the change of font could also be achieved by font specifiers - see font directives).
+  #   %%vocalfont Times-Roman 14
+  #   w:nor-mal
+  #   % legal, but not recommended
+  #   %%vocalfont Times-Italic *
+  #   +:i-ta-lic
+  #   %%vocalfont Times-Roman *
+  #   +:nor-mal
+  # Comment: abc standard 2.3 is scheduled to address markup and will be seeking a more elegant way to achieve the above.
+
+  describe "information field continuation" do
+    it "combines string-based fields with '+:'" do
+      p = parse_fragment "H:let me tell you a little\n+:about this song"
+      p.history.should == "let me tell you a little about this song"
+    end
+    it "combines lyric lines with '+:'" do
+      p = parse_fragment "GCEA\nw:my dog\n+:has fleas"
+      p.notes[3].lyric.text.should == "fleas"
+    end
+    it "combines symbol lines with '+:'" do
+      p = parse_fragment "GCEA\ns:**\n+:*+f+"
+      p.notes[3].decorations[0].symbol.should == "f"
+    end
+    it "combines more than two lines" do
+      p = parse_fragment "H:let me tell\n+:you a little\n+:about \n+:this song"
+      p.history.should == "let me tell you a little about this song"
+    end
+    it "works across end comments" do
+      p = parse_fragment "H:let me tell you a little %comment\n+:about this song"
+      p.history.should == "let me tell you a little about this song"
+    end
+    it "works across comment lines" do
+      p = parse_fragment "H:let me tell you a little \n%comment\n+:about this song"
+      p.history.should == "let me tell you a little about this song"
+    end
+    it "works across stylesheet directives" do
+      p = parse_fragment ["abcd abc",
+                          "%%vocalfont Times-Roman 14",
+                          "w:nor-mal",
+                          "% legal, but not recommended",
+                          "%%vocalfont Times-Italic *",
+                          "+:i-ta-lic",
+                          "%%vocalfont Times-Roman 14",
+                          "+:nor-mal"].join("\n")
+      p.lines[0].lyrics.map {|lyric| lyric.text }.join("").should == "normalitalicnormal"
+      # TODO make it easier to recover lyrics
+    end
+  end
+
+
+  # 4. The tune body
+
+  # 4.1 Pitch
+  # The following letters are used to represent notes using the treble clef:
+
+  #                                                       d'
+  #                                                 -c'- ----
+  #                                              b
+  #                                         -a- --- ---- ----
+  #                                        g
+  #  ------------------------------------f-------------------
+  #                                    e
+  #  --------------------------------d-----------------------
+  #                                c
+  #  ----------------------------B---------------------------
+  #                            A
+  #  ------------------------G-------------------------------
+  #                        F
+  #  --------------------E-----------------------------------
+  #                    D
+  #  ---- ---- ---- -C-
+  #             B,
+  #  ---- -A,-
+  #   G,
+  # a
 
 end
 
