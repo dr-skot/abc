@@ -1180,7 +1180,11 @@ describe "abc 2.1" do
     it "can't appear as an inline field" do
       fail_to_parse_fragment "abc[I:abc-include #{@filename}]def"
     end
-    # TODO test header files with linefeeds at the end
+    it "ignores linefeeds at the end of the include file" do
+      IO.write(@filename, "C:Bach\n\n")
+      p = parse_fragment "I:abc-include #{@filename}\nK:C"
+      p.composer.should == 'Bach'
+    end
   end
 
 

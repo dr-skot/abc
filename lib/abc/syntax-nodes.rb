@@ -21,6 +21,9 @@ module Treetop
     end
 
     class CompiledParser
+      attr_accessor :input_changed
+      alias_method :input_changed?, :input_changed
+
       alias_method :instantiate_node_original, :instantiate_node
       def instantiate_node(node_type, *args)
         # puts node_type
@@ -828,7 +831,8 @@ module ABC
       include_file(value) if name == 'abc-include'
     end
     def include_file(filename)
-      @inclusion = IO.read(filename)
+      parser.input_changed = true
+      @inclusion = IO.read(filename).sub(/\s+$/, '') # remove trailing whitespace
     end
   end
 

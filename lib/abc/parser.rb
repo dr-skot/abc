@@ -5,16 +5,17 @@ module ABC
 
   class Parser
 
-    def parse(input)
+    def parse(input, options = {})
       @parser = ABCParser.new
-      p = @parser.parse input          
+      p = @parser.parse(input, options)
       if p
-        text_value = p.text_value_with_inclusions
-        if text_value != input
-          parse text_value
+        if @parser.input_changed?
+          parse(p.text_value_with_inclusions, options)
         else
-          p.assign_free_text
-          p.propagate_tunebook_header
+          if p.is_a? Tunebook
+            p.assign_free_text
+            p.propagate_tunebook_header
+          end
           p.divvy_voices
           p.divvy_parts
           p.apply_note_lengths
@@ -31,26 +32,7 @@ module ABC
     end
 
     def parse_fragment(input)
-      @parser = ABCParser.new
-      p = @parser.parse(input, :root => :abc_fragment)
-      if p
-        text_value = p.text_value_with_inclusions
-        if text_value != input
-          parse_fragment text_value
-        else
-          p.divvy_voices
-          p.divvy_parts
-          p.apply_note_lengths
-          p.apply_chord_lengths
-          p.apply_broken_rhythms
-          p.apply_meter
-          p.apply_key_signatures
-          p.apply_symbol_lines
-          p.apply_lyrics
-          p.collect_measures
-          p
-        end
-      end
+      parse(input, :root => :abc_fragment)
     end
 
     def base_parser
