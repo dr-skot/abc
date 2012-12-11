@@ -1436,17 +1436,68 @@ describe "abc 2.1" do
      it "is relative to a new unit note length after an L: field in the tune body" do
       p = parse_fragment "L:1/2\na4\nL:1/4\na4"
       tune = p
-      tune.items[0].note_length.should == 2
-      tune.items[2].note_length.should == 1
+      tune.notes[0].note_length.should == 2
+      tune.notes[1].note_length.should == 1
     end
-    it "is relative a new unit note length after an inline L: field" do
+    it "is relative to a new unit note length after an inline L: field" do
       p = parse_fragment "L:1/2\na4[L:1/4]a4"
       tune = p
-      tune.items[0].note_length.should == 2
-      tune.items[2].note_length.should == 1
+      tune.notes[0].note_length.should == 2
+      tune.notes[1].note_length.should == 1
     end
   end
 
+
+   # 4.4 Broken rhythm
+   # A common occurrence in traditional music is the use of a dotted or broken rhythm. For example, hornpipes, strathspeys and certain morris jigs all have dotted eighth notes followed by sixteenth notes, as well as vice-versa in the case of strathspeys. To support this, abc notation uses a > to mean 'the previous note is dotted, the next note halved' and < to mean 'the previous note is halved, the next dotted'.
+   # Example: The following lines all mean the same thing (the third version is recommended):
+   # L:1/16
+   # a3b cd3 a2b2c2d2
+   # L:1/8
+   # a3/2b/2 c/2d3/2 abcd
+   # L:1/8
+   # a>b c<d abcd
+   # As a logical extension, >> means that the first note is double dotted and the second quartered and >>> means that the first note is triple dotted and the length of the second divided by eight. Similarly for << and <<<.
+   # Note that the use of broken rhythm markers between notes of unequal lengths will produce undefined results, and should be avoided.
+
+
+  describe "a broken rhythm marker" do
+
+    it "is allowed" do
+      parse_fragment "a>b c<d a>>b c2<<d2"
+    end
+    it "cannot be immediately followed by another one in the other direction" do
+      fail_to_parse_fragment "a<>b"
+      fail_to_parse_fragment "a><b"
+    end
+    it "appears as an attribute of the following note" do
+      p = parse_fragment "a>b"
+      p.items[0].broken_rhythm_marker.should == nil
+      p.items[1].broken_rhythm_marker.change('>').should == Rational(1, 2)
+    end
+    it "alters note lengths appropriately" do
+      tune = parse_fragment "L:1\na>b c<d e<<f g>>>a"
+      tune.items[0].note_length.should == Rational(3, 2)
+      tune.items[1].note_length.should == Rational(1, 2)
+      tune.items[2].note_length.should == Rational(1, 2)
+      tune.items[3].note_length.should == Rational(3, 2)
+      tune.items[4].note_length.should == Rational(1, 4)
+      tune.items[5].note_length.should == Rational(7, 4)
+      tune.items[6].note_length.should == Rational(15, 8)
+      tune.items[7].note_length.should == Rational(1, 8)
+    end
+    it "works with the default unit note length" do
+      p = parse_fragment "a>b"
+      p.items[0].note_length.should == Rational(3, 16)
+      p.items[1].note_length.should == Rational(1, 16)
+    end
+    it "works with note length specifiers" do
+      p = parse_fragment "a2>b2"
+      p.items[0].note_length.should == Rational(3, 8)
+      p.items[1].note_length.should == Rational(1, 8)
+    end
+
+  end
 
 end
 

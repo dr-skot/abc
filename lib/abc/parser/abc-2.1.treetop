@@ -838,11 +838,7 @@ rule key_field do
    rule note_letter do
      [A-Ga-g] {
        def octave
-         if text_value =~ /[a-g]/
-           1
-         else
-           0
-         end
+         text_value =~ /[a-g]/ ? 1 : 0
        end
      }
    end
@@ -878,6 +874,26 @@ rule key_field do
    # Comment: Note lengths that can't be translated to conventional staff notation are legal, but their representation by abc typesetting software is undefined and they should be avoided.
    # Note for developers: All compliant software should be able to handle note lengths down to a 128th note; shorter lengths are optional.
 
+   rule note_length_node do
+     numerator:digit* denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
+      def numerator
+        super.empty? ? 1 : super.text_value.to_i
+      end
+      def denominator
+        if super.empty?         # no denominator: use 1
+          1
+        elsif !super.respond_to? :digits  # no numeral, only slashes: use 2 ** slash count
+          2 ** super.text_value.length
+        else                              # numeral: use it
+          super.digits.text_value.to_i
+        end
+      end
+      def value
+        Rational numerator, denominator
+      end
+    }  
+  end
+
    
    # 4.4 Broken rhythm
    # A common occurrence in traditional music is the use of a dotted or broken rhythm. For example, hornpipes, strathspeys and certain morris jigs all have dotted eighth notes followed by sixteenth notes, as well as vice-versa in the case of strathspeys. To support this, abc notation uses a > to mean 'the previous note is dotted, the next note halved' and < to mean 'the previous note is halved, the next dotted'.
@@ -890,6 +906,20 @@ rule key_field do
    # a>b c<d abcd
    # As a logical extension, >> means that the first note is double dotted and the second quartered and >>> means that the first note is triple dotted and the length of the second divided by eight. Similarly for << and <<<.
    # Note that the use of broken rhythm markers between notes of unequal lengths will produce undefined results, and should be avoided.
+
+  rule broken_rhythm do 
+    # TODO: instead of lookahead do postparse check
+    ('>'+ / '<'+) &(space* notelike_thing) <BrokenRhythm> {
+      # direction = '<' or '>'; which note's timing are you changing?
+      def change(direction) 
+        x = Rational 1, 2 ** text_value.length
+        text_value[0] == direction ? x : 2 - x
+        # 2-x means 1 + (1-x): original time (=1)
+        # plus the time that's left after shortening the other note (=1-x)
+      end
+    }
+  end
+
 
    
    rule macro_field do
@@ -1106,47 +1136,8 @@ rule key_field do
      }
    end
    
-   rule note_length_node do
-     numerator:digit* denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
-      def numerator
-        if !super || super.empty?
-          1
-        else
-          super.text_value.to_i
-        end
-      end
-      def denominator
-        if !super || super.empty?         # no denominator: use 1
-          1
-        elsif !super.respond_to? :digits  # no numeral, only slashes: use 2 ** slash count
-          2 ** super.text_value.length
-        else                              # numeral: use it
-          super.digits.text_value.to_i
-        end
-      end
-      def value
-        Rational numerator, denominator
-      end
-    }  
-  end
-
 
   # BROKEN RHYTHM MARKERS
-
-  rule broken_rhythm do 
-    # TODO: instead of lookahead do postparse check
-    ('>'+ / '<'+) &(space* notelike_thing) <BrokenRhythm> {
-      # direction = '<' or '>'; which note's timing are you changing?
-      def change(direction) 
-        x = Rational 1, 2 ** text_value.length
-        if text_value[0] == direction
-          x
-        else 
-          2 - x # ie 1 + 1-x; adding time left after shortening the other note
-        end
-      end
-    }
-  end
 
 
   ## 4.8. REPEAT/BAR SYMBOLS
