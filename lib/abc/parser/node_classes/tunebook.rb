@@ -57,6 +57,9 @@ module ABC
         end
       end
     end
+    def apply_clefs
+      tunes.each { |tune| tune.apply_clefs }
+    end
   end  
 
 end

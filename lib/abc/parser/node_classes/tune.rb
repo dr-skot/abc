@@ -273,5 +273,11 @@ module ABC
       @first_voice.measures
     end
     alias_method :bars, :measures
+    def apply_clefs
+      voices.each_value { |v| v.apply_clefs(clef) }
+    end
+    def clef
+      key.clef
+    end
   end
 end

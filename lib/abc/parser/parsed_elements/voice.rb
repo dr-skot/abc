@@ -59,6 +59,23 @@ module ABC
       end
     end
 
+    def apply_clefs(tune_clef)
+      current_clef = clef || tune_clef
+      items.each do |item|
+        if item.respond_to?(:pitch) && item.pitch
+          item.pitch.clef = current_clef
+        elsif item.respond_to?(:notes) # a chord
+          item.notes.each do |note|
+            note.pitch.clef = current_clef
+          end
+        elsif item.is_a?(Field) && item.label.text_value == "K"
+          # only change clefs if a clef was specified
+          key_clef = item.value.clef
+          current_clef = key_clef if key_clef != Clef::DEFAULT 
+        end
+      end
+    end
+
     def apply_key_signatures(key)
       base_signature = key.signature.dup
       signature = base_signature

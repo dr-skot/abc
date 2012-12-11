@@ -1319,8 +1319,134 @@ describe "abc 2.1" do
       p.notes[0].pitch.octave.should == -2
       p.notes[1].pitch.octave.should == 2
     end
+    # TODO make this work when we get to clef
+    it "can be octave-shifted by the K: field" do
+       p = parse_fragment "[K:treble-8]C"
+       p.notes[0].pitch.octave.should == -1
+    end
+    it "can be octave-shifted by the K: field in the header" do
+       p = parse_fragment "K:treble-8\nC"
+       p.notes[0].pitch.octave.should == -1
+    end
+    it "can be octave-shifted by the K: field inline" do
+       p = parse_fragment "[K:treble-8]C"
+       p.notes[0].pitch.octave.should == -1
+    end
+    it "can be octave-shifted by the V: field" do
+       p = parse_fragment "V:1 treble+8\nK:C\n[V:1]C"
+       p.voices['1'].notes[0].pitch.octave.should == 1
+    end
+    it "will not have its octave-shift canceled by a K: field with no clef" do
+       p = parse_fragment "V:1 treble+8\nK:C\n[V:1][K:D]C"
+       p.voices['1'].notes[0].pitch.clef.should == p.voices['1'].clef
+       p.voices['1'].notes[0].pitch.octave.should == 1
+    end
+    it "will use the tune's clef if the voice doesn't specify one" do
+       p = parse_fragment "K:treble+8\n[V:1]C"
+       p.voices['1'].notes[0].pitch.clef.should == p.clef
+       p.voices['1'].notes[0].pitch.octave.should == 1
+    end
   end
   
+
+  # 4.2 Accidentals
+  # The symbols ^, = and _ are used (before a note) to notate respectively a sharp, natural or flat. Double sharps and flats are available with ^^ and __ respectively.
+
+  describe "an accidental specifier" do
+    it "can be applied to any note" do
+      parse_fragment "^A ^^a2 _b/ __C =D"
+    end
+    it "cannot take on bizarro forms" do
+      fail_to_parse_fragment "^_A"
+      fail_to_parse_fragment "_^A"
+      fail_to_parse_fragment "^^^A"
+      fail_to_parse_fragment "=^A"
+      fail_to_parse_fragment "___A"
+      fail_to_parse_fragment "=_A"
+    end
+    it "is valued accurately" do
+      p = parse_fragment "^A^^a2_b/__C=DF"
+      p.notes[0].pitch.accidental.should == 1
+      p.notes[1].pitch.accidental.should == 2
+      p.notes[2].pitch.accidental.should == -1
+      p.notes[3].pitch.accidental.should == -2
+      p.notes[4].pitch.accidental.should == 0
+      p.notes[5].pitch.accidental.should == nil
+    end
+    it "changes the height of the corresponding note" do
+      p = parse_fragment "^C^^C2_C/__C=CC"
+      p.notes[0].pitch.height.should == 1
+      p.notes[1].pitch.height.should == 2
+      p.notes[2].pitch.height.should == -1
+      p.notes[3].pitch.height.should == -2
+      p.notes[4].pitch.height.should == 0
+      p.notes[5].pitch.height.should == 0
+    end
+  end
+
+
+   # 4.3 Note lengths
+   # Throughout this document note lengths are referred as sixteenth, eighth, etc. The equivalents common in the U.K. are sixteenth note = semi-quaver, eighth = quaver, quarter = crotchet and half = minim.
+   # The unit note length for the transcription is set in the L: field or, if the L: field does not exist, inferred from the M: field. For example, L:1/8 sets an eighth note as the unit note length.
+   # A single letter in the range A-G, a-g then represents a note of this length. For example, if the unit note length is an eighth note, DEF represents 3 eighth notes.
+   # Notes of differing lengths can be obtained by simply putting a multiplier after the letter. Thus if the unit note length is 1/16, A or A1 is a sixteenth note, A2 an eighth note, A3 a dotted eighth note, A4 a quarter note, A6 a dotted quarter note, A7 a double dotted quarter note, A8 a half note, A12 a dotted half note, A14 a double dotted half note, A15 a triple dotted half note and so on. If the unit note length is 1/8, A is an eighth note, A2 a quarter note, A3 a dotted quarter note, A4 a half note, and so on.
+   # To get shorter notes, either divide them - e.g. if A is an eighth note, A/2 is a sixteenth note, A3/2 is a dotted eighth note, A/4 is a thirty-second note - or change the unit note length with the L: field. Alternatively, if the music has a broken rhythm, e.g. dotted eighth note/sixteenth note pairs, use broken rhythm markers.
+   # Note that A/ is shorthand for A/2 and similarly A// = A/4, etc.
+   # Comment: Note lengths that can't be translated to conventional staff notation are legal, but their representation by abc typesetting software is undefined and they should be avoided.
+   # Note for developers: All compliant software should be able to handle note lengths down to a 128th note; shorter lengths are optional.
+
+  describe "note length specifier" do
+    it "cannot be bizarre" do
+      fail_to_parse_fragment "a//4"
+      fail_to_parse_fragment "a3//4"
+    end
+    it "defaults to 1" do
+      p = parse_fragment "L:1\na"
+      p.notes[0].note_length.should == 1
+    end
+    it "can be an integer multiplier" do
+      p = parse_fragment "L:1\na3"
+      p.notes[0].note_length.should == 3
+    end
+    it "can be a simple fraction" do
+      p = parse_fragment "L:1\na3/2"
+      p.notes[0].note_length.should == Rational(3,2)
+    end
+    it "can be slashes" do
+      p = parse_fragment "L:1\na///"
+      p.notes[0].note_length.should == Rational(1, 8)
+    end
+    it "is relative to the default unit note length" do
+      p = parse_fragment "ab2c3/2d3/e/" # default unit note length 1/8
+      p.notes[0].note_length.should == Rational(1, 8)
+      p.notes[1].note_length.should == Rational(1, 4)
+      p.notes[2].note_length.should == Rational(3, 16)
+      p.notes[3].note_length.should == Rational(3, 16)
+      p.notes[4].note_length.should == Rational(1, 16)
+    end
+    it "is relative to an explicit unit note length" do
+      p = parse_fragment "L:1/2\nab2c3/2d3/e/"
+      tune = p
+      tune.notes[0].note_length.should == Rational(1, 2)
+      tune.notes[1].note_length.should == 1
+      tune.notes[2].note_length.should == Rational(3, 4)
+      tune.notes[3].note_length.should == Rational(3, 4)
+      tune.notes[4].note_length.should == Rational(1, 4)
+    end
+     it "is relative to a new unit note length after an L: field in the tune body" do
+      p = parse_fragment "L:1/2\na4\nL:1/4\na4"
+      tune = p
+      tune.items[0].note_length.should == 2
+      tune.items[2].note_length.should == 1
+    end
+    it "is relative a new unit note length after an inline L: field" do
+      p = parse_fragment "L:1/2\na4[L:1/4]a4"
+      tune = p
+      tune.items[0].note_length.should == 2
+      tune.items[2].note_length.should == 1
+    end
+  end
+
 
 end
 

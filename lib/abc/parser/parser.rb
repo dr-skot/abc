@@ -21,6 +21,7 @@ module ABC
           p.apply_broken_rhythms
           p.apply_meter
           p.apply_key_signatures
+          p.apply_clefs
           p.apply_symbol_lines
           p.apply_lyrics
           p.collect_measures

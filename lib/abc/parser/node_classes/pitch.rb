@@ -14,9 +14,11 @@ module ABC
     # duplicates the signature if the note's accidental changes it
     def signature=(sig)
       if accidental && sig[note] != accidental
+        puts "accidental"
         @signature = sig.dup
         @signature[note] = accidental
       else
+        puts "no accidental"
         @signature = sig
       end
       @signature

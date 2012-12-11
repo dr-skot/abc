@@ -1,3 +1,4 @@
+require "abc/parser/parsed_elements/pitch"
 require "abc/parser/parsed_elements/clef"
 require "abc/parser/parsed_elements/decoration"
 require "abc/parser/parsed_elements/key"

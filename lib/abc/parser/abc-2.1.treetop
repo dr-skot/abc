@@ -634,12 +634,11 @@ grammar ABC do
 
 rule key_field do
     label:'K' ':' content:(key/"none") <Field> {
+      def value
+        key
+      end
       def key
-        if content.text_value == "none"
-          Key::NONE
-        else
-          content.key
-        end
+        content.text_value == "none" ? Key::NONE : content.key
       end
     }
   end
@@ -820,9 +819,18 @@ rule key_field do
   # Comment: The English note names C-B, which are used in the abc system, correspond to the note names do-si, which are used in many other languages: do=C, re=D, mi=E, fa=F, sol=G, la=A, si=B.
 
    rule pitch do
-     accidental:accidental? note_letter octave_shift <PitchNode> {
+     accidental:accidental? note_letter octave_shift {
+       def value
+         @value ||= Pitch.new(note, :octave => octave, :accidental => accidental)
+       end
        def accidental
          super.value if !super.empty?
+       end
+       def octave
+         note_letter.octave + octave_shift.value
+       end
+       def note
+         note_letter.text_value.upcase
        end
      } 
    end
@@ -839,19 +847,62 @@ rule key_field do
      }
    end
 
+   rule octave_shift do
+     ("'" / ",")* {
+       def value
+         text_value.count("'") - text_value.count(",")
+       end
+     }
+   end
 
 
-  rule macro_field do
-    'not implemented'
-  end
+  # 4.2 Accidentals
+  # The symbols ^, = and _ are used (before a note) to notate respectively a sharp, natural or flat. Double sharps and flats are available with ^^ and __ respectively.
 
-  rule user_defined_field do
-    'not implemented'
-  end
+   rule accidental do
+     ("^^" / "^" / "__" / "_" / "=") '' {
+       def value
+         { "^^" => 2, "^" => 1, "=" => 0, "_" => -1, "__" => -2 }[text_value]
+       end
+     }
+   end
+  
+ 
+   # 4.3 Note lengths
+   # Throughout this document note lengths are referred as sixteenth, eighth, etc. The equivalents common in the U.K. are sixteenth note = semi-quaver, eighth = quaver, quarter = crotchet and half = minim.
+   # The unit note length for the transcription is set in the L: field or, if the L: field does not exist, inferred from the M: field. For example, L:1/8 sets an eighth note as the unit note length.
+   # A single letter in the range A-G, a-g then represents a note of this length. For example, if the unit note length is an eighth note, DEF represents 3 eighth notes.
+   # Notes of differing lengths can be obtained by simply putting a multiplier after the letter. Thus if the unit note length is 1/16, A or A1 is a sixteenth note, A2 an eighth note, A3 a dotted eighth note, A4 a quarter note, A6 a dotted quarter note, A7 a double dotted quarter note, A8 a half note, A12 a dotted half note, A14 a double dotted half note, A15 a triple dotted half note and so on. If the unit note length is 1/8, A is an eighth note, A2 a quarter note, A3 a dotted quarter note, A4 a half note, and so on.
+   # To get shorter notes, either divide them - e.g. if A is an eighth note, A/2 is a sixteenth note, A3/2 is a dotted eighth note, A/4 is a thirty-second note - or change the unit note length with the L: field. Alternatively, if the music has a broken rhythm, e.g. dotted eighth note/sixteenth note pairs, use broken rhythm markers.
+   # Note that A/ is shorthand for A/2 and similarly A// = A/4, etc.
+   # Comment: Note lengths that can't be translated to conventional staff notation are legal, but their representation by abc typesetting software is undefined and they should be avoided.
+   # Note for developers: All compliant software should be able to handle note lengths down to a 128th note; shorter lengths are optional.
 
+   
+   # 4.4 Broken rhythm
+   # A common occurrence in traditional music is the use of a dotted or broken rhythm. For example, hornpipes, strathspeys and certain morris jigs all have dotted eighth notes followed by sixteenth notes, as well as vice-versa in the case of strathspeys. To support this, abc notation uses a > to mean 'the previous note is dotted, the next note halved' and < to mean 'the previous note is halved, the next dotted'.
+   # Example: The following lines all mean the same thing (the third version is recommended):
+   # L:1/16
+   # a3b cd3 a2b2c2d2
+   # L:1/8
+   # a3/2b/2 c/2d3/2 abcd
+   # L:1/8
+   # a>b c<d abcd
+   # As a logical extension, >> means that the first note is double dotted and the second quartered and >>> means that the first note is triple dotted and the length of the second divided by eight. Similarly for << and <<<.
+   # Note that the use of broken rhythm markers between notes of unequal lengths will produce undefined results, and should be avoided.
 
-  # TODO: deal with escaped " ?
-  rule quoted_string do
+   
+   rule macro_field do
+     'not implemented'
+   end
+   
+   rule user_defined_field do
+     'not implemented'
+   end
+   
+   
+   # TODO: deal with escaped " ?
+   rule quoted_string do
     '"' value_node:(!'"' .)* '"' {
       def value
         value_node.text_value
@@ -1025,24 +1076,9 @@ rule key_field do
    end
 
    rule note do
-     pitch note_length_node <Note>
-   end
-
-   ## "The symbols '^', '=' and '_' are used (before a note) to notate respectively a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
-   rule accidental do
-     ("^^" / "^" / "__" / "_" / "=") '' {
-       def value
-         { "^^" => 2, "^" => 1, "=" => 0, "_" => -1, "__" => -2 }[text_value]
-       end
-     }
-   end
-
-   # "Lower octaves are reached by using 2 commas, 3 commas and so on. 
-   #  Higher octaves are written using 2 apostrophes, 3 apostrophes and so on."
-   rule octave_shift do
-     ("'" / ",")* {
-       def value
-         text_value.count("'") - text_value.count(",")
+     pitch note_length_node <Note> {
+       def pitch
+         super.value
        end
      }
    end
@@ -1505,7 +1541,7 @@ rule decoration do
     rule clef_middle do
       ('middle'/'m') '=' middle:pitch {
         def set_clef_opts(opts)
-          opts[:middle] = middle
+          opts[:middle] = middle.value
         end
       }
     end
