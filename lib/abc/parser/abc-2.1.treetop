@@ -766,16 +766,6 @@ rule key_field do
   end
 
 
-  rule macro_field do
-    'not implemented'
-  end
-
-  rule user_defined_field do
-    'not implemented'
-  end
-
-
-
   # 3.3 Field continuation
   # A field that is too long for one line may be continued by prefixing +: at the start of the following line. For string-type information fields (see the information fields table for a list of string-type fields), the continuation is considered to add a space between the two half lines.
   # Example: The following two excerpts are considered equivalent.
@@ -799,11 +789,66 @@ rule key_field do
   end
   
 
+  # 4. The tune body
 
-  # FIELDS
+  # 4.1 Pitch
+  # The following letters are used to represent notes using the treble clef:
+  #                                                       d'
+  #                                                 -c'- ----
+  #                                              b
+  #                                         -a- --- ---- ----
+  #                                        g
+  #  ------------------------------------f-------------------
+  #                                    e
+  #  --------------------------------d-----------------------
+  #                                c
+  #  ----------------------------B---------------------------
+  #                            A
+  #  ------------------------G-------------------------------
+  #                        F
+  #  --------------------E-----------------------------------
+  #                    D
+  #  ---- ---- ---- -C-
+  #             B,
+  #  ---- -A,-
+  #   G,
+  # a
+  # and by extension other lower and higher notes are available.
+  # Lower octaves are reached by using commas and higher octaves are written using apostrophes; each extra comma/apostrophe lowers/raises the note by an octave.
+  # Programs should be able to to parse any combinations of , and ' signs appearing after the note. For example C,', (C comma apostrophe comma) has the the same meaning as C, (C comma) and (uppercase) C' (C apostrophe) should have the same meaning as (lowercase) c.
+  # Alternatively, it is possible to raise or lower a section of music code using the octave parameter of the K: or V: fields.
+  # Comment: The English note names C-B, which are used in the abc system, correspond to the note names do-si, which are used in many other languages: do=C, re=D, mi=E, fa=F, sol=G, la=A, si=B.
+
+   rule pitch do
+     accidental:accidental? note_letter octave_shift <PitchNode> {
+       def accidental
+         super.value if !super.empty?
+       end
+     } 
+   end
+   
+   rule note_letter do
+     [A-Ga-g] {
+       def octave
+         if text_value =~ /[a-g]/
+           1
+         else
+           0
+         end
+       end
+     }
+   end
 
 
-  # TEMPO FIELD
+
+  rule macro_field do
+    'not implemented'
+  end
+
+  rule user_defined_field do
+    'not implemented'
+  end
+
 
   # TODO: deal with escaped " ?
   rule quoted_string do
@@ -983,33 +1028,11 @@ rule key_field do
      pitch note_length_node <Note>
    end
 
-   rule pitch do
-     accidental:accidental? note_letter octave_shift <PitchNode> {
-       def accidental
-         super.value if !super.empty?
-       end
-     } 
-   end
-   
    ## "The symbols '^', '=' and '_' are used (before a note) to notate respectively a sharp, natural or flat. Double sharps and flats are available with '^^' and '__' "
    rule accidental do
      ("^^" / "^" / "__" / "_" / "=") '' {
        def value
          { "^^" => 2, "^" => 1, "=" => 0, "_" => -1, "__" => -2 }[text_value]
-       end
-     }
-   end
-
-   rule note_letter do
-     [A-Ga-g] {
-       def octave
-         if text_value =~ /[AB]/
-           -1
-         elsif text_value =~ /[c-g]/
-           1
-         else
-           0
-         end
        end
      }
    end

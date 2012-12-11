@@ -154,7 +154,7 @@ describe "abc 2.0 draft 4" do
       p = parse_fragment "def [r: remarks] abc"
       p.items[2].pitch.height.should == 17 # f
       p.items[3].is_a?(Field).should == true
-      p.items[4].pitch.height.should == 9 # a
+      p.items[4].pitch.height.should == 21 # a
     end
   end
 
@@ -703,16 +703,16 @@ describe "abc 2.0 draft 4" do
       p = parse_fragment "[V:1]b[K:F]b[V:2]b[K:F]b"
       v1 = p.voices['1']
       v2 = p.voices['2']
-      v1.notes[0].pitch.height.should == 11 # B
-      v1.notes[1].pitch.height.should == 10 # B flat
-      v2.notes[0].pitch.height.should == 11
-      v2.notes[1].pitch.height.should == 10
+      v1.notes[0].pitch.height.should == 23 # B
+      v1.notes[1].pitch.height.should == 22 # B flat
+      v2.notes[0].pitch.height.should == 23
+      v2.notes[1].pitch.height.should == 22
     end
     it "retains key change when voice comes back" do
       p = parse_fragment "[V:1]b[K:F]b[V:2]b[K:F]b[V:1]b[K:C]b"
       v1 = p.voices['1']
-      v1.notes[2].pitch.height.should == 10 # B flat
-      v1.notes[3].pitch.height.should == 11 # B
+      v1.notes[2].pitch.height.should == 22 # B flat
+      v1.notes[3].pitch.height.should == 23 # B
     end
     it "resets meter when new voice starts" do
       p = parse_fragment "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4"
@@ -782,8 +782,8 @@ describe "abc 2.0 draft 4" do
       p = parse_fragment "|a b c & A B C|"
       p.measures[0].overlays?.should == true
       p.measures[0].overlays.count.should == 1
-      p.measures[0].notes[0].pitch.height.should == 9
-      p.measures[0].overlays[0].notes[0].pitch.height.should == -3
+      p.measures[0].notes[0].pitch.height.should == 21
+      p.measures[0].overlays[0].notes[0].pitch.height.should == 9
     end
     # TODO move this to a different test section
     it "allows bars[] as a synonym for measures[]" do

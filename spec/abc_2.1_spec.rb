@@ -243,7 +243,7 @@ describe "abc 2.1" do
       p = parse_fragment "def [r: remarks] abc"
       p.items[2].pitch.height.should == 17 # f
       p.items[3].is_a?(Field).should == true
-      p.items[4].pitch.height.should == 9 # a
+      p.items[4].pitch.height.should == 21 # a
     end
   end
 
@@ -1269,13 +1269,57 @@ describe "abc 2.1" do
   #             B,
   #  ---- -A,-
   #   G,
-  # a
   # and by extension other lower and higher notes are available.
   # Lower octaves are reached by using commas and higher octaves are written using apostrophes; each extra comma/apostrophe lowers/raises the note by an octave.
   # Programs should be able to to parse any combinations of , and ' signs appearing after the note. For example C,', (C comma apostrophe comma) has the the same meaning as C, (C comma) and (uppercase) C' (C apostrophe) should have the same meaning as (lowercase) c.
   # Alternatively, it is possible to raise or lower a section of music code using the octave parameter of the K: or V: fields.
   # Comment: The English note names C-B, which are used in the abc system, correspond to the note names do-si, which are used in many other languages: do=C, re=D, mi=E, fa=F, sol=G, la=A, si=B.
 
+  describe "a pitch specifier" do
+    it "indicates the middle-c octave with capital letters" do
+      p = parse_fragment "CDEFGAB"
+      p.notes.each do |note| 
+        note.pitch.octave.should == 0
+        note.pitch.height.should == note.pitch.height_in_octave
+      end
+      p.notes[0].pitch.height.should == 0
+      p.notes[1].pitch.height.should == 2
+      p.notes[2].pitch.height.should == 4
+      p.notes[3].pitch.height.should == 5
+      p.notes[4].pitch.height.should == 7
+      p.notes[5].pitch.height.should == 9
+      p.notes[6].pitch.height.should == 11
+    end
+    it "indicates octave 1 with lowercase letters" do
+      p = parse_fragment "cdefgab"
+      p.notes.each do |note| 
+        note.pitch.octave.should == 1
+        note.pitch.height.should == note.pitch.height_in_octave + 12
+      end
+      p.notes[0].pitch.height.should == 12
+      p.notes[1].pitch.height.should == 14
+      p.notes[2].pitch.height.should == 16
+      p.notes[3].pitch.height.should == 17
+      p.notes[4].pitch.height.should == 19
+      p.notes[5].pitch.height.should == 21
+      p.notes[6].pitch.height.should == 23
+    end
+    it "indicates higher octaves with apostrophes" do
+      p = parse_fragment "C'c'''"
+      p.notes[0].pitch.octave.should == 1
+      p.notes[1].pitch.octave.should == 4
+    end
+    it "indicates lower octave down with commas" do
+      p = parse_fragment "C,,,,c,,"
+      p.notes[0].pitch.octave.should == -4
+      p.notes[1].pitch.octave.should == -1
+    end
+    it "can use any combination of commas and apostrophes" do
+      p = parse_fragment "C,',',,c,,'''',"
+      p.notes[0].pitch.octave.should == -2
+      p.notes[1].pitch.octave.should == 2
+    end
+  end
   
 
 end

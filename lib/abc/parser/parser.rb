@@ -1,5 +1,3 @@
-require 'polyglot'
-require 'treetop'
 
 module ABC
 

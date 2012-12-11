@@ -373,7 +373,7 @@ describe "abc-2.1 PEG" do
       p = parse_fragment "CcAg"
       p.items[0].pitch.octave.should == 0
       p.items[1].pitch.octave.should == 1
-      p.items[2].pitch.octave.should == -1
+      p.items[2].pitch.octave.should == 0
       p.items[3].pitch.octave.should == 1
     end
     
@@ -446,7 +446,7 @@ describe "abc-2.1 PEG" do
     it "knows height" do
       p = parse_fragment "C^^B,d_e''EF,',"
       p.items[0].pitch.height.should == 0
-      p.items[1].pitch.height.should == -11
+      p.items[1].pitch.height.should == 1
       p.items[2].pitch.height.should == 14
       p.items[3].pitch.height.should == 39
       p.items[4].pitch.height.should == 4
@@ -466,9 +466,9 @@ describe "abc-2.1 PEG" do
       p.items[7].pitch.height(key).should == 6
       p = parse_fragment "AB=BCD^DE_E"
       key = { 'A'=>-1, 'B'=>-1, 'D'=>-1, 'E'=>-1 } # Ab maj
-      p.items[0].pitch.height(key).should == -4
-      p.items[1].pitch.height(key).should == -2
-      p.items[2].pitch.height(key).should == -1
+      p.items[0].pitch.height(key).should == 8
+      p.items[1].pitch.height(key).should == 10
+      p.items[2].pitch.height(key).should == 11
       p.items[3].pitch.height(key).should == 0
       p.items[4].pitch.height(key).should == 1
       p.items[5].pitch.height(key).should == 3
@@ -482,56 +482,56 @@ describe "abc-2.1 PEG" do
 
     it "can apply the tune's key signature to a tune" do
       p = parse_fragment "K:F\nB"
-      p.items[0].pitch.height.should == -1
+      p.items[0].pitch.height.should == 11
       p.divvy_voices
       p.apply_key_signatures
-      p.items[0].pitch.height.should == -2
+      p.items[0].pitch.height.should == 10
     end
 
     it "retains accidentals within a measure when applying key signature" do
       p = parse_fragment "K:F\nB=BB"
       p.divvy_voices
       p.apply_key_signatures
-      p.items[0].pitch.height.should == -2
-      p.items[1].pitch.height.should == -1
-      p.items[2].pitch.height.should == -1
+      p.items[0].pitch.height.should == 10
+      p.items[1].pitch.height.should == 11
+      p.items[2].pitch.height.should == 11
     end
 
     it "resets accidentals at end of measure" do
       p = parse_fragment "K:F\nB=B|B"
       p.divvy_voices
       p.apply_key_signatures
-      p.items[0].pitch.height.should == -2
-      p.items[1].pitch.height.should == -1
-      p.items[3].pitch.height.should == -2
+      p.items[0].pitch.height.should == 10
+      p.items[1].pitch.height.should == 11
+      p.items[3].pitch.height.should == 10
     end
 
     it "does not reset accidentals at dotted bar line" do
       p = parse_fragment "K:F\nB=B.|B"
       p.divvy_voices
       p.apply_key_signatures
-      p.items[0].pitch.height.should == -2
-      p.items[1].pitch.height.should == -1
-      p.items[3].pitch.height.should == -1
+      p.items[0].pitch.height.should == 10
+      p.items[1].pitch.height.should == 11
+      p.items[3].pitch.height.should == 11
     end
 
     it "can apply key signatures to all tunes in tunebook" do
       p = parse "X:1\nT:T\nK:Eb\nA=A^AA\n\nX:2\nT:T2\nK:F\nB"
       p.divvy_voices
       p.apply_key_signatures
-      p.tunes[0].items[0].pitch.height.should == -4
-      p.tunes[0].items[1].pitch.height.should == -3
-      p.tunes[0].items[2].pitch.height.should == -2
-      p.tunes[0].items[3].pitch.height.should == -2
-      p.tunes[1].items[0].pitch.height.should == -2
+      p.tunes[0].items[0].pitch.height.should == 8
+      p.tunes[0].items[1].pitch.height.should == 9
+      p.tunes[0].items[2].pitch.height.should == 10
+      p.tunes[0].items[3].pitch.height.should == 10
+      p.tunes[1].items[0].pitch.height.should == 10
     end
 
     it "does not apply key signature from previous tune" do
       p = parse "X:1\nT:T\nK:Eb\nA\n\n\nX:2\nT:T2\nK:C\nA"
       p.divvy_voices
       p.apply_key_signatures
-      p.tunes[0].items[0].pitch.height.should == -4
-      p.tunes[1].items[0].pitch.height.should == -3
+      p.tunes[0].items[0].pitch.height.should == 8
+      p.tunes[1].items[0].pitch.height.should == 9
     end
 
     it "changes key signature when inline K: field found in tune body" do
