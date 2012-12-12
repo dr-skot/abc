@@ -874,8 +874,8 @@ rule key_field do
    # Comment: Note lengths that can't be translated to conventional staff notation are legal, but their representation by abc typesetting software is undefined and they should be avoided.
    # Note for developers: All compliant software should be able to handle note lengths down to a 128th note; shorter lengths are optional.
 
-   rule note_length_node do
-     numerator:digit* denominator:('/' digits:digit+ / '/'+)? <NoteLength> {
+   rule note_length do
+     numerator:digit* denominator:('/' digits:digit+ / '/'+)? {
       def numerator
         super.empty? ? 1 : super.text_value.to_i
       end
@@ -936,9 +936,9 @@ rule key_field do
   end
 
   rule note_rest do
-    [xz] note_length_node <ValueNode> {
+    [xz] note_length <ValueNode> {
       def value
-        @value ||= Rest.new(note_length_node.value, :invisible => text_value[0] == 'x')
+        @value ||= Rest.new(note_length.value, :invisible => text_value[0] == 'x')
       end
     }
   end
@@ -1002,11 +1002,7 @@ rule key_field do
   rule integer do
     sign:('-'/'+')? wholenum {
       def value
-        if (sign.text_value == '-')
-          - wholenum.value
-        else
-          wholenum.value
-        end
+        (sign.text_value == '-' ? -1 : 1) * wholenum.value
       end
     }   
   end
@@ -1135,9 +1131,9 @@ rule key_field do
    end
 
    rule note do
-     pitch note_length_node <ValueNode> {
+     pitch note_length <ValueNode> {
        def value(options={})
-         @value ||= Note.new(pitch.value, note_length_node.value, options)
+         @value ||= Note.new(pitch.value, note_length.value, options)
        end
      }
    end
@@ -1378,9 +1374,9 @@ rule decoration do
   ## then it is a unison (e.g. a note played on two strings of a violin simultaneously) and is shown with one stem and two note-heads:
 
   rule chord do
-    '[' notes_node:note+ ']' note_length_node {
+    '[' notes_node:note+ ']' note_length {
       def value(options={})
-        @value ||= Chord.new(notes, note_length_node.value, options)
+        @value ||= Chord.new(notes, note_length.value, options)
       end
       def notes
         @notes ||= notes_node.elements.map { |node| node.value }

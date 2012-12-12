@@ -24,7 +24,7 @@ module Treetop
         elsif terminal?
           text_value
         else
-          elements.map { |elem| elem.text_value_with_inclusions }.join("")
+          elements.map { |elem| elem.text_value_with_inclusions } * ""
         end
       end
 
@@ -41,17 +41,7 @@ module Treetop
         if types.count > 0
           children.select { |el| el.is_one_of? *types } 
         else
-          if !elements
-            []
-          else
-            elements.map do |el|
-              if el.is_a? ABC::ABCNode
-                el
-              else
-                el.children
-              end
-            end.flatten
-          end
+          elements ? elements.map { |el| el.is_a?(ABCNode) ? el : el.children }.flatten : []
         end
       end
       

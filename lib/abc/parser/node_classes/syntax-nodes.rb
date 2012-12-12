@@ -73,12 +73,6 @@ module ABC
 
   # NOTES AND RESTS
 
-  class NoteLength < MusicNode
-    def multiplier
-      1.0 * self.numerator / self.denominator
-    end
-  end
-
   class BrokenRhythm < MusicNode
   end
 
