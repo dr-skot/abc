@@ -28,7 +28,7 @@ module ABC
     end
 
     def notes
-      items.select { |item| item.is_a? NoteOrRest }
+      items.select { |item| item.is_a?(NoteOrRest) || item.is_a?(MusicUnit) }
     end
 
     def collect_measures

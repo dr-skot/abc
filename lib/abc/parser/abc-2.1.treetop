@@ -921,6 +921,56 @@ rule key_field do
   end
 
 
+  # 4.5 Rests
+  # Rests can be transcribed with a z or an x and can be modified in length in exactly the same way as normal notes. z rests are printed in the resulting sheet music, while x rests are invisible, that is, not shown in the printed music.
+  # Multi-measure rests are notated using Z (upper case) followed by the number of measures.
+  # Example: The following excerpts, shown with the typeset results, are musically equivalent (although they are typeset differently).
+  # Z4|CD EF|GA Bc
+  # z4|z4|z4|z4|CD EF|GA Bc
+  # When the number of measures is not given, Z is equivalent to a pause of one measure.
+  # By extension multi-measure invisible rests are notated using X (upper case) followed by the number of measures and when the number of measures is not given, X is equivalent to a pause of one measure.
+  # Comment: Although not particularly valuable, a multi-measure invisible rest could be useful when a voice is silent for several measures.
+
+  rule rest do
+    note_rest / measure_rest
+  end
+
+  rule note_rest do
+    [xz] note_length_node <ValueNode> {
+      def value
+        @value ||= Rest.new(note_length_node.value, :invisible => text_value[0] == 'x')
+      end
+      def broken_rhythm_marker
+        nil
+      end
+      def invisible?
+        text_value[0] == 'x'
+      end
+    }
+  end
+
+  rule measure_rest do
+    [XZ] measure_count:integer? <ValueNode> {
+      attr_accessor :measure_length
+      def value
+        @value ||= MeasureRest.new(measure_count, :invisible => text_value[0] == 'X')
+      end
+      def measure_count
+        super.empty? ? 1 : super.value
+      end
+      def note_length
+        measure_length * measure_count if measure_length
+      end
+      def broken_rhythm_marker
+        nil
+      end
+      def invisible?
+        text_value[0] == 'X'
+      end
+    }
+  end
+
+
    
    rule macro_field do
      'not implemented'
@@ -1113,29 +1163,6 @@ rule key_field do
      }
    end
 
-   rule rest do
-     note_rest / measure_rest
-   end
-
-   rule note_rest do
-     [xz] note_length_node <Rest>
-   end
-   
-   rule measure_rest do
-     "Z" measure_count:digit+ <MeasureRest> {
-       attr_accessor :measure_length
-       def measure_count
-         super.text_value.to_i
-       end
-       def note_length
-         measure_length * measure_count if measure_length
-       end
-       def broken_rhythm_marker
-         nil
-       end
-     }
-   end
-   
 
   # BROKEN RHYTHM MARKERS
 

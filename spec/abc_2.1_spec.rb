@@ -6,7 +6,7 @@ require 'abc/parser'
 include ABC
 
 
-describe "abc 2.1" do
+describe "abc 2.1:" do
 
   before do
     @parser = ABC::Parser.new
@@ -1460,9 +1460,7 @@ describe "abc 2.1" do
    # As a logical extension, >> means that the first note is double dotted and the second quartered and >>> means that the first note is triple dotted and the length of the second divided by eight. Similarly for << and <<<.
    # Note that the use of broken rhythm markers between notes of unequal lengths will produce undefined results, and should be avoided.
 
-
   describe "a broken rhythm marker" do
-
     it "is allowed" do
       parse_fragment "a>b c<d a>>b c2<<d2"
     end
@@ -1496,7 +1494,87 @@ describe "abc 2.1" do
       p.items[0].note_length.should == Rational(3, 8)
       p.items[1].note_length.should == Rational(1, 8)
     end
+  end
 
+
+  # 4.5 Rests
+  # Rests can be transcribed with a z or an x and can be modified in length in exactly the same way as normal notes. z rests are printed in the resulting sheet music, while x rests are invisible, that is, not shown in the printed music.
+  # Multi-measure rests are notated using Z (upper case) followed by the number of measures.
+  # Example: The following excerpts, shown with the typeset results, are musically equivalent (although they are typeset differently).
+  # Z4|CD EF|GA Bc
+  # z4|z4|z4|z4|CD EF|GA Bc
+  # When the number of measures is not given, Z is equivalent to a pause of one measure.
+  # By extension multi-measure invisible rests are notated using X (upper case) followed by the number of measures and when the number of measures is not given, X is equivalent to a pause of one measure.
+  # Comment: Although not particularly valuable, a multi-measure invisible rest could be useful when a voice is silent for several measures.
+
+  describe "a visible rest (z)" do
+    it "can appear with a length specifier" do
+      p = parse_fragment "L:1\n z3/2 z//"
+      p.items[0].note_length.should == Rational(3, 2)
+      p.items[1].note_length.should == Rational(1, 4)
+    end
+    it "cannot have a bizarro length specifier" do
+      fail_to_parse_fragment "z3//4"
+    end
+    it "knows it's visible" do
+      p = parse_fragment "z"
+      p.items[0].invisible?.should == false
+    end
+  end
+  
+  describe "an invisible rest (x)" do
+    it "can appear with a length specifier" do
+      p = parse_fragment "L:1\n x3/2 x//"
+      p.items[0].note_length.should == Rational(3, 2)
+      p.items[1].note_length.should == Rational(1, 4)
+    end
+    it "cannot have a bizarro length specifier" do
+      fail_to_parse_fragment "x3//4"
+    end
+    it "knows it's invisible" do
+      p = parse_fragment "x"
+      p.items[0].invisible?.should == true
+    end
+  end
+
+  describe "a visible measure rest (Z)" do
+    it "knows its measure count" do
+      p = parse_fragment "Z4"
+      p.items[0].measure_count.should == 4
+    end
+    it "can calculate its note length based on the meter" do
+      p = parse_fragment "M:C\nZ4[M:3/4]Z2\n"
+      p.items[0].note_length.should == 4
+      p.items[2].note_length.should == Rational(6, 4)
+    end
+    it "defaults to one measure" do
+      p = parse_fragment "Z"
+      p.items[0].measure_count.should == 1
+    end
+    it "knows it's visible" do
+      p = parse_fragment "Z"
+      p.items[0].invisible?.should == false
+    end
+  end
+
+  describe "an invisible measure rest (X)" do
+    it "knows its measure count" do
+      p = parse_fragment "X4"
+      p.items[0].measure_count.should == 4
+    end
+    it "can calculate its note length based on the meter" do
+      p = parse_fragment "M:C\nX4[M:3/4]X2\n"
+      p.items[0].note_length.should == 4
+      p.items[2].note_length.should == Rational(6, 4)
+    end
+    it "defaults to one measure" do
+      p = parse_fragment "X"
+      p.items[0].measure_count.should == 1
+    end
+    it "knows it's invisible" do
+      p = parse_fragment "X"
+      p.items[0].invisible?.should == true
+    end
   end
 
 end

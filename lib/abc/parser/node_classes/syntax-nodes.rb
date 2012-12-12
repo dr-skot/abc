@@ -45,6 +45,9 @@ module ABC
   class ABCSection < ABCNode
   end
 
+  class ValueNode < ABCNode
+  end
+
   class TypesetText < ABCSection
   end
 
@@ -71,12 +74,6 @@ module ABC
   # NOTES AND RESTS
 
   class Note < NoteOrRest
-  end
-
-  class Rest < NoteOrRest
-  end
-
-  class MeasureRest < Rest
   end
 
   class NoteLength < MusicNode

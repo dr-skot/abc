@@ -16,7 +16,7 @@ module ABC
       if !@lines
         line = TuneLine.new
         @lines = [line]
-        all_items = children.select { |c| c.is_a?(MusicNode) || c.is_a?(Field) || c.is_a?(TuneLineBreak) || c.is_a?(SymbolLine) }
+        all_items = children.select { |c| c.is_a?(MusicNode) || c.is_a?(Field) || c.is_a?(TuneLineBreak) || c.is_a?(SymbolLine) || c.is_a?(ValueNode) }.map { |c| c.is_a?(ValueNode) ? c.value : c }
         all_items.each do |it|
           if it.is_a?(TuneLineBreak)
             line = TuneLine.new
@@ -42,7 +42,7 @@ module ABC
       end
     end
     def all_items
-      children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) }
+      @all_items ||= children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) || child.is_a?(ValueNode) }.map { |child| child.is_a?(ValueNode) ? child.value : child }
     end
     def notes
       if @first_voice
@@ -52,7 +52,7 @@ module ABC
       end
     end
     def all_notes
-      items.select { |item| item.is_a?(NoteOrRest) }
+      all_items.select { |item| item.is_a?(NoteOrRest) || item.is_a?(MusicUnit) }
     end
     def unit_note_length
       if !@unit_note_length && header && (field = header.field(/L/))

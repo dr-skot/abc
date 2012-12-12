@@ -552,58 +552,6 @@ describe "abc-2.1 PEG" do
 
   end
 
-  describe "rests" do
-
-    it "accepts rests" do
-      parse_fragment "z3/2 x// x2 Z4"
-    end
-    
-    it "does not accept wierdo rest lengths" do
-      fail_to_parse_fragment "Z3/2"
-      fail_to_parse_fragment "z3//4"
-    end
-
-    it "understands the note length of rests" do
-      p = parse_fragment "z3/2x//z4"
-      p.items[0].note_length.should == Rational(3, 2)
-      p.items[1].note_length.should == Rational(1, 4)
-      p.items[2].note_length.should == 4
-    end
-
-    it "understands measure-count rests" do
-      p = parse_fragment "Z4"
-      p.items[0].measure_count.should == 4
-    end
-
-    it "knows the note length of measure-count rests after applying meter" do
-      p = parse_fragment "M:C\nZ4[M:3/4]Z2\n"
-      p.items[0].note_length.should == nil
-      p.divvy_voices
-      p.apply_meter
-      p.items[0].note_length.should == 4
-      p.items[2].note_length.should == Rational(6, 4)
-    end
-
-    it "applies the tunebook's meter to all tunes" do
-      p = parse "M:C\n\n#{tune1}\n\n#{tune2}"
-      p.meter.symbol.should == :common
-      p.tunes[0].meter.symbol.should == :free
-      p.tunes[1].meter.symbol.should == :free
-      p.divvy_voices
-      p.apply_meter
-      p.tunes[0].meter.symbol.should == :common
-      p.tunes[1].meter.symbol.should == :common
-    end
-    
-    it "overrides the tunebook's meter with tune's meter" do
-      p = parse "M:C\n\nX:1\nT:T\nM:C|\nK:C"
-      p.meter.symbol.should == :common
-      p.tunes[0].meter.symbol.should == :cut
-      p.divvy_voices
-      p.apply_meter
-      p.tunes[0].meter.symbol.should == :cut
-    end
-  end
 
   
   describe "bar lines" do
