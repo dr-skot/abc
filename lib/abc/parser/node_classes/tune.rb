@@ -16,7 +16,7 @@ module ABC
       if !@lines
         line = TuneLine.new
         @lines = [line]
-        all_items = children.select { |c| c.is_a?(MusicNode) || c.is_a?(Field) || c.is_a?(TuneLineBreak) || c.is_a?(SymbolLine) || c.is_a?(ValueNode) }.map { |c| c.is_a?(ValueNode) ? c.value : c }
+        all_items = values(MusicNode, Field, TuneLineBreak, SymbolLine, MusicUnit)
         all_items.each do |it|
           if it.is_a?(TuneLineBreak)
             line = TuneLine.new
@@ -42,7 +42,7 @@ module ABC
       end
     end
     def all_items
-      @all_items ||= children.select { |child| child.is_a?(MusicNode) || child.is_a?(Field) || child.is_a?(ValueNode) }.map { |child| child.is_a?(ValueNode) ? child.value : child }
+      @all_items ||= values(MusicNode, Field, MusicUnit)
     end
     def notes
       if @first_voice
@@ -52,7 +52,7 @@ module ABC
       end
     end
     def all_notes
-      all_items.select { |item| item.is_a?(NoteOrRest) || item.is_a?(MusicUnit) }
+      values(MusicUnit)
     end
     def unit_note_length
       if !@unit_note_length && header && (field = header.field(/L/))
@@ -68,22 +68,13 @@ module ABC
     end
     def apply_broken_rhythms
       last_note = nil
-      children(NoteOrRest).each do |item|
+      all_notes.each do |item|
         if (br = item.broken_rhythm_marker)
           # TODO throw an error if no last note?
           last_note.broken_rhythm *= br.change('<') if last_note
           item.broken_rhythm *= br.change('>')
         end
         last_note = item
-      end
-    end
-    def apply_chord_lengths
-      items.each do |item|
-        if item.respond_to?(:stroke) and item.stroke.is_a?(Chord)
-          item.notes.each do |note|
-            note.chord_length = item.note_length
-          end
-        end
       end
     end
     def apply_meter(tunebook_meter=nil)
@@ -154,14 +145,14 @@ module ABC
     def apply_beams
       beam = :start
       last_note = nil
-      children.each do |item|
+      values.each do |item|
         if item.is_a?(TuneSpace) || item.is_a?(BarLine) || item.is_a?(TuneLineBreak)
           beam = :start
           if last_note
             last_note.beam = nil if last_note.beam == :start
             last_note.beam = :end if last_note.beam == :middle
           end
-        elsif item.is_a?(NoteOrRest)
+        elsif item.is_a?(MusicUnit)
           item.beam = beam
           beam = :middle
           last_note = item
@@ -177,7 +168,7 @@ module ABC
             break if i >= items.count
             if symbol.skip == :note
               # advance to next note, then skip it
-              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest)
+              i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
               i += 1
             elsif symbol.skip == :bar
               # advance to next (undotted) bar, then skip it
@@ -185,7 +176,7 @@ module ABC
               i += 1
             else
               # find next note and set this symbol on it
-              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest)
+              i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
               if i < items.count
                 items[i].annotations << symbol if symbol.type == :annotation
                 items[i].decorations << symbol if symbol.type == :decoration
@@ -206,7 +197,7 @@ module ABC
             break if i >= items.count
             if lyric.skip == :note
               # advance to next note, then skip it
-              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest)
+              i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
               i += 1
             elsif lyric.skip == :bar
               # advance to next (undotted) bar, then skip it
@@ -214,13 +205,13 @@ module ABC
               i += 1
             else
               # find next note and set this lyric on it
-              i += 1 until items.count <= i || items[i].is_a?(NoteOrRest);
+              i += 1 until items.count <= i || items[i].is_a?(MusicUnit);
               items[i].lyric = lyric if i < items.count
               # how many notes does it apply to?
               note_count = lyric.note_count
               # advance that many notes
               while i < items.count && note_count > 1
-                note_count -= 1 if items[i].is_a?(NoteOrRest)
+                note_count -= 1 if items[i].is_a?(MusicUnit)
                 i += 1
               end
               # then advance to next item

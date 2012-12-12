@@ -1,5 +1,11 @@
 require 'treetop'
 
+class Object
+  def is_one_of?(*types)
+    types.inject(false) { |result, type| result ||= self.is_a? type }
+  end
+end
+
 module Treetop
   module Runtime
 
@@ -22,12 +28,18 @@ module Treetop
         end
       end
 
+      def values(*types)
+        types << ValueNode if types.count > 0
+        values = children(*types).map { |el| el.is_a?(ValueNode) ? el.value : el }
+        types.count == 0 ? values : values.select { |v| v.is_one_of? *types }
+      end
+
       # returns the ABCNodes that are immediate descendants of this node
       # (immediate descendant meaning there may be intervening SyntaxNodes, but they are not ABCNodes)
-      # or select from among these children by passing a subclass of ABCNode
-      def children(type=nil)
-        if type
-          children.select { |el| el.is_a? type }
+      # or select from among these children by passing subclasses of ABCNode
+      def children(*types)
+        if types.count > 0
+          children.select { |el| el.is_one_of? *types } 
         else
           if !elements
             []

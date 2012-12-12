@@ -7,8 +7,12 @@ module ABC
     attr_accessor :beam
     attr_accessor :lyric
 
-    def specified_note_length
-      @specified_note_length || 1
+    def initialize(length)
+      @specified_length = length
+    end
+
+    def specified_length
+      @specified_length || 1
     end
 
     def unit_note_length
@@ -24,7 +28,7 @@ module ABC
     end
 
     def note_length
-      specified_note_length * unit_note_length * broken_rhythm * chord_length
+      specified_length * unit_note_length * broken_rhythm * chord_length
     end
     alias_method :length, :note_length
 
@@ -32,8 +36,8 @@ module ABC
 
   class Rest < MusicUnit
 
-    def initialize(length, options = {})
-      @specified_note_length = length
+    def initialize(length, options={})
+      super(length)
       @invisible = options[:invisible]
     end
 
@@ -55,6 +59,7 @@ module ABC
     def note_length
       measure_length * measure_count if measure_length
     end
+    alias_method :length, :note_length
 
     def invisible?
       @invisible

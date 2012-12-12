@@ -1,7 +1,7 @@
 module ABC
 
   # TODO rename this?
-  class NoteOrRest < MusicNode
+  class NoteOrRestttt < MusicNode
     attr_accessor :unit_note_length
     attr_accessor :broken_rhythm
     attr_accessor :chord_length

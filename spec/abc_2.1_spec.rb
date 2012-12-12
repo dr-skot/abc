@@ -1510,8 +1510,8 @@ describe "abc 2.1:" do
   describe "a visible rest (z)" do
     it "can appear with a length specifier" do
       p = parse_fragment "L:1\n z3/2 z//"
-      p.items[0].note_length.should == Rational(3, 2)
-      p.items[1].note_length.should == Rational(1, 4)
+      p.items[0].length.should == Rational(3, 2)
+      p.items[1].length.should == Rational(1, 4)
     end
     it "cannot have a bizarro length specifier" do
       fail_to_parse_fragment "z3//4"
@@ -1525,8 +1525,8 @@ describe "abc 2.1:" do
   describe "an invisible rest (x)" do
     it "can appear with a length specifier" do
       p = parse_fragment "L:1\n x3/2 x//"
-      p.items[0].note_length.should == Rational(3, 2)
-      p.items[1].note_length.should == Rational(1, 4)
+      p.items[0].length.should == Rational(3, 2)
+      p.items[1].length.should == Rational(1, 4)
     end
     it "cannot have a bizarro length specifier" do
       fail_to_parse_fragment "x3//4"
@@ -1544,8 +1544,8 @@ describe "abc 2.1:" do
     end
     it "can calculate its note length based on the meter" do
       p = parse_fragment "M:C\nZ4[M:3/4]Z2\n"
-      p.items[0].note_length.should == 4
-      p.items[2].note_length.should == Rational(6, 4)
+      p.items[0].length.should == 4
+      p.items[2].length.should == Rational(6, 4)
     end
     it "defaults to one measure" do
       p = parse_fragment "Z"
@@ -1564,8 +1564,8 @@ describe "abc 2.1:" do
     end
     it "can calculate its note length based on the meter" do
       p = parse_fragment "M:C\nX4[M:3/4]X2\n"
-      p.items[0].note_length.should == 4
-      p.items[2].note_length.should == Rational(6, 4)
+      p.items[0].length.should == 4
+      p.items[2].length.should == Rational(6, 4)
     end
     it "defaults to one measure" do
       p = parse_fragment "X"

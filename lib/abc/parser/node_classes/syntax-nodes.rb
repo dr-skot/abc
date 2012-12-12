@@ -73,9 +73,6 @@ module ABC
 
   # NOTES AND RESTS
 
-  class Note < NoteOrRest
-  end
-
   class NoteLength < MusicNode
     def multiplier
       1.0 * self.numerator / self.denominator
@@ -100,9 +97,6 @@ module ABC
   class TupletMarker < MusicNode    
   end
 
-  # CHORDS
-  class Chord < NoteOrRest
-  end
 
   # BAR LINES
   class BarLine < MusicNode

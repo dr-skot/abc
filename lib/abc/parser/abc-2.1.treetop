@@ -940,12 +940,6 @@ rule key_field do
       def value
         @value ||= Rest.new(note_length_node.value, :invisible => text_value[0] == 'x')
       end
-      def broken_rhythm_marker
-        nil
-      end
-      def invisible?
-        text_value[0] == 'x'
-      end
     }
   end
 
@@ -957,15 +951,6 @@ rule key_field do
       end
       def measure_count
         super.empty? ? 1 : super.value
-      end
-      def note_length
-        measure_length * measure_count if measure_length
-      end
-      def broken_rhythm_marker
-        nil
-      end
-      def invisible?
-        text_value[0] == 'X'
       end
     }
   end
@@ -1116,7 +1101,20 @@ rule key_field do
    # NOTES AND RESTS
 
    rule notelike_thing do
-     grace_note_and_or_broken_rhythm? space* chord_annotation:chord_annotation? space* modifiers:(node:(annotation / decoration) space*)* stroke:stroke <NoteOrRest> {
+     grace_note_and_or_broken_rhythm? space* chord_annotation:chord_annotation? space* modifiers:(node:(annotation / decoration) space*)* stroke:stroke <ValueNode> {
+       def value
+         if @value
+           @value
+         else
+           options = {
+             :decorations => decorations,
+             :annotations => annotations,
+             :chord_symbol => chord_symbol,
+             :broken_rhythm_marker => child(BrokenRhythm)
+           }
+           @value = stroke.value(options)
+         end
+       end
        def broken_rhythm_marker
          child(BrokenRhythm)
        end
@@ -1127,10 +1125,7 @@ rule key_field do
          @annotations ||= modifiers.elements.inject([]) { |result, el| result << el.node if el.node.type == :annotation }
        end
        def chord_symbol
-         if !@chord_symbol
-           @chord_symbol = chord_annotation.symbol if !chord_annotation.empty?
-         end
-         @chord_symbol
+         @chord_symbol ||= chord_annotation.empty? ? nil : chord_annotation.symbol
        end
        def chord_symbol=(sym)
          @chord_symbol = sym
@@ -1156,9 +1151,9 @@ rule key_field do
    end
 
    rule note do
-     pitch note_length_node <Note> {
-       def pitch
-         super.value
+     pitch note_length_node <ValueNode> {
+       def value(options={})
+         @value ||= Note.new(pitch.value, note_length_node.value, options)
        end
      }
    end
@@ -1399,9 +1394,12 @@ rule decoration do
   ## then it is a unison (e.g. a note played on two strings of a violin simultaneously) and is shown with one stem and two note-heads:
 
   rule chord do
-    '[' notes_node:note+ ']' note_length_node <Chord> {
+    '[' notes_node:note+ ']' note_length_node {
+      def value(options={})
+        @value ||= Chord.new(notes, note_length_node.value, options)
+      end
       def notes
-        notes_node.elements
+        @notes ||= notes_node.elements.map { |node| node.value }
       end
     }
   end

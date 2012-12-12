@@ -806,7 +806,7 @@ describe "abc-2.1 PEG" do
   describe "chords" do
     it "recognizes chords" do
       p = parse_fragment "[CEG]"
-      p.items[0].stroke.is_a?(Chord).should == true
+      p.items[0].is_a?(Chord).should == true
       p.items[0].notes.count.should == 3
       p.items[0].notes[0].is_a?(Note).should == true
       p.items[0].notes[0].pitch.height.should == 0
@@ -821,8 +821,6 @@ describe "abc-2.1 PEG" do
     end
     it "multiplies inner length modifiers by outer" do
       p = parse_fragment "[C2E2G2]3/"
-      p.items[0].notes[0].note_length.should == 2
-      p.apply_chord_lengths
       p.items[0].notes[0].note_length.should == 3
     end
     it "applies key signatures to chord pitches" do

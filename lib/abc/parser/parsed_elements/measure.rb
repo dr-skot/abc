@@ -12,7 +12,7 @@ module ABC
     end
 
     def notes
-      items.select { |item| item.is_a? NoteOrRest }
+      items.select { |item| item.is_a? MusicUnit }
     end
 
     def overlays?

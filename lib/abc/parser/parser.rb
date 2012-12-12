@@ -14,10 +14,10 @@ module ABC
             p.assign_free_text
             p.propagate_tunebook_header
           end
+          p.apply_beams
           p.divvy_voices
           p.divvy_parts
           p.apply_note_lengths
-          p.apply_chord_lengths
           p.apply_broken_rhythms
           p.apply_meter
           p.apply_key_signatures

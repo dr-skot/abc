@@ -28,7 +28,7 @@ module ABC
     end
 
     def notes
-      items.select { |item| item.is_a?(NoteOrRest) || item.is_a?(MusicUnit) }
+      items.select { |item| item.is_a?(MusicUnit) }
     end
 
     def collect_measures
@@ -51,7 +51,7 @@ module ABC
           overlay = Overlay.new
           measure.overlays << overlay
         elsif overlay
-          overlay.notes << item if item.is_a? NoteOrRest
+          overlay.notes << item if item.is_a?(MusicUnit)
           # TODO add assertion? no other type of item should be possible here
         else
           measure.items << item
@@ -115,7 +115,7 @@ module ABC
     def apply_note_lengths(start_note_length)
       len = start_note_length
       items.each do |item|
-        if item.is_a? NoteOrRest
+        if item.is_a?(MusicUnit)
           item.unit_note_length = len
         elsif item.is_a?(Field) && item.label.text_value == "L"
           len = item.value
