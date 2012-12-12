@@ -1101,51 +1101,35 @@ rule key_field do
    # NOTES AND RESTS
 
    rule notelike_thing do
-     grace_note_and_or_broken_rhythm? space* chord_annotation:chord_annotation? space* modifiers:(node:(annotation / decoration) space*)* stroke:stroke <ValueNode> {
+     grace_and_broken? space* chord:chord_annotation? space* embellishments stroke <ValueNode> {
        def value
-         if @value
-           @value
-         else
-           options = {
-             :decorations => decorations,
-             :annotations => annotations,
-             :chord_symbol => chord_symbol,
-             :broken_rhythm_marker => child(BrokenRhythm)
-           }
-           @value = stroke.value(options)
-         end
-       end
-       def broken_rhythm_marker
-         child(BrokenRhythm)
-       end
-       def decorations
-         @decorations ||= modifiers.elements.inject([]) { |result, el| result << el.node.symbol if el.node.type == :decoration }
-       end
-       def annotations
-         @annotations ||= modifiers.elements.inject([]) { |result, el| result << el.node if el.node.type == :annotation }
-       end
-       def chord_symbol
-         @chord_symbol ||= chord_annotation.empty? ? nil : chord_annotation.symbol
-       end
-       def chord_symbol=(sym)
-         @chord_symbol = sym
-       end
-       def pitch
-         stroke.pitch if stroke.respond_to? :pitch
-       end
-       def note_length_node
-         stroke.note_length_node if stroke.respond_to? :note_length_node
-       end
-       def notes
-         stroke.notes if stroke.respond_to? :notes
+         @value ||= stroke.value(:decorations => embellishments.decorations,
+                                 :annotations => embellishments.annotations,
+                                 :chord_symbol => chord.empty? ? nil : chord.symbol,
+                                 :broken_rhythm_marker => child(BrokenRhythm))
        end
      }
    end
 
-   rule grace_note_and_or_broken_rhythm do
+   rule grace_and_broken do
      grace_note space* broken_rhythm? / broken_rhythm space* grace_note?
    end
    
+   rule embellishments do
+     (node:(annotation / decoration) space*)* {
+       def decorations
+         @decorations ||= elements.inject([]) do |result, el|
+           result << el.node.symbol if el.node.type == :decoration
+         end
+       end
+       def annotations
+         @annotations ||= elements.inject([]) do |result, el| 
+           result << el.node if el.node.type == :annotation
+         end
+       end
+     }
+   end
+
    rule stroke do
      chord / note
    end
