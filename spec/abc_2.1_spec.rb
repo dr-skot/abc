@@ -1968,5 +1968,103 @@ describe "abc 2.1:" do
     end
   end
 
+
+    # 4.11 Ties and slurs
+    # You can tie two notes of the same pitch together, within or between bars, with a - symbol, e.g. abc-|cba or c4-c4. The tie symbol must always be adjacent to the first note of the pair, but does not need to be adjacent to the second, e.g. c4 -c4 and abc|-cba are not legal - see order of abc constructs.
+    # More general slurs can be put in with () symbols. Thus (DEFG) puts a slur over the four notes. Spaces within a slur are OK, e.g. ( D E F G ) .
+    # Slurs may be nested:
+    # (c (d e f) g a)
+    # and they may also start and end on the same note:
+    # (c d (e) f g a)
+    # A dotted slur may be notated by preceding the opening brace with a dot, e.g. .(cde); it is optional to place a dot immediately before the closing brace. Likewise, a dotted tie can be transcribed by preceding it with a dot, e.g. C.-C. This is especially useful in parts with multiple verses: some verses may require a slur, some may not.
+    # It should be noted that although the tie - and slur () produce similar symbols in staff notation they have completely different meanings to player programs and should not be interchanged. Ties connect two successive notes of the same pitch, causing them to be played as a single note, while slurs connect the first and last note of any series of notes, and may be used to indicate phrasing, or that the group should be played legato. Both ties and slurs may be used into, out of and between chords, and in this case the distinction between them is particularly important.
+
+  describe "a tie" do
+    it "does not appear by default" do
+      p = parse_fragment "a a"
+      p.items[0].tied_right.should == false
+      p.items[1].tied_left.should == false
+    end
+    it "is indicated by a hyphen" do
+      p = parse_fragment "a-a"
+      p.items[0].tied_right.should == true
+      p.items[1].tied_left.should == true
+    end
+    # TODO convert this to slur
+    it "can be used to mark a slur" do
+      p = parse_fragment "a-b"
+      p.items[0].tied_right.should == true
+      p.items[1].tied_left.should == true
+    end
+    it "can operate across spaces" do
+      p = parse_fragment "a- b"
+      p.items[0].tied_right.should == true
+      p.items[1].tied_left.should == true
+    end
+    it "can operate across bar lines" do
+      p = parse_fragment "a-|b"
+      p.items[0].tied_right.should == true
+      p.items[2].tied_left.should == true
+    end
+    it "can operate across fields" do
+      p = parse_fragment "a-[M:6/8]b"
+      p.items[0].tied_right.should == true
+      p.items[2].tied_left.should == true
+    end
+    it "can be dotted" do
+      p = parse_fragment "a.-b"
+      p.items[0].tied_right.should == false
+      p.items[0].tied_right_dotted.should == true
+      p.items[1].tied_left.should == true
+    end
+  end
+
+  describe "a slur" do
+    it "is indicated with parenthesis" do
+      p = parse_fragment "d(ab^c)d"
+      p.items[1].start_slur.should == 1
+      p.items[3].end_slur.should == 1
+    end
+    it "can be nested" do
+      p = parse_fragment "d(a(b^c))"
+      p.items[1].start_slur.should == 1
+      p.items[2].start_slur.should == 1
+      p.items[3].end_slur.should == 2
+    end
+    it "can exist on a single note" do
+      p = parse_fragment "d(a)b^c"
+      p.items[1].start_slur.should == 1
+      p.items[1].end_slur.should == 1
+    end
+    it "can operate across spaces" do
+      p = parse_fragment "(a b c)"
+      p.items[0].start_slur.should == 1
+      p.items[2].end_slur.should == 1
+    end
+    it "can operate across bar lines" do
+      p = parse_fragment "(ab|c)"
+      p.items[0].start_slur.should == 1
+      p.items[3].end_slur.should == 1
+    end
+    it "can operate across fields" do
+      p = parse_fragment "(ab[M:6/8]c)"
+      p.items[0].start_slur.should == 1
+      p.items[3].end_slur.should == 1
+    end
+    it "can slur a single note" do
+      p = parse_fragment "(a)"
+      p.items[0].start_slur.should == 1
+      p.items[0].end_slur.should == 1
+    end
+    it "can be dotted" do
+      p = parse_fragment "(a.(bc))"
+      p.notes[0].start_slur.should == 1
+      p.notes[0].start_dotted_slur.should == 0
+      p.notes[1].start_slur.should == 0
+      p.notes[1].start_dotted_slur.should == 1
+      p.notes[2].end_slur.should == 2
+    end
+  end
+
 end
 

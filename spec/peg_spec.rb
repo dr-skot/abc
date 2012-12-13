@@ -553,32 +553,6 @@ describe "abc-2.1 PEG" do
   end
 
 
-  describe "ties" do
-    it "accepts ties" do
-      p = parse_fragment "a-a"
-      p.items[1].is_a?(Tie).should == true
-    end
-    it "accepts ties that are really slurs" do
-      p = parse_fragment "a-b"
-      p.items[1].is_a?(Tie).should == true
-    end
-  end
-
-  describe "slurs" do
-    it "accepts slurs" do
-      p = parse_fragment "d(ab^c)d"
-      p.items[1].is_a?(Slur).should == true
-      p.items[1].start_slur.should == true
-      p.items[5].end_slur.should == true
-    end
-    it "can nest slurs" do
-      p = parse_fragment "d(a(b^c)d)"
-      p.items[1].start_slur.should == true
-      p.items[3].start_slur.should == true
-      p.items[6].end_slur.should == true
-      p.items[8].end_slur.should == true
-    end
-  end
 
   describe "gracenotes" do
     it "parses gracenotes" do

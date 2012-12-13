@@ -263,5 +263,31 @@ module ABC
     def clef
       key.clef
     end
+    # TODO can't slur across voices (or voice overlays or parts?)
+    def apply_ties_and_slurs
+      tied_left, start_slur, start_dotted_slur = false, 0, 0
+      last_note = nil
+      values.each do |item|
+        if item.is_a?(NoteOrChord)
+          item.start_slur = start_slur
+          item.start_dotted_slur = start_dotted_slur
+          item.tied_left = tied_left
+          last_note = item
+          tied_left, start_slur, start_dotted_slur = false, 0, 0
+        elsif item.is_a?(ABCElement, :type => :start_slur)
+          start_slur += 1
+        elsif item.is_a?(ABCElement, :type => :start_dotted_slur)
+          start_dotted_slur += 1
+        elsif item.is_a?(ABCElement, :type => :end_slur)
+          last_note.end_slur += 1
+        elsif item.is_a?(ABCElement, :type => :tie)
+          last_note.tied_right = true
+          tied_left = true
+        elsif item.is_a?(ABCElement, :type => :dotted_tie)
+          last_note.tied_right_dotted = true
+          tied_left = true
+        end
+      end
+    end
   end
 end

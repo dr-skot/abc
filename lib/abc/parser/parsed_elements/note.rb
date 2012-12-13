@@ -7,6 +7,12 @@ module ABC
     attr_reader :annotations
     attr_accessor :chord_symbol
     attr_reader :broken_rhythm_marker
+    attr_accessor :tied_left
+    attr_accessor :tied_right
+    attr_accessor :tied_right_dotted
+    attr_accessor :start_slur
+    attr_accessor :start_dotted_slur
+    attr_accessor :end_slur
 
     def initialize(length, options={})
       super(length)
@@ -14,6 +20,8 @@ module ABC
       @annotations = options[:annotations] || []
       @chord_symbol = options[:chord_symbol]
       @broken_rhythm_marker = options[:broken_rhythm_marker]
+      @tied_left, @tied_right, @tied_right_dotted = false, false, false
+      @start_slur, @start_dotted_slur, @end_slur = 0, 0, 0
     end
   end
   

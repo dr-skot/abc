@@ -1159,6 +1159,37 @@ rule key_field do
     end
 
 
+    # 4.11 Ties and slurs
+    # You can tie two notes of the same pitch together, within or between bars, with a - symbol, e.g. abc-|cba or c4-c4. The tie symbol must always be adjacent to the first note of the pair, but does not need to be adjacent to the second, e.g. c4 -c4 and abc|-cba are not legal - see order of abc constructs.
+    # More general slurs can be put in with () symbols. Thus (DEFG) puts a slur over the four notes. Spaces within a slur are OK, e.g. ( D E F G ) .
+    # Slurs may be nested:
+    # (c (d e f) g a)
+    # and they may also start and end on the same note:
+    # (c d (e) f g a)
+    # A dotted slur may be notated by preceding the opening brace with a dot, e.g. .(cde); it is optional to place a dot immediately before the closing brace. Likewise, a dotted tie can be transcribed by preceding it with a dot, e.g. C.-C. This is especially useful in parts with multiple verses: some verses may require a slur, some may not.
+    # It should be noted that although the tie - and slur () produce similar symbols in staff notation they have completely different meanings to player programs and should not be interchanged. Ties connect two successive notes of the same pitch, causing them to be played as a single note, while slurs connect the first and last note of any series of notes, and may be used to indicate phrasing, or that the group should be played legato. Both ties and slurs may be used into, out of and between chords, and in this case the distinction between them is particularly important.
+
+    rule tie do
+      '.'? '-' <ValueNode> {
+        def value
+          @value ||= ABCElement.new(text_value[0] == '.' ? :dotted_tie : :tie)
+        end
+      }
+    end
+
+    rule slur do
+      ('.(' / '(' / ')') '' <ValueNode> {
+        def value
+          @value ||= ABCElement.new(text_value == '.(' ? :start_dotted_slur : 
+                                    text_value == '(' ? :start_slur : :end_slur)
+        end
+      }
+    end
+
+
+
+
+
    rule macro_field do
      'not implemented'
    end
@@ -1346,31 +1377,6 @@ rule key_field do
 
 
 
-
-## 4.11. TIES AND SLURS
-## You can tie two notes together either across or within a bar with a '-' symbol, e.g. abc-|cba or abc-cba. More general slurs can be put in with () symbols. Thus (DEFG) puts a slur over the four notes. Spaces within a slur are OK, e.g. ( D E F G ) .
-## Slurs may be nested:
-##   (c (d e f) g a)
-## and they may also start and end on the same note:
-##   (c d (e) f g a)
-## An unnested slur on a singe note, e.g. |c d (e) f g a| is legal, but will be ignored.
-## A dotted slur may be notated by preceding the opening brace with a dot, e.g. .(cde); it is optional to dot the closing brace. Likewise, a dotted tie can be transcribed by preceding it with a dot, e.g. C.-C. This is especially useful in parts with multiple verses: some verses may require a slur, some may not.
-## It should be noted that although the tie '-' and slur '()' produce similar symbols in staff notation they have completely different meanings to player programs and should not be interchanged. Ties connect two successive notes of the same pitch, causing them to be played as a single note, while slurs connect the first and last note of any series of notes, and may be used to indicate phrasing, or that the group should be played legato. Both ties and slurs may be used into, out of and between chords, and in this case the distinction between them is particularly important.
-
-rule tie do
-  '-' <Tie>
-end
-
-rule slur do
-  ('(' / ')') '' <Slur> {
-    def start_slur
-      text_value == '('
-    end
-    def end_slur
-      text_value == ')'
-    end
-  }
-end
 
 ## 4.12. GRACE NOTES  
 ## Grace notes can be written by enclosing them in curly braces, '{}'. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some packages may ignore them. The unit duration to use for gracenotes is not specified by the ABC file, but by the package, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
