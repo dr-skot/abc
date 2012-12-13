@@ -28,9 +28,9 @@ module ABC
     
     def initialize(opts = {})
       @name = opts[:name] || 'treble'
-      @line = opts[:line] || LINES[name.to_sym]
+      @line = opts[:line] || LINES[name.to_sym] || LINES[:treble]
       @octave_shift = opts[:octave] || 0
-      @middle_pitch = opts[:middle] || MIDDLE_PITCHES[name.to_sym]
+      @middle_pitch = opts[:middle] || MIDDLE_PITCHES[name.to_sym] || MIDDLE_PITCHES[:treble]
       @transpose = opts[:transpose] || 0
       @stafflines = opts[:stafflines] || 5
     end

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'polyglot'
 require 'treetop'
 
@@ -1574,6 +1575,179 @@ describe "abc 2.1:" do
     it "knows it's invisible" do
       p = parse_fragment "X"
       p.items[0].invisible?.should == true
+    end
+  end
+
+
+  # 4.6 Clefs and transposition
+  # VOLATILE: This section is subject to some clarifications with regard to transposition, rules for the middle parameter and interactions between different parameters.
+  # Clef and transposition information may be provided in the K: key and V: voice fields. The general syntax is:
+  # [clef=]<clef name>[<line number>][+8 | -8] [middle=<pitch>] [transpose=<semitones>] [octave=<number>] [stafflines=<lines>]
+  # (where <…> denotes a value, […] denotes an optional parameter, and | separates alternative values).
+  # <clef name> - may be treble, alto, tenor, bass, perc or none. perc selects the drum clef. clef= may be omitted.
+  # [<line number>] - indicates on which staff line the base clef is written. Defaults are: treble: 2; alto: 3; tenor: 4; bass: 4.
+  # [+8 | -8] - draws '8' above or below the staff. The player will transpose the notes one octave higher or lower.
+  # [middle=<pitch>] - is an alternate way to define the line number of the clef. The pitch indicates what note is displayed on the 3rd line of the staff. Defaults are: treble: B; alto: C; tenor: A,; bass: D,; none: B.
+  # [transpose=<semitones>] - for playback, transpose the current voice by the indicated amount of semitones; positive numbers transpose up, negative down. This setting does not affect the printed score. The default is 0.
+  # [octave=<number>] to raise (positive number) or lower (negative number) the music code in the current voice by one or more octaves. This usage can help to avoid the need to write lots of apostrophes or commas to raise or lower notes.
+  # [stafflines=<lines>] - the number of lines in the staff. The default is 5.
+  # Note that the clef, middle, transpose, octave and stafflines specifiers may be used independent of each other.
+  # Examples:
+  #   K:   clef=alto
+  #   K:   perc stafflines=1
+  #   K:Am transpose=-2
+  #   V:B  middle=d bass
+  # Note that although this standard supports the drum clef, there is currently no support for special percussion notes.
+  # The middle specifier can be handy when working in the bass clef. Setting K:bass middle=d will save you from adding comma specifiers to the notes. The specifier may be abbreviated to m=.
+  # The transpose specifier is useful, for example, for a Bb clarinet, for which the music is written in the key of C although the instrument plays it in the key of Bb:
+  #   V:Clarinet
+  #   K:C transpose=-2
+  # The transpose specifier may be abbreviated to t=.
+  # To notate the various standard clefs, one can use the following specifiers:
+  # The seven clefs
+
+  # Name          specifier
+  # Treble        K:treble
+  # Bass          K:bass
+  # Baritone      K:bass3
+  # Tenor         K:tenor
+  # Alto          K:alto
+  # Mezzosoprano  K:alto2
+  # Soprano       K:alto1
+
+  # More clef names may be allowed in the future, therefore unknown names should be ignored. If the clef is unknown or not specified, the default is treble.
+  # Applications may introduce their own clef line specifiers. These specifiers should start with the name of the application, followed a colon, followed by the name of the specifier.
+  # Example:
+  # V:p1 perc stafflines=3 m=C  mozart:noteC=snare-drum
+
+  describe "a clef specifier" do
+    it "can appear in a K: field" do
+      p = parse_fragment "K:Am clef=bass"
+      p.clef.name.should == "bass"
+    end
+    it "can appear in a V: field" do
+      p = parse_fragment "V:Bass clef=bass"
+      p.voices["Bass"].clef.name.should == "bass"
+    end
+    it "can appear without 'clef='" do
+      p = parse_fragment "K:bass"
+      p.clef.name.should == "bass"
+    end
+    it "can have names treble, alto, tenor, bass, perc or none" do
+      p = parse_fragment "K:treble"
+      p.key.clef.name.should == "treble"
+      p = parse_fragment "K:alto"
+      p.key.clef.name.should == "alto"
+      p = parse_fragment "K:tenor"
+      p.key.clef.name.should == "tenor"
+      p = parse_fragment "K:bass"
+      p.key.clef.name.should == "bass"
+      p = parse_fragment "K:perc"
+      p.key.clef.name.should == "perc"
+      p = parse_fragment "K:clef=none"
+      p.key.clef.name.should == "none"
+    end
+    it "can specify the line on which to draw the clef" do
+      p = parse_fragment "K:Am clef=bass4"
+      p.key.clef.line.should == 4
+    end
+    it "has default lines for the basic clefs" do
+      p = parse_fragment "K:C clef=treble"
+      p.key.clef.line.should == 2
+      p = parse_fragment "K:C clef=alto"
+      p.key.clef.line.should == 3
+      p = parse_fragment "K:C clef=tenor"
+      p.key.clef.line.should == 4
+      p = parse_fragment "K:C clef=bass"
+      p.key.clef.line.should == 4
+    end
+    it "can include a 1-octave shift up or down using +8 or -8" do
+      p = parse_fragment "K:Am clef=bass"
+      p.key.clef.octave_shift.should == 0
+      p = parse_fragment "K:Am clef=alto+8"
+      p.key.clef.octave_shift.should == 1
+      p = parse_fragment "K:Am clef=treble-8"
+      p.key.clef.octave_shift.should == -1
+    end    
+    it "can specify a middle pitch" do
+      p = parse_fragment "K:C clef=treble middle=d"
+      p.key.clef.middle.height.should == 14
+      p = parse_fragment "K:C treble middle=d"
+      p.key.clef.middle.height.should == 14
+      p = parse_fragment "K:C middle=d"
+      p.key.clef.middle.height.should == 14
+    end
+    it "has default middle pitch for the basic clefs" do
+      p = parse_fragment "K:C clef=treble"
+      p.key.clef.middle.height.should == 11
+      p = parse_fragment "K:C clef=alto"
+      p.key.clef.middle.height.should == 0
+      p = parse_fragment "K:C clef=tenor"
+      p.key.clef.middle.height.should == -3
+      p = parse_fragment "K:C clef=bass"
+      p.key.clef.middle.height.should == -10
+      p = parse_fragment "K:C clef=none"
+      p.key.clef.middle.height.should == 11
+    end
+    it "can specify a transposition" do
+      p = parse_fragment "K:C clef=treble transpose=-2"
+      p.key.clef.transpose.should == -2
+      p = parse_fragment "K:C clef=treble t=4"
+      p.key.clef.transpose.should == 4
+    end
+    it "has a default transposition of 0" do
+      p = parse_fragment "K:C clef=treble"
+      p.key.clef.transpose.should == 0
+    end
+    it "can specify an octave shift with 'octave='" do
+      p = parse_fragment "K:C clef=treble octave=-2\nc"
+      p.key.clef.octave_shift.should == -2
+      p.notes[0].pitch.height.should == -12
+    end
+    it "has a default octave shift of 0" do
+      p = parse_fragment "K:C clef=treble"
+      p.key.clef.octave_shift.should == 0
+    end
+    it "can specify the number of stafflines" do
+      p = parse_fragment "K:C clef=treble stafflines=4"
+      p.key.clef.stafflines.should == 4
+    end
+    it "has a default of 5 stafflines" do
+      p = parse_fragment "K:C clef=treble"
+      p.key.clef.stafflines.should == 5
+    end
+    it "is allowed to use unknown clef names" do
+      p = parse_fragment "K:C baritone"
+      p.key.clef.name.should == 'baritone' 
+    end
+    it "matches treble clef's line and middle pitch if clef name is unknown" do
+      p = parse_fragment "K:C baritone"
+      p.key.clef.line.should == 2
+      p.key.clef.middle.height.should == 11
+    end
+    it "defaults to treble" do
+      p = parse_fragment "K:C"
+      p.key.clef.name.should == 'treble'
+    end
+    it "is allowed to use app-specific specifiers" do
+      p = parse_fragment "K:C clef=perc mozart:noteC=snare-drum"
+    end
+    it "can place its specifiers in any order" do
+      p = parse_fragment "K:C middle=d stafflines=3 bass4+8 t=-3"
+      p.key.clef.name.should == 'bass'
+      p.key.clef.middle.note.should == 'D'
+      p.key.clef.stafflines.should == 3
+      p.key.clef.transpose.should == -3
+      p.key.clef.octave_shift.should == 1
+    end
+  end
+
+  describe "field node" do
+    it "has a val" do
+      p = parse_fragment "[R:rhythm]abc"
+      p.items[0].is_a?(Field).should == true
+      p.items[0].val.identifier.should == "R"
+      p.items[0].val.value.should == "rhythm"
     end
   end
 

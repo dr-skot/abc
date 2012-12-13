@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # based on
 # http://abc.sourceforge.net/standard/abc2-draft.html
 # http://abcnotation.com/wiki/abc:standard:v2.1
@@ -12,7 +13,7 @@ grammar ABC do
   #   %abc-2.1
   # Version numbers of 2.1 or higher indicate that the abc file is to be interpreted strictly according to the corresponding abc standard; if the version number is missing, the file will be treated under loose interpretation. The version field may also be used to indicate abc versions for individual tunes.
   
-  ## TODO deal with this in preprocessor
+  ## TODO deal with this in preprocessor?
 
 
   # 2.2 Abc file structure
@@ -546,11 +547,11 @@ grammar ABC do
   end
 
   rule parts_atom do
-    part:[A-Z] dots? repeat_node:wholenum? <PartsAtom>
+    part:[A-Z] dots? repeat_node:posint? <PartsAtom>
   end
 
   rule parts_group do
-    '(' parts ')' dots? repeat_node:wholenum? <PartsGroup>
+    '(' parts ')' dots? repeat_node:posint? <PartsGroup>
   end
 
   rule parts_body_field do
@@ -634,11 +635,11 @@ grammar ABC do
 
 rule key_field do
     label:'K' ':' content:(key/"none") <Field> {
-      def value
-        key
-      end
       def key
-        content.text_value == "none" ? Key::NONE : content.key
+        value
+      end
+      def value
+        @value ||= content.text_value == "none" ? Key::NONE : content.key
       end
     }
   end
@@ -649,31 +650,22 @@ rule key_field do
 
 
   rule key do
-    tonic:([A-G] ('#' / 'b')? / 'HP' / 'Hp')? space* mode:mode? space* extra:key_accidental* space* clef:clef? {  
-      def tonic
-        super.text_value if super
-      end
-      def mode
-        super.text_value if super
-      end
-      def extra_accidentals
-        result = {}
-        extra.elements.each do |acc|
-          result[acc.note_letter] = acc.accidental.value
-        end
-        result
-      end
-      def clef
-        super.clef unless super.empty?
-      end
+    tonic:tonic? space* mode:mode? space* extra:key_accidental* space* clef:clef? {  
       def key
         if !@key
-          @key = Key.new tonic, mode, extra_accidentals
-          @key.clef = clef if clef
+          accidentals = extra.elements.inject({}) do |result, acc| 
+            result[acc.note_letter] = acc.accidental.value; result
+          end
+          @key = Key.new(tonic.text_value, mode.text_value, accidentals)
+          @key.clef = clef.value unless clef.empty?
         end
         @key
       end
     }
+  end
+
+  rule tonic do
+    [A-G] ('#' / 'b')? / 'HP' / 'Hp'
   end
 
   # maj min m ion aeo mix dor phr lyd loc
@@ -944,7 +936,7 @@ rule key_field do
   end
 
   rule measure_rest do
-    [XZ] measure_count:integer? <ValueNode> {
+    [XZ] measure_count:posint? <ValueNode> {
       attr_accessor :measure_length
       def value
         @value ||= MeasureRest.new(measure_count, :invisible => text_value[0] == 'X')
@@ -955,6 +947,116 @@ rule key_field do
     }
   end
 
+
+  # 4.6 Clefs and transposition
+  # VOLATILE: This section is subject to some clarifications with regard to transposition, rules for the middle parameter and interactions between different parameters.
+  # Clef and transposition information may be provided in the K: key and V: voice fields. The general syntax is:
+  # [clef=]<clef name>[<line number>][+8 | -8] [middle=<pitch>] [transpose=<semitones>] [octave=<number>] [stafflines=<lines>]
+  # (where <…> denotes a value, […] denotes an optional parameter, and | separates alternative values).
+  # <clef name> - may be treble, alto, tenor, bass, perc or none. perc selects the drum clef. clef= may be omitted.
+  # [<line number>] - indicates on which staff line the base clef is written. Defaults are: treble: 2; alto: 3; tenor: 4; bass: 4.
+  # [+8 | -8] - draws '8' above or below the staff. The player will transpose the notes one octave higher or lower.
+  # [middle=<pitch>] - is an alternate way to define the line number of the clef. The pitch indicates what note is displayed on the 3rd line of the staff. Defaults are: treble: B; alto: C; tenor: A,; bass: D,; none: B.
+  # [transpose=<semitones>] - for playback, transpose the current voice by the indicated amount of semitones; positive numbers transpose up, negative down. This setting does not affect the printed score. The default is 0.
+  # [octave=<number>] to raise (positive number) or lower (negative number) the music code in the current voice by one or more octaves. This usage can help to avoid the need to write lots of apostrophes or commas to raise or lower notes.
+  # [stafflines=<lines>] - the number of lines in the staff. The default is 5.
+  # Note that the clef, middle, transpose, octave and stafflines specifiers may be used independent of each other.
+  # Examples:
+  #   K:   clef=alto
+  #   K:   perc stafflines=1
+  #   K:Am transpose=-2
+  #   V:B  middle=d bass
+  # Note that although this standard supports the drum clef, there is currently no support for special percussion notes.
+  # The middle specifier can be handy when working in the bass clef. Setting K:bass middle=d will save you from adding comma specifiers to the notes. The specifier may be abbreviated to m=.
+  # The transpose specifier is useful, for example, for a Bb clarinet, for which the music is written in the key of C although the instrument plays it in the key of Bb:
+  #   V:Clarinet
+  #   K:C transpose=-2
+  # The transpose specifier may be abbreviated to t=.
+  # To notate the various standard clefs, one can use the following specifiers:
+  # The seven clefs
+
+  # Name          specifier
+  # Treble        K:treble
+  # Bass          K:bass
+  # Baritone      K:bass3
+  # Tenor         K:tenor
+  # Alto          K:alto
+  # Mezzosoprano  K:alto2
+  # Soprano       K:alto1
+
+  # More clef names may be allowed in the future, therefore unknown names should be ignored. If the clef is unknown or not specified, the default is treble.
+  # Applications may introduce their own clef line specifiers. These specifiers should start with the name of the application, followed a colon, followed by the name of the specifier.
+  # Example:
+  # V:p1 perc stafflines=3 m=C  mozart:noteC=snare-drum
+
+    rule clef_transpose do
+      ('transpose'/'t') '=' transpose:integer {
+        def set_clef_opts(opts)
+          opts[:transpose] = transpose.value 
+        end
+      }
+    end
+
+    rule clef_octave do
+      'octave' '=' octave:integer {
+        def set_clef_opts(opts)
+          opts[:octave] = octave.value 
+        end
+      }
+    end
+
+    rule clef_stafflines do
+      'stafflines' '=' stafflines:wholenum {
+        def set_clef_opts(opts)
+          opts[:stafflines] = stafflines.value 
+        end
+      }
+    end
+
+    rule clef_name do
+      'clef='? name:[a-zA-Z]+ line_number:posint? octave:('+8'/'-8')? {
+        def set_clef_opts(opts)
+          opts[:name] = name.text_value
+          opts[:line_number] = line_number.value unless line_number.empty? 
+          opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
+        end
+      }
+    end
+
+    rule clef_middle do
+      ('middle'/'m') '=' middle:pitch {
+        def set_clef_opts(opts)
+          opts[:middle] = middle.value
+        end
+      }
+    end
+
+    rule clef_app_specific do
+      app:alphanum+ ':' field:alphanum+ '=' value:alphanum+ {
+        def set_clef_opts(opts)
+          # TODO pass this data to the clef object
+        end
+      }
+    end
+
+    rule clef_specifier do
+      clef_transpose / clef_octave / clef_stafflines / clef_middle / clef_app_specific / clef_name
+    end
+
+    rule clef do
+      first:clef_specifier extras:(space+ specifier:clef_specifier)* {
+        def value
+          if @clef
+            @clef
+          else
+            opts = {}
+            first.set_clef_opts(opts)
+            extras.elements.each { |node| node.specifier.set_clef_opts(opts) }
+            @clef = Clef.new(opts)
+          end
+        end
+      }
+    end
 
    
    rule macro_field do
@@ -1009,6 +1111,14 @@ rule key_field do
   
   rule wholenum do
     digit+ {
+      def value
+        text_value.to_i
+      end
+    }
+  end
+
+  rule posint do
+    [1-9] [0-9]* {
       def value
         text_value.to_i
       end
@@ -1158,21 +1268,28 @@ rule key_field do
   ## ABC parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of '|' (thin bar line), '[' or ']' (thick bar line), and ':' (dots). Ex: '|[|', '[|:::'.
 
   rule bar_line
-  repeat_before:':'* bar repeat_after:':'* variant_number:wholenum? <BarLine> {
+   before:repeat bar after:repeat variant:posint? <ValueNode> {
+     def value
+       @value ||= BarLine.new(bar.type, before.count, after.count, 
+                              variant.empty? ? nil : variant.value)
+     end
     def type
       bar.type
     end
     def repeat_before
-      super.text_value.length
+      before.count
     end
     def repeat_after
-      super.text_value.length
+      after.count
     end
     def variant_number
-      super.value if !super.empty?
+      variant.value if !variant.empty?
     end
   } /
-    '::' <BarLine> {
+    '::' <ValueNode> {
+    def value
+      @value ||= BarLine.new(:thin, 1, 1, nil)
+    end
     def type
       :thin
     end
@@ -1185,18 +1302,24 @@ rule key_field do
   }
 end
 
+rule repeat do
+  ':'* {
+    def count
+      text_value.length
+    end
+  }
+end
+
 rule bar do
   ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
     def type
-      bar_types = { 
-        '[|]' => :invisible,
-        '.|' => :dotted,
-        '||' => :double,
-        '[|' => :thick_thin,
-        '|]' => :thin_thick,
-        '|' => :thin,
-      }
-      bar_types[text_value]
+      {'[|]' => :invisible,
+       '.|' => :dotted,
+       '||' => :double,
+       '[|' => :thick_thin,
+       '|]' => :thin_thick,
+       '|' => :thin,
+      }[text_value]
     end
   }
 end
@@ -1501,74 +1624,6 @@ rule decoration do
       }
     end
 
-
-    ## 6. CLEFS
-    ## A clef line specification may be provided in K: and V: fields. The general syntax is:
-    ##   [clef=]<clef name>[<line number>][+8 | -8]
-    ##     [middle=<pitch>] [transpose=<semitones>]
-    ##     [stafflines=<lines>]
-
-    rule clef_transpose do
-      ('transpose'/'t') '=' transpose:integer {
-        def set_clef_opts(opts)
-          opts[:transpose] = transpose.value 
-        end
-      }
-    end
-
-    rule clef_stafflines do
-      'stafflines' '=' stafflines:wholenum {
-        def set_clef_opts(opts)
-          opts[:stafflines] = stafflines.value 
-        end
-      }
-    end
-
-    rule clef_name do
-      'clef='? name:[a-zA-Z]+ line_number:wholenum? octave:('+8'/'-8')? {
-        def set_clef_opts(opts)
-          opts[:name] = name.text_value
-          opts[:line_number] = line_number.value unless line_number.empty? 
-          opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
-        end
-      }
-    end
-
-    rule clef_middle do
-      ('middle'/'m') '=' middle:pitch {
-        def set_clef_opts(opts)
-          opts[:middle] = middle.value
-        end
-      }
-    end
-
-    rule clef_app_specific do
-      app:alphanum+ ':' field:alphanum+ '=' value:alphanum+ {
-        def set_clef_opts(opts)
-          # TODO pass this data to the clef object
-        end
-      }
-    end
-
-    rule clef_specifier do
-      clef_transpose / clef_stafflines / clef_middle / clef_app_specific / clef_name
-    end
-
-    rule clef do
-      first:clef_specifier extras:(space+ specifier:clef_specifier)* {
-        def clef
-          unless @clef
-            opts = {}
-            first.set_clef_opts(opts)
-            extras.elements.each do |node| 
-              node.specifier.set_clef_opts(opts)
-            end
-            @clef = Clef.new(opts)
-          end
-          @clef
-        end
-      }
-    end
 
     # MULTIPLE VOICES
 

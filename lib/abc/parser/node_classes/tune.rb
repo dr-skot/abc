@@ -16,7 +16,7 @@ module ABC
       if !@lines
         line = TuneLine.new
         @lines = [line]
-        all_items = values(MusicNode, Field, TuneLineBreak, SymbolLine, MusicUnit)
+        all_items = values(MusicNode, Field, TuneLineBreak, SymbolLine, MusicElement)
         all_items.each do |it|
           if it.is_a?(TuneLineBreak)
             line = TuneLine.new
@@ -42,7 +42,7 @@ module ABC
       end
     end
     def all_items
-      @all_items ||= values(MusicNode, Field, MusicUnit)
+      @all_items ||= values(MusicNode, Field, MusicElement)
     end
     def notes
       if @first_voice

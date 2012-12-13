@@ -92,10 +92,6 @@ module ABC
   end
 
 
-  # BAR LINES
-  class BarLine < MusicNode
-  end
-
   # SYMBOL LINE
   class SymbolLine < ABCNode
   end

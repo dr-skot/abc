@@ -1,3 +1,5 @@
+require 'abc/parser/parsed_elements/music_unit'
+
 module ABC
   
   class NoteOrChord < MusicUnit

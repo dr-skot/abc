@@ -1,7 +1,10 @@
 module ABC
 
   class Field < ABCNode
-    def value
+    def val
+      FField.new(text_value[0], content_value)
+    end
+    def content_value
       if content.respond_to? :value
         content.value
       elsif content.respond_to? :text_value
@@ -10,6 +13,7 @@ module ABC
         content
       end
     end
+    alias_method :value, :content_value
   end
 
 end
