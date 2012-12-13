@@ -2,17 +2,12 @@ require 'treetop'
 
 class Object
   def is_one_of?(*types)
-    types.inject(false) { |result, type| result ||= self.is_a? type }
+    types.inject(false) { |result, type| result || self.is_a?(type) }
   end
-  def is_a?(type, options={})
-    return false unless super(type)
-    good = true
-    options.each_pair do |k, v|
-      if good
-        good = false unless self.respond_to?(k) && self.send(k) == v
-      end
+  def is_a?(type, attributes={})
+    super(type) && attributes.keys.inject(true) do |result, k|
+      result && self.respond_to?(k) && self.send(k) == attributes[k]
     end
-    return good
   end
 end
 
