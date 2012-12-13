@@ -1074,6 +1074,67 @@ rule key_field do
     end
     
 
+    # 4.8 Repeat/bar symbols
+    # Bar line symbols are notated as follows:
+    # |	  bar line
+    # |]  thin-thick double bar line
+    # ||  thin-thin double bar line
+    # [|  thick-thin double bar line
+    # |:  start of repeated section
+    # :|  end of repeated section
+    # ::  start & end of two repeated sections
+    # Recommendation for developers: If an 'end of repeated section' is found without a previous 'start of repeated section', playback programs should restart the music from the beginning of the tune, or from the latest double bar line or end of repeated section.
+    # Note that the notation :: is short for :| followed by |:. The variants ::, :|: and :||: are all equivalent.
+    # By extension, |:: and ::| mean the start and end of a section that is to be repeated three times, and so on.
+    # A dotted bar line can be notated by preceding it with a dot, e.g. .| - this may be useful for notating editorial bar lines in music with very long measures.
+    # An invisible bar line may be notated by putting the bar line in brackets, e.g. [|] - this may be useful for notating voice overlay in meter-free music.
+    # Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of | (thin bar line), [ or ] (thick bar line), and : (dots), e.g. |[| or [|::: .
+
+    rule bar_line do
+      standard_bar_line / double_colon_bar_line
+    end
+
+    rule standard_bar_line do
+      before:repeat bar after:repeat variant:posint? <ValueNode> {
+        def value
+          @value ||= BarLine.new(bar.type, before.count, after.count, 
+                                 variant.empty? ? nil : variant.value)
+        end
+      }
+    end
+
+    rule double_colon_bar_line do
+      '::' <ValueNode> {
+        def value
+          @value ||= BarLine.new(:thin, 1, 1, nil)
+        end
+      }
+    end
+
+    rule repeat do
+      ':'* {
+        def count
+          text_value.length
+        end
+      }
+    end
+
+    rule bar do
+      ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
+        def type
+          {'[|]' => :invisible,
+            '.|' => :dotted,
+            '||' => :double,
+            '[|' => :thick_thin,
+            '|]' => :thin_thick,
+            '|' => :thin,
+          }[text_value]
+        end
+      }
+    end
+
+
+
 
    rule macro_field do
      'not implemented'
@@ -1263,78 +1324,6 @@ rule key_field do
 
   # BROKEN RHYTHM MARKERS
 
-
-  ## 4.8. REPEAT/BAR SYMBOLS
-  ## Bar line symbols are notated as follows:
-  ##   |  bar line
-  ##   |] thin-thick double bar line
-  ##   || thin-thin double bar line
-  ##   [| thick-thin double bar line
-  ##   |: start of repeated section
-  ##   :| end of repeated section
-  ##   :: start & end of two repeated sections
-  ## If an 'end of repeated section' is found without a previous 'start of repeated section', the music restarts from the beginning of the tune, or from the latest double bar line or end of repeated section.
-  ## Note that the notation :: is short for :| followed by |:. The variants ::, :|: and :||: are all equivalent.
-  ## By extension, |:: and ::| mean the start and end of a section that is to be repeated three times, and so on.
-  ## A dotted bar line can be notated by preceding it with a dot, e.g. '.|'. This may be useful for notating editorial bar lines in music with very long measures. An invisible bar line may be notated by putting the bar line in brackets, e.g. '[|]'. This may be useful for e.g. notating Voice overlay in meter free music.
-  ## ABC parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of '|' (thin bar line), '[' or ']' (thick bar line), and ':' (dots). Ex: '|[|', '[|:::'.
-
-  rule bar_line
-   before:repeat bar after:repeat variant:posint? <ValueNode> {
-     def value
-       @value ||= BarLine.new(bar.type, before.count, after.count, 
-                              variant.empty? ? nil : variant.value)
-     end
-    def type
-      bar.type
-    end
-    def repeat_before
-      before.count
-    end
-    def repeat_after
-      after.count
-    end
-    def variant_number
-      variant.value if !variant.empty?
-    end
-  } /
-    '::' <ValueNode> {
-    def value
-      @value ||= BarLine.new(:thin, 1, 1, nil)
-    end
-    def type
-      :thin
-    end
-    def repeat_before
-      1
-    end
-    def repeat_after
-      1
-    end
-  }
-end
-
-rule repeat do
-  ':'* {
-    def count
-      text_value.length
-    end
-  }
-end
-
-rule bar do
-  ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
-    def type
-      {'[|]' => :invisible,
-       '.|' => :dotted,
-       '||' => :double,
-       '[|' => :thick_thin,
-       '|]' => :thin_thick,
-       '|' => :thin,
-      }[text_value]
-    end
-  }
-end
 
 
 ## 4.9. FIRST AND SECOND REPEATS

@@ -1811,6 +1811,98 @@ describe "abc 2.1:" do
   end
 
 
+  # 4.8 Repeat/bar symbols
+  # Bar line symbols are notated as follows:
+  # |	  bar line
+  # |]  thin-thick double bar line
+  # ||  thin-thin double bar line
+  # [|  thick-thin double bar line
+  # |:  start of repeated section
+  # :|  end of repeated section
+  # ::  start & end of two repeated sections
+  # Recommendation for developers: If an 'end of repeated section' is found without a previous 'start of repeated section', playback programs should restart the music from the beginning of the tune, or from the latest double bar line or end of repeated section.
+    # Note that the notation :: is short for :| followed by |:. The variants ::, :|: and :||: are all equivalent.
+    # By extension, |:: and ::| mean the start and end of a section that is to be repeated three times, and so on.
+    # A dotted bar line can be notated by preceding it with a dot, e.g. .| - this may be useful for notating editorial bar lines in music with very long measures.
+    # An invisible bar line may be notated by putting the bar line in brackets, e.g. [|] - this may be useful for notating voice overlay in meter-free music.
+    # Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of | (thin bar line), [ or ] (thick bar line), and : (dots), e.g. |[| or [|::: .
+
+  describe "a bar line" do
+    
+    it "can be thin" do
+      p = parse_fragment "a|b"
+      bar = p.items[1]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :thin
+    end
+    it "can be double" do
+      p = parse_fragment "a||b"
+      p.items.count.should == 3
+      bar = p.items[1]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :double
+    end
+    it "can be thin-thick" do
+      p = parse_fragment "a|]"
+      p.items.count.should == 2
+      bar = p.items.last
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :thin_thick
+    end
+    it "can be thick-thin" do
+      p = parse_fragment "[|C"
+      p.items.count.should == 2
+      bar = p.items[0]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :thick_thin
+    end
+    it "can be dotted" do
+      p = parse_fragment "a.|b"
+      p.items.count.should == 3
+      bar = p.items[1]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :dotted
+    end
+    it "can be invisible" do
+      p = parse_fragment "a[|]b"
+      p.items.count.should == 3
+      bar = p.items[1]
+      bar.is_a?(BarLine).should == true
+      bar.type.should == :invisible
+    end
+    it "can repeat to the left" do
+      p = parse_fragment "|:"
+      p.items[0].type.should == :thin
+      p.items[0].repeat_before.should == 0
+      p.items[0].repeat_after.should == 1
+    end
+    it "can repeat to the right" do
+      p = parse_fragment ":|"
+      p.items[0].type.should == :thin
+      p.items[0].repeat_before.should == 1
+      p.items[0].repeat_after.should == 0
+    end    
+    it "can repeat to the right if it's thin-thick" do
+      p = parse_fragment ":|]"
+      p.items[0].type.should == :thin_thick
+      p.items[0].repeat_before.should == 1
+      p.items[0].repeat_after.should == 0
+    end
+    it "can repeat to the left if it's thin-thick" do
+      p = parse_fragment "[|:"
+      p.items[0].type.should == :thick_thin
+      p.items[0].repeat_before.should == 0
+      p.items[0].repeat_after.should == 1
+    end
+    it "can indicate multiple repeats" do
+      p = parse_fragment "::|"
+      p.items[0].repeat_before.should == 2
+      p.items[0].repeat_after.should == 0
+    end
+  end
+
+
+
 
 
 end
