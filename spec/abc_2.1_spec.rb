@@ -1734,22 +1734,20 @@ describe "abc 2.1:" do
     end
     it "can place its specifiers in any order" do
       p = parse_fragment "K:C middle=d stafflines=3 bass4+8 t=-3"
-      p.key.clef.name.should == 'bass'
-      p.key.clef.middle.note.should == 'D'
-      p.key.clef.stafflines.should == 3
-      p.key.clef.transpose.should == -3
-      p.key.clef.octave_shift.should == 1
+      p.clef.name.should == 'bass'
+      p.clef.middle.note.should == 'D'
+      p.clef.stafflines.should == 3
+      p.clef.transpose.should == -3
+      p.clef.octave_shift.should == 1
+    end
+    it "can combine octave shifts with octave= and +/-8" do
+      p = parse_fragment "K: bass+8 octave=-1"
+      p.clef.octave_shift.should == 0
     end
   end
 
-  describe "field node" do
-    it "has a val" do
-      p = parse_fragment "[R:rhythm]abc"
-      p.items[0].is_a?(Field).should == true
-      p.items[0].val.identifier.should == "R"
-      p.items[0].val.value.should == "rhythm"
-    end
-  end
+
+
 
 end
 

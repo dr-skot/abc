@@ -1000,7 +1000,7 @@ rule key_field do
     rule clef_octave do
       'octave' '=' octave:integer {
         def set_clef_opts(opts)
-          opts[:octave] = octave.value 
+          opts[:octave] = opts[:octave].to_i + octave.value 
         end
       }
     end
@@ -1018,7 +1018,8 @@ rule key_field do
         def set_clef_opts(opts)
           opts[:name] = name.text_value
           opts[:line_number] = line_number.value unless line_number.empty? 
-          opts[:octave] = { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
+          opts[:octave] = opts[:octave].to_i
+          opts[:octave] += { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
         end
       }
     end
