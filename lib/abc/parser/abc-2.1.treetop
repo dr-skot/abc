@@ -239,7 +239,7 @@ grammar ABC do
   end
 
   rule string_field do
-    !special_field_identifier label:[A-Za-z] ':' content:string_field_content <Field>
+    !special_field_identifier [A-Za-z] ':' content:string_field_content <Field>
   end
 
   rule string_field_content do
@@ -305,7 +305,7 @@ grammar ABC do
   end
 
   rule inline_string_field do
-    !special_field_identifier label:[A-Za-z] ':' content:inline_string_field_content <Field>
+    !special_field_identifier [A-Za-z] ':' content:inline_string_field_content <Field>
   end
 
   rule inline_string_field_content do
@@ -324,7 +324,7 @@ grammar ABC do
   # Recommendation for developers: Software which writes abc files is recommended to offer users the possibility to manage X: field numbering automatically. GUI applications may even hide the X: field from users although they should always allow the user access to the raw abc file.
 
   rule refnum_field do
-    label:'X' ':' content:integer? <Field>
+    'X:' content:posint? <Field>
   end
 
   rule refnum_field_line do
@@ -339,7 +339,7 @@ grammar ABC do
   # See typesetting information fields for details of how the title and alternatives are included in the printed score.
 
   rule title_field do
-    label:'T' ':' content:string_field_content <Field>
+    'T:' content:string_field_content <Field>
   end
 
   rule title_field_line do
@@ -372,40 +372,29 @@ grammar ABC do
   # When there is no M: field defined, free meter is assumed (in free meter, bar lines can be placed anywhere you want).
 
   rule meter_field do
-    label:'M' ':' content:(named_meter / fractional_meter / complex_meter) <Field> {
-      def meter
-        content.meter
-      end
-    }
+    'M:' content:(named_meter / fractional_meter / complex_meter) <Field>
   end
 
   rule fractional_meter do
-    num:integer "/" denom:integer {
-      def meter
-        @meter ||= Meter.new num.value, denom.value
+    num:posint "/" denom:posint {
+      def value
+        @value ||= Meter.new(num.value, denom.value)
       end
     }
   end
 
   rule named_meter do
     ("C|" / "C" / "none") {
-      def meter
-        return @meter if @meter
-        if text_value == "C"
-          @meter = Meter.new :common
-        elsif text_value == "C|"
-          @meter = Meter.new :cut
-        else
-          @meter = Meter.new :free
-        end
+      def value
+        @value ||= Meter.new({ "C|" => :cut, "C" => :common, "none" => :free }[text_value])
       end
     }
   end
   
   rule complex_meter do
-   num:sum_maybe_parenthesized '/' denom:integer {
-      def meter
-        @meter ||= Meter.new(num.addends, denom.value)
+   num:sum_maybe_parenthesized '/' denom:posint {
+      def value
+        @value ||= Meter.new(num.addends, denom.value)
       end
     }
   end
@@ -420,12 +409,11 @@ grammar ABC do
   end
 
   rule sum do
-    first:(number:integer '+')+ last:integer {
+    first:posint rest:('+' number:posint)+ {
       def addends
-        result = []
-        first.elements.each { |el| result << el.number.value }
-        result << last.value
-        result
+        @addends ||= rest.elements.inject([first.value]) do |list, el| 
+          list << el.number.value; list
+        end
       end
     }
   end
@@ -438,13 +426,9 @@ grammar ABC do
   # A meter change within the body of the tune will not change the unit note length.
   
   rule unit_note_length_field do
-    label:'L' ':' content:((num:digit+ "/" denom:digit+) / digit+) <Field> {
+    'L:' content:(rational / posint) <Field> {
       def value
-        if content.respond_to? :num
-          Rational(content.num.text_value.to_i, content.denom.text_value.to_i)
-        else
-          Rational(content.text_value.to_i, 1)
-        end
+        @value ||= content.value
       end    
     }
   end
@@ -462,11 +446,7 @@ grammar ABC do
   # Finally note that some previous Q: field syntax is now deprecated (see outdated information field syntax).
 
   rule tempo_field do
-    label:'Q' ':' content:tempo_field_content <Field> {
-      def value
-        @tempo ||= content.tempo
-      end
-    }
+    'Q:' content:tempo_field_content <Field>
   end
   
   rule tempo_field_content do
@@ -475,13 +455,11 @@ grammar ABC do
 
   rule tempo_with_leading_label do
     label:quoted_string field_space* specifier:tempo_specifier? {
-      def tempo
+      def value
         if specifier.empty?
           Tempo.new(:label => label.value)
         else
-          t = specifier.tempo
-          t.label = label.value
-          t
+          (tempo = specifier.value).label = label.value; tempo
         end
       end
     }
@@ -489,42 +467,34 @@ grammar ABC do
   
   rule tempo_with_trailing_label do
     tempo_specifier field_space* label:quoted_string? {
-      def tempo
-        t = tempo_specifier.tempo
-        t.label = label.value if !label.empty?
-        t
+      def value
+        tempo = tempo_specifier.value
+        tempo.label = label.value if !label.empty?
+        tempo
       end
     }
   end
   
   rule tempo_label_only do
     quoted_string {
-      def tempo
+      def value
         Tempo.new(:label => value)
       end
     }
   end
   
   rule tempo_specifier do
-    beat_node:((rationals/'C') '=')? bpm_node:wholenum 
-    {
-      def tempo
-        Tempo.new(:beat_parts => beat_parts, :bpm => bpm)
+    beats:beat_parts? bpm:posint {
+      def value
+        Tempo.new(:beat_parts => (beats.empty? ? nil : beats.value), :bpm => bpm.value)
       end
-      def beat_parts
-        if beat_node.empty?
-          nil
-        else        
-          b = beat_node.elements[0]
-          if b.text_value == 'C'
-            [ Rational(1, 4) ]
-          else
-            b.value
-          end
-        end
-      end
-      def bpm
-        bpm_node.value
+    }
+  end
+
+  rule beat_parts do
+    beats:(rationals / 'C') '=' {
+      def value
+        beats.text_value == 'C' ? [ Rational(1, 4) ] : beats.value
       end
     }
   end
@@ -538,8 +508,9 @@ grammar ABC do
   # Player programs should use the P: field if possible to render a complete playback of the tune; typesetting programs should include the P: field values in the printed score.
 # See typesetting information fields for details of how the part information may be included in the printed score.
 
+  # TODO: make this conform to content value paradigm
   rule parts_header_field do
-    label:'P' ':' value:parts <Field>
+    'P:' value:parts <Field>
   end
 
   rule parts do
@@ -555,7 +526,7 @@ grammar ABC do
   end
 
   rule parts_body_field do
-    label:'P' ':' id:[A-Za-z] <Field> {
+    'P:' id:[A-Za-z] <Field> {
       def id
         super.text_value
       end
@@ -634,12 +605,9 @@ grammar ABC do
   # Note that the first occurrence of the K: field, which must appear in every tune, finishes the tune header. All following lines are considered to be part of the tune body.
 
 rule key_field do
-    label:'K' ':' content:(key/"none") <Field> {
-      def key
-        value
-      end
+    'K:' content:(key/"none") <Field> {
       def value
-        @value ||= content.text_value == "none" ? Key::NONE : content.key
+        @value ||= content.text_value == "none" ? Key::NONE : content.value
       end
     }
   end
@@ -651,7 +619,7 @@ rule key_field do
 
   rule key do
     tonic:tonic? space* mode:mode? space* extra:key_accidental* space* clef:clef? {  
-      def key
+      def value
         if !@key
           accidentals = extra.elements.inject({}) do |result, acc| 
             result[acc.note_letter] = acc.accidental.value; result
@@ -723,7 +691,7 @@ rule key_field do
   # Comment: Remember that abc software which extracts separate tunes from a file must insert the fields of the original file header into the header of the extracted tune: this is also true for the fields defined in this section.
 
   rule instruction_field do
-    label:'I' ':' directive value:(field_space+ text:string_field_content) <InstructionField> {
+    'I:' directive value:(field_space+ text:string_field_content) <InstructionField> {
       def name
         directive.text_value
       end
@@ -738,7 +706,7 @@ rule key_field do
   end
 
   rule inline_instruction_field do
-    !tune_body_instruction_field_excludes label:'I' ':' directive value:(space+ text:inline_string_field_content) <Field> {
+    !tune_body_instruction_field_excludes 'I:' directive value:(space+ text:inline_string_field_content) <InstructionField> {
       def name
         directive.text_value
       end
@@ -867,23 +835,27 @@ rule key_field do
    # Note for developers: All compliant software should be able to handle note lengths down to a 128th note; shorter lengths are optional.
 
    rule note_length do
-     numerator:digit* denominator:('/' digits:digit+ / '/'+)? {
-      def numerator
-        super.empty? ? 1 : super.text_value.to_i
-      end
-      def denominator
-        if super.empty?         # no denominator: use 1
-          1
-        elsif !super.respond_to? :digits  # no numeral, only slashes: use 2 ** slash count
-          2 ** super.text_value.length
-        else                              # numeral: use it
-          super.digits.text_value.to_i
-        end
-      end
-      def value
-        Rational numerator, denominator
+     num:posint? den:(number_denominator / slashes)? {
+      def value        
+        Rational( (num.empty? ? 1 : num.value), (den.empty? ? 1 : den.value) )
       end
     }  
+  end
+
+  rule number_denominator do
+    '/' posint {
+      def value
+        posint.value
+      end
+    }
+  end
+  
+  rule slashes do
+    '/'+ {
+      def value
+        2 ** text_value.length
+      end
+    }
   end
 
    
@@ -1566,8 +1538,9 @@ rule decoration do
 
   # LYRICS
 
+  # TODO: make this conform to content value paradigm
   rule lyrics_field do
-    label:'w' ':' (field_space* lyric_unit)+ <LyricsLine> {
+    'w:' (field_space* lyric_unit)+ <LyricsLine> {
       def units
         children(LyricUnit)
       end
@@ -1656,8 +1629,9 @@ rule decoration do
       voice_name / voice_subname / voice_stem / clef_specifier
     end
 
+    # TODO make this conform to content value paradigm
     rule voice_header_field do
-      label:'V' ':' id:alphanum+ specifiers:(space+ specifier:voice_specifier)* <Field> {
+      'V:' id:alphanum+ specifiers:(space+ specifier:voice_specifier)* <Field> {
         def id
           super.text_value[0..19] # first 20 chars only
         end
@@ -1684,7 +1658,7 @@ rule decoration do
     end
 
     rule voice_body_field do
-      label:'V' ':' id:alphanum+ <Field> {
+      'V:' id:alphanum+ <Field> {
         def id
           super.text_value[0..19] # first 20 chars only
         end

@@ -92,14 +92,7 @@ module ABC
       @tempo
     end
     def key
-      if !@key
-        if header && (field = header.field(/K/))
-          @key = field.key
-        else
-          @key = Key::NONE
-        end
-      end
-      @key
+      @key ||= header && (field = header.field(/K/)) ? field.value : Key::NONE
     end
     def part_sequence
       if header && (field = header.field(/P/))
@@ -123,7 +116,7 @@ module ABC
       part = nil
       items.each do |item|
         # TODO lose text_value here, label should already be a string
-        if item.is_a?(Field) && item.label.text_value == 'P'
+        if item.is_a?(Field, :type => :part)
           id = item.id
           parts[id] = Part.new(id) if !parts[id]
           part = parts[id]
@@ -241,7 +234,7 @@ module ABC
       voice = nil
       items.each do |item|
         # TODO lose text_value here, label should already be a string
-        if item.is_a?(Field) && item.label.text_value == 'V'
+        if item.is_a?(Field, :type => :voice)
           id = item.id
           voices[id] = Voice.new(id) if !voices[id]
           voice = voices[id]

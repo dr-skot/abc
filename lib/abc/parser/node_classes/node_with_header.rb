@@ -45,7 +45,7 @@ module ABC
 
     def meter
       if !@meter && header && (field = header.field(/M/))
-        @meter = field.meter
+        @meter = field.value
       end
       @meter ||= Meter.new :free
     end

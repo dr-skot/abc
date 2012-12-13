@@ -70,7 +70,7 @@ describe "abc 2.0 draft 4" do
     it "can handle a standalone body field right after the K: field" do
       p = parse "X:1\nT:T\nK:C\nK:F\nabc"
       p.tunes[0].key.tonic.should == "C"
-      p.tunes[0].items[0].key.tonic.should == "F"
+      p.tunes[0].items[0].value.tonic.should == "F"
     end
     
     it "allows fragment tune data with no header" do

@@ -4,6 +4,16 @@ class Object
   def is_one_of?(*types)
     types.inject(false) { |result, type| result ||= self.is_a? type }
   end
+  def is_a?(type, options={})
+    return false unless super(type)
+    good = true
+    options.each_pair do |k, v|
+      if good
+        good = false unless self.respond_to?(k) && self.send(k) == v
+      end
+    end
+    return good
+  end
 end
 
 module Treetop

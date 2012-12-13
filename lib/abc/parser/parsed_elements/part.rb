@@ -68,7 +68,7 @@ module ABC
         elsif item.is_a?(BarLine) && item.type != :dotted
           # reset to base signature at end of each measure
           signature = base_signature
-        elsif item.is_a?(Field) && item.label.text_value == "K"
+        elsif item.is_a?(Field, :type => :key)
           # key change
           base_signature = item.key.signature.dup
           signature = base_signature
@@ -81,7 +81,7 @@ module ABC
         items.each do |item|
           if item.is_a? MeasureRest
             item.measure_length = measure_length
-          elsif item.is_a?(Field) && item.label.text_value == "M"
+          elsif item.is_a?(Field, :type => :meter)
             measure_length = item.meter.measure_length
           end
         end
@@ -93,7 +93,7 @@ module ABC
       items.each do |item|
         if item.is_a? MusicUnit
           item.unit_note_length = len
-        elsif item.is_a?(Field) && item.label.text_value == "L"
+        elsif item.is_a?(Field, :type => :unit_note_length)
           len = item.value
         end
       end

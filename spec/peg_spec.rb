@@ -72,7 +72,7 @@ describe "abc-2.1 PEG" do
     it "can handle a standalone body field right after the K: field" do
       p = parse_fragment "K:C\nK:F\nabc"
       p.key.tonic.should == "C"
-      p.items[0].key.tonic.should == "F"
+      p.items[0].value.tonic.should == "F"
     end
 
   end

@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+
+# TODO fields should be objects not nodes
+# TODO get rid of label: on fields
+# TODO change item.is_a?(Field) and item.label.text_value == 'K' to 
+#    item.is_a?(Field, :type => :key)
+
 require 'polyglot'
 require 'treetop'
 

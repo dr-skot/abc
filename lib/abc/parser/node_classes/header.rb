@@ -3,7 +3,7 @@ module ABC
     # returns all header fields whose labels match regex
     def fields(regex=nil)
       if regex
-        children(Field).select { |f| f.label.text_value =~ regex }
+        children(Field).select { |f| f.text_value[0] =~ regex }
       else
         children(Field)
       end
