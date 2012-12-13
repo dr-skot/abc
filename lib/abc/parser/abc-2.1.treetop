@@ -168,7 +168,7 @@ grammar ABC do
   # Recommendation: Despite there being no limit on line length in abc files, it is recommended that users avoid writing abc code with very long lines. In particular, judiciously applied line-breaks can aid the (human) readability of abc code. More importantly, users who send abc tunes with long lines should be aware that email software sometimes introduces additional line-breaks into lines with more than 72 characters and these may even cause errors when the resulting tune is processed.
 
   rule music_line_ender do
-    tune_space? (music_line_break / music_line_continuation)
+    music_space? (music_line_break / music_line_continuation)
   end
 
   rule music_line_break do
@@ -723,7 +723,7 @@ rule key_field do
   # Comment: Remember that abc software which extracts separate tunes from a file must insert the fields of the original file header into the header of the extracted tune: this is also true for the fields defined in this section.
 
   rule instruction_field do
-    label:'I' ':' directive value:(tune_space+ text:string_field_content) <InstructionField> {
+    label:'I' ':' directive value:(field_space+ text:string_field_content) <InstructionField> {
       def name
         directive.text_value
       end
@@ -738,7 +738,7 @@ rule key_field do
   end
 
   rule inline_instruction_field do
-    !tune_body_instruction_field_excludes label:'I' ':' directive value:(tune_space+ text:inline_string_field_content) <Field> {
+    !tune_body_instruction_field_excludes label:'I' ':' directive value:(space+ text:inline_string_field_content) <Field> {
       def name
         directive.text_value
       end
@@ -1059,7 +1059,22 @@ rule key_field do
       }
     end
 
+    # 4.7 Beams
+    # To group notes together under one beam they must be grouped together without spaces. Thus in 2/4, A2BC will produce an eighth note followed by two sixteenth notes under one beam whilst A2 B C will produce the same notes separated. The beam slopes and the choice of upper or lower stems are typeset automatically.
+    # Notes that cannot be beamed may be placed next to each other. For example, if L:1/8 then ABC2DE is equivalent to AB C2 DE.
+    # Back quotes ` may be used freely between notes to be beamed, to increase legibility. They are ignored by computer programs. For example, A2``B``C is equivalent to A2BC.
+  
+    rule beam do
+      "`"
+    end
    
+    rule music_space do
+      # since this is an ABCNode, it will intrude between notes, thus breaking beams
+      space+ <ABCNode>
+    end
+    
+
+
    rule macro_field do
      'not implemented'
    end
@@ -1172,14 +1187,15 @@ rule key_field do
   end
 
   rule music_line do
-    (tune_space? tune_element)+ music_line_ender
+    (music_space? tune_element)+ music_line_ender
   end
 
 
   rule tune_element do
     inline_field /
-    tuplet_symbol / slur / variant_ending / notelike_thing / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
-    ignored_char
+    tuplet_symbol / slur / variant_ending / 
+    notelike_thing / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
+    beam / ignored_char
   end
 
   rule tune_hard_linebreak do
@@ -1197,14 +1213,9 @@ rule key_field do
    # "Back quotes ` may be used freely between beamed notes to increase legibility. 
    #  They are ignored by computer programs."
    rule ignored_char do
-     "`" / "#" / "$" / "*" / "?" / "@" # TODO: issue warning?
+     "#" / "$" / "*" / "?" / "@" # TODO: issue warning?
    end
 
-   # need to keep track of this to figure out beaming
-   rule tune_space do
-     space+ <TuneSpace>
-   end
-   
    # NOTES AND RESTS
 
    rule notelike_thing do

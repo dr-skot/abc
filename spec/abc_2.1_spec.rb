@@ -1747,6 +1747,70 @@ describe "abc 2.1:" do
   end
 
 
+    # 4.7 Beams
+    # To group notes together under one beam they must be grouped together without spaces. Thus in 2/4, A2BC will produce an eighth note followed by two sixteenth notes under one beam whilst A2 B C will produce the same notes separated. The beam slopes and the choice of upper or lower stems are typeset automatically.
+    # Notes that cannot be beamed may be placed next to each other. For example, if L:1/8 then ABC2DE is equivalent to AB C2 DE.
+    # Back quotes ` may be used freely between notes to be beamed, to increase legibility. They are ignored by computer programs. For example, A2``B``C is equivalent to A2BC.
+
+  describe "a beam" do
+    it "connects adjacent notes" do
+      p = parse_fragment "abc"
+      p.items[0].beam.should == :start
+      p.items[1].beam.should == :middle
+      p.items[2].beam.should == :end
+    end
+    it "connects notes separated by backticks" do
+      p = parse_fragment "a``b"
+      p.items[0].beam.should == :start
+      p.items[1].beam.should == :end
+    end
+    it "does not connect notes separated by space" do
+      p = parse_fragment "ab c"
+      p.notes[1].beam.should == :end
+      p.notes[2].beam.should == nil
+    end
+    it "does not connect notes separated by bar lines" do
+      p = parse_fragment "ab|c"
+      p.notes[1].beam.should == :end
+      p.notes[2].beam.should == nil
+    end
+    it "does not connect notes separated by fields" do
+      p = parse_fragment "ab[L:1/16]c"
+      p.notes[1].beam.should == :end
+    end
+    it "connects notes separated by line continuation" do
+      p = parse_fragment "ab\\\nc"
+      p.notes[1].beam.should == :middle
+      p.notes[2].beam.should == :end
+    end
+    it "does not connect notes separated by space plus line continuation" do
+      p = parse_fragment "ab \\\nc"
+      p.notes[1].beam.should == :end
+      p.notes[2].beam.should == nil
+    end
+    it "does not connect notes separated by line continuation plus space" do
+      p = parse_fragment "ab\\\n c"
+      p.notes[1].beam.should == :end
+      p.notes[2].beam.should == nil
+    end
+    it "does not connect notes that are unbeamable" do
+      p = parse_fragment "ab2"
+      p.notes[0].beam.should == nil
+      p.notes[1].beam.should == nil
+    end
+    it "does not connect notes separated by overlay symbols" do
+      p = parse_fragment "a&b"
+      p.notes[0].beam.should == nil
+      p.notes[1].beam.should == nil
+    end
+    it "does not connect notes separated by rests" do
+      p = parse_fragment "axb"
+      p.notes[0].beam.should == nil
+      p.notes[1].beam.should == nil
+    end
+  end
+
+
 
 
 end

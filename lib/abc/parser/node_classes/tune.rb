@@ -146,16 +146,16 @@ module ABC
       beam = :start
       last_note = nil
       values.each do |item|
-        if item.is_a?(TuneSpace) || item.is_a?(BarLine) || item.is_a?(TuneLineBreak)
+        if item.is_a?(NoteOrChord) && item.length <= Rational(1, 8)
+          item.beam = beam
+          beam = :middle
+          last_note = item
+        else
           beam = :start
           if last_note
             last_note.beam = nil if last_note.beam == :start
             last_note.beam = :end if last_note.beam == :middle
           end
-        elsif item.is_a?(MusicUnit)
-          item.beam = beam
-          beam = :middle
-          last_note = item
         end
       end
     end

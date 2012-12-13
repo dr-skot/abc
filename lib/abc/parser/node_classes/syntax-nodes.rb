@@ -65,9 +65,6 @@ module ABC
   class TuneHeader < Header
   end
 
-  class TuneSpace < ABCNode
-  end
-
   class TuneLineBreak < ABCNode
   end
 

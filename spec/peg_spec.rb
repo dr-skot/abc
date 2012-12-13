@@ -893,26 +893,6 @@ describe "abc-2.1 PEG" do
     parse_fragment "ab y de"
   end
   
-  describe "beaming support" do
-    it "beams adjacent notes" do
-      p = parse_fragment "abc d e"
-      p.apply_beams
-      p.items[0].beam.should == :start
-      p.items[1].beam.should == :middle
-      p.items[2].beam.should == :end
-      p.items[3].beam.should == nil
-      p.items[4].beam.should == nil
-    end
-    it "can stretch beam with backticks" do
-      p = parse_fragment "a``b c3/`^d"
-      p.apply_beams
-      p.items[0].beam.should == :start
-      p.items[1].beam.should == :end
-      p.items[2].beam.should == :start
-      p.items[3].beam.should == :end
-    end
-  end
-
   describe "lyrics support" do
     it "parses whole word lyrics" do
       p = parse_fragment "gcea\nw:my dog has fleas"
