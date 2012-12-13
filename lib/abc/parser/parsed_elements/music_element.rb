@@ -1,4 +1,4 @@
 module ABC
-  class MusicElement
+  class MusicElement < ABCElement
   end
 end

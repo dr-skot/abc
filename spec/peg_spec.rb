@@ -553,19 +553,6 @@ describe "abc-2.1 PEG" do
   end
 
 
-  
-  describe "variant endings" do
-    it "can parse first and second repeats" do
-      p = parse_fragment "[1 abc :|[2 def ||"
-      p = parse_fragment "abc|1 abc:|2 def ||"
-      p.items[3].variant_number.should == 1
-      p.items[7].variant_number.should == 2
-    end
-    it "can parse complex variants" do
-      p = parse_fragment "[1,3,5-7 abc || [2,4,8 def ||"
-    end
-  end
-
   describe "ties" do
     it "accepts ties" do
       p = parse_fragment "a-a"

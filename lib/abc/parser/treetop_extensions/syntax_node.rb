@@ -51,7 +51,7 @@ module Treetop
       end
       
       # returns the first child (of type, optionally) or nil if no children
-      def child(type=ABC::ABCNode)
+      def child(type=nil)
         c = children(type)[0]
       end
 

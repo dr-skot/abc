@@ -1908,8 +1908,65 @@ describe "abc 2.1:" do
   end
 
 
+  # 4.9 First and second repeats
+  # First and second repeats can be notated with the symbols [1 and [2, e.g.
+  #   faf gfe|[1 dfe dBA:|[2 d2e dcB|].
+  # When adjacent to bar lines, these can be shortened to |1 and :|2, but with regard to spaces
+  #   | [1
+  # is legal, while
+  #   | 1
+  # is not.
+  # Thus, a tune with different ending for the first and second repeats has the general form:
+  #   |:  <common body of tune>  |1  <first ending>  :|2  <second ending>  |]
+  # Note that in many abc files the |: may not be present.
+
+  describe "first and second ending" do
+    it "can be notated with [1 and [2" do
+      p = parse_fragment "abc|[1 abc :|[2 def |]"
+      p.items[4].is_a?(VariantEnding).should == true
+      p.items[4].range_list.should == [1]
+      p.items[9].is_a?(VariantEnding).should == true
+      p.items[9].range_list.should == [2]
+    end
+    it "can be notated with |1 and |2" do 
+      p = parse_fragment "abc|1 abc:|2 def ||"
+      p.items[4].is_a?(VariantEnding).should == true
+      p.items[4].range_list.should == [1]
+      p.items[9].is_a?(VariantEnding).should == true
+      p.items[9].range_list.should == [2]
+    end
+    it "can be notated with | [1" do
+      p = parse_fragment "abc| [1 abc :| [2 def |]"
+      p.items[4].is_a?(VariantEnding).should == true
+      p.items[4].range_list.should == [1]
+      p.items[9].is_a?(VariantEnding).should == true
+      p.items[9].range_list.should == [2]
+    end
+    it "cannot be notated iwth | 1" do 
+      fail_to_parse_fragment "abc| 1 abc:|2 def |]"
+    end
+  end
 
 
+    # 4.10 Variant endings
+    # In combination with P: part notation, it is possible to notate more than two variant endings for a section that is to be repeated a number of times.
+    # For example, if the header of the tune contains P:A4.B4 then parts A and B will each be played 4 times. To play a different ending each time, you could write in the tune:
+    #   P:A
+    #   <notes> | [1  <notes>  :| [2 <notes> :| [3 <notes> :| [4 <notes> |]
+    # The Nth ending starts with [N and ends with one of ||, :| |] or [|. You can also mark a section as being used for more than one ending e.g.
+    #   [1,3 <notes> :|
+    # plays on the 1st and 3rd endings and
+    #   [1-3 <notes> :|
+    # plays on endings 1, 2 and 3. In general, '[' can be followed by any list of numbers and ranges as long as it contains no spaces e.g.
+    #   [1,3,5-7  <notes>  :| [2,4,8 <notes> :|
+  
+  describe "a variant ending" do
+    it "can involve a range list" do
+      p = parse_fragment "[1,3,5-7 abc || [2,4,8 def ||"
+      p.items[0].range_list.should == [1, 3, 5..7]
+      p.items[5].range_list.should == [2, 4, 8]
+    end
+  end
 
 end
 
