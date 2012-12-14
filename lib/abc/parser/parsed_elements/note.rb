@@ -6,6 +6,7 @@ module ABC
     attr_reader :decorations
     attr_reader :annotations
     attr_accessor :chord_symbol
+    attr_accessor :grace_notes
     attr_reader :broken_rhythm_marker
     attr_accessor :tied_left
     attr_accessor :tied_right
@@ -19,6 +20,7 @@ module ABC
       @decorations = options[:decorations] || []
       @annotations = options[:annotations] || []
       @chord_symbol = options[:chord_symbol]
+      @grace_notes = options[:grace_notes]
       @broken_rhythm_marker = options[:broken_rhythm_marker]
       @tied_left, @tied_right, @tied_right_dotted = false, false, false
       @start_slur, @start_dotted_slur, @end_slur = 0, 0, 0

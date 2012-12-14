@@ -80,6 +80,9 @@ module ABC
       base_signature = key.signature.dup
       signature = base_signature
       items.each do |item|
+        if item.respond_to?(:grace_notes) && item.grace_notes
+          item.grace_notes.notes.each { |n| n.pitch.signature = signature }
+        end
         if item.respond_to?(:pitch) && item.pitch
           item.pitch.signature = signature
           # note's accidental may have altered the signature so ask for it back
