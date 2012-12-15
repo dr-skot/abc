@@ -92,7 +92,7 @@ module ABC
             note.pitch.signature = signature
             signature = note.pitch.signature
           end
-        elsif item.is_a?(BarLine) && item.type != :dotted
+        elsif item.is_a?(BarLine) && !item.dotted?
           # reset to base signature at end of each measure
           signature = base_signature
         elsif item.is_a?(Field, :type => :key)

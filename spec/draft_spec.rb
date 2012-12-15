@@ -220,7 +220,7 @@ describe "abc 2.0 draft 4" do
   describe "symbol line support" do
     it "applies symbol line symbols to notes" do
       p = parse_fragment([     "CDEF    | G```AB`c     c",
-                          "s: \"^slow\" | +f+ ** +fff+ \"Gm\""].join("\n"))
+                          "s: \"^slow\" | !f! ** !fff! \"Gm\""].join("\n"))
       p.lines[0].symbols.should_not == nil
       p.notes[0].annotations[0].placement.should == :above
       p.notes[0].annotations[0].text.should == "slow"
@@ -234,6 +234,13 @@ describe "abc 2.0 draft 4" do
       p.notes[7].decorations[0].symbol.should == 'fff'
       p.notes[8].chord_symbol.should == 'Gm'
     end
+    it "skips dotted bar lines" do
+      p = parse_fragment("abc.|de|f\ns:!f!|!f!")
+      p.notes[0].decorations[0].symbol.should == "f"
+      p.notes[3].decorations[0].should == nil
+      p.notes[5].decorations[0].symbol.should == "f"
+    end
+    # TODO decorations can also be abbreviations
 
   end
 

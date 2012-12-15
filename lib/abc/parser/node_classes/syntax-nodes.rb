@@ -72,11 +72,6 @@ module ABC
   class BrokenRhythm < MusicNode
   end
 
-  # TIES AND SLURS
-
-  class Spacer < MusicNode
-  end
-
   # SYMBOL LINE
   class SymbolLine < ABCNode
   end

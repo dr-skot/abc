@@ -622,7 +622,7 @@ rule key_field do
       def value
         if !@key
           accidentals = extra.elements.inject({}) do |result, acc| 
-            result[acc.note_letter] = acc.accidental.value; result
+            result.merge!(acc.note_letter => acc.accidental.value)
           end
           @key = Key.new(tonic.text_value, mode.text_value, accidentals)
           @key.clef = clef.value unless clef.empty?
@@ -1063,23 +1063,45 @@ rule key_field do
   # A dotted bar line can be notated by preceding it with a dot, e.g. .| - this may be useful for notating editorial bar lines in music with very long measures.
   # An invisible bar line may be notated by putting the bar line in brackets, e.g. [|] - this may be useful for notating voice overlay in meter-free music.
   # Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of | (thin bar line), [ or ] (thick bar line), and : (dots), e.g. |[| or [|::: .
-  
+
   rule bar_line do
-    bar_line_with_variant_ending / standard_bar_line / double_colon_bar_line
+    embellished_bar_line variant_ending_list?
+  end
+  
+  rule embellished_bar_line do
+    embellishments bare_bar_line <ValueNode> {
+      def value
+        if @value
+          @value
+        else
+          b = bare_bar_line.value(embellishments.empty? ? {} : embellishments.value)
+          # kludge to reinterpret staccato mark as dotted bar line
+          if b.decorations[-1] && b.decorations[-1] == "staccato"
+            b.decorations.pop
+            b.dotted = true
+          end
+          @value = b
+        end
+      end
+    }
+  end
+  
+  rule bare_bar_line do
+    standard_bar_line / double_colon_bar_line
   end
   
   rule standard_bar_line do
-    before:repeat bar after:repeat <ValueNode> {
-      def value
-        @value ||= BarLine.new(bar.type, before.count, after.count)
+    before:repeat bar after:repeat {
+      def value(options={})
+        BarLine.new(bar.type, before.count, after.count, options)
       end
     }
   end
   
   rule double_colon_bar_line do
-    '::' <ValueNode> {
-      def value
-        @value ||= BarLine.new(:thin, 1, 1, nil)
+    '::' {
+      def value(options={})
+        BarLine.new(:thin, 1, 1, nil, options)
       end
     }
   end
@@ -1132,15 +1154,11 @@ rule key_field do
   #   [1,3,5-7  <notes>  :| [2,4,8 <notes> :|
   
   rule variant_ending do
-    '[' variant_ending_list space+
-  end
-  
-  rule bar_line_with_variant_ending do
-    standard_bar_line variant_ending_list space+
+    '[' variant_ending_list
   end
   
   rule variant_ending_list do
-    range_list '' <ValueNode> {
+    range_list space+ <ValueNode> {
       def value
         @value ||= VariantEnding.new(range_list.value)
       end
@@ -1150,9 +1168,7 @@ rule key_field do
   rule range_list do
     first:(range / posint) rest:(',' node:(range / posint))* {
       def value
-        rest.elements.inject([first.value]) do |result, el|
-          result << el.node.value; result
-        end
+        rest.elements.inject([first.value]) { |result, el| result << el.node.value }
       end
     }
   end
@@ -1204,7 +1220,7 @@ rule key_field do
     first:note rest:(br:broken_rhythm? note)* {
       def value
         @value ||= rest.elements.inject([first.value]) do |result, el|
-          result << el.note.value(:broken_rhythm_marker => el.br.empty? ? nil : el.br); result
+          result << el.note.value(:broken_rhythm_marker => el.br.empty? ? nil : el.br)
         end
       end
     }
@@ -1238,6 +1254,339 @@ rule key_field do
     }
   end
   
+
+  # 4.14 Decorations
+  # A number of shorthand decoration symbols are available:
+  # .       staccato mark
+  # ~       Irish roll
+  # H       fermata
+  # L       accent or emphasis
+  # M       lowermordent
+  # O       coda
+  # P       uppermordent
+  # S       segno
+  # T       trill
+  # u       up-bow
+  # v       down-bow
+  # Decorations should be placed before the note which they decorate - see order of abc constructs
+  # Examples:
+  # (3.a.b.c    % staccato triplet
+  # vAuBvA      % bowing marks (for fiddlers)
+  # Most of the characters above (~HLMOPSTuv) are just short-cuts for commonly used decorations and can even be redefined (see redefinable symbols).
+  # More generally, symbols can be entered using the syntax !symbol!, e.g. !trill!A4 for a trill symbol. (Note that the abc standard version 2.0 used instead the syntax +symbol+ - this dialect of abc is still available, but is now deprecated - see decoration dialects.)
+  # The currently defined symbols are:
+  # !trill!                "tr" (trill mark)
+  # !trill(!               start of an extended trill
+  # !trill)!               end of an extended trill
+  # !lowermordent!         short /|/|/ squiggle with a vertical line through it
+  # !uppermordent!         short /|/|/ squiggle
+  # !mordent!              same as !lowermordent!
+  # !pralltriller!         same as !uppermordent!
+  # !roll!                 a roll mark (arc) as used in Irish music
+  # !turn!                 a turn mark (also known as gruppetto)
+  # !turnx!                a turn mark with a line through it
+  # !invertedturn!         an inverted turn mark
+  # !invertedturnx!        an inverted turn mark with a line through it
+  # !arpeggio!             vertical squiggle
+  # !>!                    > mark
+  # !accent!               same as !>!
+  # !emphasis!             same as !>!
+  # !fermata!              fermata or hold (arc above dot)
+  # !invertedfermata!      upside down fermata
+  # !tenuto!               horizontal line to indicate holding note for full duration
+  # !0! - !5!              fingerings
+  # !+!                    left-hand pizzicato, or rasp for French horns
+  # !plus!                 same as !+!
+  # !snap!                 snap-pizzicato mark, visually similar to !thumb!
+  # !slide!                slide up to a note, visually similar to a half slur
+  # !wedge!                small filled-in wedge mark
+  # !upbow!                V mark
+  # !downbow!              squared n mark
+  # !open!                 small circle above note indicating open string or harmonic
+  # !thumb!                cello thumb symbol
+  # !breath!               a breath mark (apostrophe-like) after note
+  # !pppp! !ppp! !pp! !p!  dynamics marks
+  # !mp! !mf! !f! !ff!     more dynamics marks
+  # !fff! !ffff! !sfz!     more dynamics marks
+  # !crescendo(!           start of a < crescendo mark
+  # !<(!                   same as !crescendo(!
+  # !crescendo)!           end of a < crescendo mark, placed after the last note
+  # !<)!                   same as !crescendo)!
+  # !diminuendo(!          start of a > diminuendo mark
+  # !>(!                   same as !diminuendo(!
+  # !diminuendo)!          end of a > diminuendo mark, placed after the last note
+  # !>)!                   same as !diminuendo)!
+  # !segno!                2 ornate s-like symbols separated by a diagonal line
+  # !coda!                 a ring with a cross in it
+  # !D.S.!                 the letters D.S. (=Da Segno)
+  # !D.C.!                 the letters D.C. (=either Da Coda or Da Capo)
+  # !dacoda!               the word "Da" followed by a Coda sign
+  # !dacapo!               the words "Da Capo"
+  # !fine!                 the word "fine"
+  # !shortphrase!          vertical line on the upper part of the staff
+  # !mediumphrase!         same, but extending down to the centre line
+  # !longphrase!           same, but extending 3/4 of the way down
+  # Note that the decorations may be applied to notes, rests, note groups, and bar lines. If a decoration is to be typeset between notes, it may be attached to the y spacer - see typesetting extra space.
+  # Spaces may be used freely between each of the symbols and the object to which it should be attached. Also an object may be preceded by multiple symbols, which should be printed one over another, each on a different line.
+  # Example:
+  # [!1!C!3!E!5!G]  !coda! y  !p! !trill! C   !fermata!|
+  # Player programs may choose to ignore most of the symbols mentioned above, though they may be expected to implement the dynamics marks, the accent mark and the staccato dot. Default volume is equivalent to !mf!. On a scale from 0-127, the relative volumes can be roughly defined as: !pppp! = !ppp! = 30, !pp! = 45, !p! = 60, !mp! = 75, !mf! = 90, !f! = 105, !ff! = 120, !fff! = !ffff! = 127.
+  # Abc software may also allow users to define new symbols in a package dependent way.
+  # Note that symbol names may not contain any spaces, [, ], | or : signs, e.g. while !dacapo! is legal, !da capo! is not.
+  # If an unimplemented or unknown symbol is found, it should be ignored.
+  # Recommendation: A good source of general information about decorations can be found at http://www.dolmetsch.com/musicalsymbols.htm.
+
+  rule decoration do
+    explicit_declaration / redefinable_symbol
+  end
+  
+  rule explicit_declaration do
+    decoration_delimiter label:legal_decoration_char+ decoration_delimiter <SymbolUnit> {
+      def type
+        :decoration
+      end
+      def symbol
+        label.text_value
+      end
+    }
+  end
+  
+  rule decoration_delimiter do
+    '!'
+  end
+
+  rule legal_decoration_char do
+    !(space / '[' / ']' / '|' / ':' / decoration_delimiter) .
+  end
+
+
+  # 4.15 Symbol lines
+  # Adding many symbols to a line of music can make a tune difficult to read. In such cases, a symbol line (a line that contains only !…! decorations, "…" chord symbols or annotations) can be used, analogous to a line of lyrics.
+  # A symbol line starts with s:, followed by a line of symbols. Matching of notes and symbols follow the alignment rules defined for lyrics (meaning that symbols in an s: line cannot be aligned on grace notes, rests or spacers).
+  # Example:
+  #    CDEF    | G```AB`c
+  # s: "^slow" | !f! ** !fff!
+  # It is also possible to stack s: lines to produced multiple symbols on a note.
+  # Example: The following two excerpts are equivalent and would place a decorations plus a chord on the E.
+  #    C2  C2 Ez   A2|
+  # s: "C" *  "Am" * |
+  # s: *   *  !>!  * |
+  # "C" C2 C2 "Am" !>! Ez A2|
+
+  rule symbol_line do
+    's:' (field_space+ / symbol_skip / chord_annotation / annotation / decoration)+ <SymbolLine>
+  end
+
+  rule symbol_skip do
+    ('*' / '|') '' <SymbolUnit> {
+      def skip
+        text_value == '*' ? :note : :bar
+      end
+    }
+  end
+
+
+  # 4.16 Redefinable symbols
+  # As a short cut to writing symbols which avoids the !symbol! syntax (see decorations), the letters H-W and h-w and the symbol ~ can be assigned with the U: field. For example, to assign the letter T to represent the trill, you can write:
+  # U: T = !trill!
+  # You can also use "^text", etc (see annotations below) in definitions
+  # Example: To print a plus sign over notes, define p as follows and use it before the required notes:
+  # U: p = "^+"
+  # Symbol definitions can be written in the file header, in which case they apply to all the tunes in that file, or in a tune header, when they apply only to that tune, and override any previous definitions. Programs may also make use of a set of global default definitions, which apply everywhere unless overridden by local definitions. You can assign the same symbol to two or more letters e.g.
+  # U: T = !trill!
+  # U: U = !trill!
+  # in which case the same visible symbol will be produced by both letters (but they may be played differently), and you can de-assign a symbol by writing:
+  # U: T = !nil!
+  # or
+  # U: T = !none!
+  # The standard set of definitions (if you do not redefine them) is:
+  # U: ~ = !roll!
+  # U: H = !fermata!
+  # U: L = !accent!
+  # U: M = !lowermordent!
+  # U: O = !coda!
+  # U: P = !uppermordent!
+  # U: S = !segno!
+  # U: T = !trill!
+  # U: u = !upbow!
+  # U: v = !downbow!
+  # Please see macros for an advanced macro mechanism.
+
+  rule redefinable_symbol do
+    [.~H-Wh-w] {
+      attr_accessor :user_defined_symbols
+      def user_defined_symbols
+        @user_defined_symbols || ABC::DEFAULT_USER_DEFINED_SYMBOLS
+      end
+      def type
+        user_defined_symbols[text_value].type if user_defined_symbols[text_value]
+      end
+      def symbol
+        user_defined_symbols[text_value].symbol if type == :decoration
+      end
+      def text
+        user_defined_symbols[text_value].text if type == :annotation
+      end
+    }
+  end
+
+  
+  # 4.17 Chords and unisons
+  # Chords (i.e. more than one note head on a single stem) can be coded with [] symbols around the notes, e.g.
+  # [CEGc]
+  # indicates the chord of C major. They can be grouped in beams, e.g.
+  # [d2f2][ce][df]
+  # but there should be no spaces within the notation for a chord. See the tune 'Kitchen Girl' in the sample file Reels.abc for a simple example.
+  # All the notes within a chord should normally have the same length, but if not, the chord duration is that of the first note.
+  # Recommendation: Although playback programs should not have any difficulty with notes of different lengths, typesetting programs may not always be able to render the resulting chord to staff notation (for example, an eighth and a quarter note cannot be represented on the same stem) and the result is undefined. Consequently, this is not recommended.
+  # More complicated chords can be transcribed with the & operator (see voice overlay).
+ # The chord forms a syntactic grouping, to which the same prefixes and postfixes can be attached as to an ordinary note (except for accidentals which should be attached to individual notes within the chord and decorations which may be attached to individual notes within the chord or may be attached to the chord as a whole).
+  # Example:
+  # ( "^I" !f! [CEG]- > [CEG] "^IV" [F=AC]3/2"^V"[GBD]/  H[CEG]2 )
+  # When both inside and outside the chord length modifiers are used, they should be multiplied. Example: [C2E2G2]3 has the same meaning as [CEG]6.
+  # If the chord contains two notes of the same pitch, then it is a unison (e.g. a note played on two strings of a violin simultaneously) and is shown with one stem and two note-heads.
+  # Example:
+  # [DD]
+
+  rule chord do
+    '[' notes_node:note+ ']' note_length {
+      def value(options={})
+        Chord.new(notes, note_length.value, options)
+      end
+      def notes
+        @notes ||= notes_node.elements.map { |node| node.value }
+      end
+    }
+  end
+
+
+  # 4.18 Chord symbols
+  # VOLATILE: The list of chords and how they are handled will be extended at some point. Until then programs should treat chord symbols quite liberally.
+  # Chord symbols (e.g. chords/bass notes) can be put in under the melody line (or above, depending on the package) using double-quotation marks placed to the left of the note it is sounded with, e.g. "Am7"A2D2.
+  # The chord has the format <note><accidental><type></bass>, where <note> can be A-G, the optional <accidental> can be b, #, the optional <type> is one or more of
+  # m or min        minor
+  # maj             major
+  # dim             diminished
+  # aug or +        augmented
+  # sus             suspended
+  # 7, 9 ...        7th, 9th, etc.
+  # and </bass> is an optional bass note.
+  # A slash after the chord type is used only if the optional bass note is also used, e.g., "C/E". If the bass note is a regular part of the chord, it indicates the inversion, i.e., which note of the chord is lowest in pitch. If the bass note is not a regular part of the chord, it indicates an additional note that should be sounded with the chord, below it in pitch. The bass note can be any letter (A-G or a-g), with or without a trailing accidental sign (b or #). The case of the letter used for the bass note does not affect the pitch.
+  # Alternate chords can be indicated for printing purposes (but not for playback) by enclosing them in parentheses inside the double-quotation marks after the regular chord, e.g., "G(Em)".
+  # Note to developers: Software should also be able to recognise and handle appropriately the unicode versions of flat, natural and sharp symbols (♭, ♮, ♯) - see special symbols.
+
+  rule chord_annotation do
+    '"' symbol:(chord_symbol space* ('(' chord_symbol ')')?) '"' <SymbolUnit> {
+      def type
+        :chord_symbol
+      end
+      def symbol
+        super.text_value
+      end
+    }
+  end
+
+  rule chord_symbol do
+    [A-G] 
+    ('b' / '#')? 
+    ('m' / 'min' / 'maj' / 'dim' / 'aug' / '+' / 'sus' / posint / space)*
+      ('/' [A-Ga-g])?
+  end
+
+
+  # 4.19 Annotations
+  # General text annotations can be added above, below or on the staff in a similar way to chord symbols. In this case, the string within double quotes is preceded by one of five symbols ^, _, <, > or @ which controls where the annotation is to be placed; above, below, to the left or right respectively of the following note, rest or bar line. Using the @ symbol leaves the exact placing of the string to the discretion of the interpreting program. These placement specifiers distinguish annotations from chord symbols, and should prevent programs from attempting to play or transpose them. All text that follows the placement specifier is treated as a text string.
+  # Where two or more annotations with the same placement specifier are placed consecutively, e.g. for fingerings, the notation program should draw them on separate lines, with the first listed at the top.
+  # Example: The following annotations place the note between parentheses.
+  # "<(" ">)" C
+
+  # TODO support \"
+  rule annotation do
+    '"' placement_specifier text:(!'"' .)* '"' space* <SymbolUnit> {
+      def type
+        :annotation
+      end
+      def placement
+        placement_specifier.value
+      end
+      def text
+        super.text_value
+      end
+    }
+  end
+
+  rule placement_specifier do
+    ('^' / '_' / '<' / '>' / '@') {
+      def value
+        { '^' => :above, '_' => :below, '<' => :left, '>' => :right, 
+          '@' => :unspecified }[text_value]
+      end
+    }
+  end
+
+
+  # 4.20 Order of abc constructs
+  # The order of abc constructs for a note is: <grace notes>, <chord symbols>, <annotations>/<decorations> (e.g. Irish roll, staccato marker or up/downbow), <accidentals>, <note>, <octave>, <note length>, i.e. ~^c'3 or even "Gm7"v.=G,2.
+  # Each tie symbol, -, should come immediately after a note group but may be followed by a space, i.e. =G,2- . Open and close chord delimiters, [ and ], should enclose entire note sequences (except for chord symbols), e.g.
+  # "C"[CEGc]|
+  # |"Gm7"[.=G,^c']
+  # and open and close slur symbols, (), should do likewise, i.e.
+  # "Gm7"(v.=G,2~^c'2)
+
+   rule note_or_chord do
+     gb:grace_and_broken? space* embellishments stroke <ValueNode> {
+       def value
+         gr_br = gb.empty? ? {} : gb.value
+         em = embellishments.empty? ? {} : embellishments.value
+         @value ||= stroke.value(gr_br.merge(em))
+       end
+     }
+   end
+
+   rule grace_and_broken do
+     (gn:grace_note space* br:broken_rhythm? / br:broken_rhythm space* gn:grace_note?) {
+       def value
+         @value ||= empty? ? {} : { :grace_notes => gn.empty? ? nil : gn.value,
+           :broken_rhythm_marker => child(BrokenRhythm) }
+       end
+     }
+   end
+   
+   rule embellishments do
+     chord:chord_annotation? space* dec:(node:(annotation / decoration) space*)* {
+       def value
+         @value ||= { :decorations => decorations, :annotations => annotations, 
+           :chord_symbol => chord_symbol }
+       end
+       def chord_symbol
+         chord.symbol unless chord.empty?
+       end
+       def decorations
+         @decorations ||= dec.elements.inject([]) do |result, el|
+           result << el.node.symbol if el.node.type == :decoration
+         end
+       end
+       def annotations
+         @annotations ||= dec.elements.inject([]) do |result, el| 
+           result << el.node if el.node.type == :annotation
+         end
+       end
+     }
+   end
+
+   rule stroke do
+     chord / note
+   end
+
+   rule note do
+     pitch note_length {
+       def value(options={})
+         Note.new(pitch.value, note_length.value, options)
+       end
+     }
+   end
+
+
 
    rule macro_field do
      'not implemented'
@@ -1355,7 +1704,7 @@ rule key_field do
   rule tune_element do
     inline_field /
     tuplet_symbol / slur / variant_ending / 
-    notelike_thing / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
+    note_or_chord / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
     beam / ignored_char
   end
 
@@ -1379,180 +1728,8 @@ rule key_field do
 
    # NOTES AND RESTS
 
-   rule notelike_thing do
-     gb:grace_and_broken? space* chord:chord_annotation? space* embellishments stroke <ValueNode> {
-       def value
-         @value ||= stroke.value(:decorations => embellishments.decorations,
-                                 :annotations => embellishments.annotations,
-                                 :chord_symbol => chord.empty? ? nil : chord.symbol,
-                                 :broken_rhythm_marker => gb.empty? ? nil : gb.broken_rhythm,
-                                 :grace_notes=> gb.empty? ? nil : gb.grace_notes)
-       end
-     }
-   end
-
-   rule grace_and_broken do
-     (gn:grace_note space* br:broken_rhythm? / br:broken_rhythm space* gn:grace_note?) {
-       def grace_notes
-         gn.empty? ? nil : gn.value
-       end
-       def broken_rhythm
-         child(BrokenRhythm)
-         # br.empty ? nil : br
-       end
-     }
-   end
-   
-   rule embellishments do
-     (node:(annotation / decoration) space*)* {
-       def decorations
-         @decorations ||= elements.inject([]) do |result, el|
-           result << el.node.symbol if el.node.type == :decoration
-         end
-       end
-       def annotations
-         @annotations ||= elements.inject([]) do |result, el| 
-           result << el.node if el.node.type == :annotation
-         end
-       end
-     }
-   end
-
-   rule stroke do
-     chord / note
-   end
-
-   rule note do
-     pitch note_length {
-       def value(options={})
-         Note.new(pitch.value, note_length.value, options)
-       end
-     }
-   end
 
 
-
-# DECORATIONS
-
-## Staccato marks (a small dot above or below the note head) can be notated by a dot before the note, i.e. a staccato triplet is written as (3.a.b.c
-## For fiddlers, the letters u and v can be used to denote up-bow and down-bow, e.g. vAuBvA
-## Other common symbols are available such as
-##   ~       Irish roll
-##   T       trill
-##   H       fermata
-##   L       accent or emphasis
-##   M       lowermordent
-##   P       uppermordent
-##   S       segno
-##   O       coda
-## However these characters (~.uvTHLMPSO) are just short cuts for commonly used decorations and can even be redefined (see section Redefinable symbols). More generally, symbols can be entered using the syntax +symbol+, e.g. +trill+A4 for a trill symbol (tr).
-rule decoration do
-  '+' label:[^+]+ '+' <SymbolUnit> {
-    def type
-      :decoration
-    end
-    def symbol
-      label.text_value
-    end
-  }
-  /
-    [.~H-Wh-w] {
-      attr_accessor :user_defined_symbols
-      def user_defined_symbols
-        @user_defined_symbols || ABC::DEFAULT_USER_DEFINED_SYMBOLS
-      end
-      def type
-        user_defined_symbols[text_value].type if user_defined_symbols[text_value]
-      end
-      def symbol
-        user_defined_symbols[text_value].symbol if type == :decoration
-      end
-      def text
-        user_defined_symbols[text_value].text if type == :annotation
-      end
-    }
-  end
-
-  ## 4.17. CHORDS AND UNISONS
-  ## Chords (i.e. more than one note head on a single stem) can be coded with [] symbols around the notes, e.g.
-  ## [CEGc]
-  ## produces the chord of C major. They can be grouped in beams, e.g.
-  ## [d2f2][ce][df]
-  ## but there should be no spaces within a chord. See the tune 'Kitchen Girl' in the file Reels.abc for a simple example.
-  ## All the notes within a chord should have the same length. More complicated chords can be transcribed with the & operator, see section Voice overlay.
-  ## Some packages allow chords with notes of different lengths. However, currenly the semantics of such chords are not well-defined and differ from package to package.
-  ## The chord forms a syntactic grouping, to which the same prefixes and postfixes can be attached as to an ordinary note, except for accidentals. In particular, the following notation is legal:
-  ## ( "^I" +f+ [CEG]- > [CEG] "^IV" [F=AC]3/2"^V"[GBD]/  H[CEG]2 )
-  ## When both inside and outside the chord length modifiers are used, they should be multiplied. I.e. [C2E2G2]3 has the same meaning as [CEG]6.
-  ## If the chord contains two notes both of the same length and pitch, such as
-  ## [DD]
-  ## then it is a unison (e.g. a note played on two strings of a violin simultaneously) and is shown with one stem and two note-heads:
-
-  rule chord do
-    '[' notes_node:note+ ']' note_length {
-      def value(options={})
-        @value ||= Chord.new(notes, note_length.value, options)
-      end
-      def notes
-        @notes ||= notes_node.elements.map { |node| node.value }
-      end
-    }
-  end
-
-
-  ## 4.18. CHORD SYMBOLS
-  ## Chord symbols (e.g. chords/bass notes) can be put in under the melody line (or above, depending on the package) using double-quotation marks placed to the left of the note it is sounded with, e.g. "Am7"A2D2.
-  ## The chord has the format <note><accidental><type></bass>, where <note> can be A-G, the optional <accidental> can be b, #, the optional <type> is one or more of
-  ##   m or min        minor
-  ##   maj             major
-  ##   dim             diminished
-  ##   aug or +        augmented
-  ##   sus             sustained
-  ##   7, 9 ...        7th, 9th, etc.
-  ## and </bass> is an optional bass note.
-  ## A slash after the chord type is used only if the optional bass note is also used, e.g., "C/E". If the bass note is a regular part of the chord, it indicates the inversion, i.e., which note of the chord is lowest in pitch. If the bass note is not a regular part of the chord, it indicates an additional note that should be sounded with the chord, below it in pitch. The bass note can be any letter (A-G or a-g), with or without a trailing accidental sign (b or #). The case of the letter used for the bass note does not affect the pitch.
-  ## Alternate chords can be indicated for printing purposes (but not for playback) by enclosing them in parentheses inside the double-quotation marks after the regular chord, e.g., "G(Em)".
-  ## Programs should treat chord symbols quite liberally.
-
-  rule chord_annotation do
-    '"' symbol:(chord_symbol space* ('(' chord_symbol ')')?) '"' <SymbolUnit> {
-      def type
-        :chord_symbol
-      end
-      def symbol
-        super.text_value
-      end
-    }
-  end
-
-  rule chord_symbol do
-    [A-G] 
-    ('b' / '#')? 
-    ('m' / 'min' / 'maj' / 'dim' / 'aug' / '+' / 'sus' / wholenum / space)*
-      ('/' [A-Ga-g])?
-  end
-
-
-  ##  4.19. ANNOTATIONS
-  ##  General text annotations can be added above, below or on the staff in a similar way to chord symbols. In this case, the string within double quotes is preceded by one of five symbols '^', '_', '<', '>' or '@' which controls where the annotation is to be placed; above, below, to the left or right respectively of the following note, rest or bar line. Using the '@' symbol leaves the exact placing of the string to the discretion of the interpreting program. These placement specifiers distinguish annotations from chord symbols, and should prevent programs from attempting to play or transpose them. All text that follows the placement specifier is treated as an ABC string.
-  ## Where two or more annotations with the same placement specifier are placed consecutively, e.g. for fingerings, the notation program should draw them on separate lines, with the first listed at the top.
-  ## Example:
-  ## "<(" ">)" C
-  ## Places the note between parentheses.
-
-  rule annotation do
-    '"' placement_specifier:('^' / '_' / '<' / '>' / '@') text:(!'"' .)* '"' space* <SymbolUnit> {
-      def type
-        :annotation
-      end
-      def placement
-        { '^' => :above, '_' => :below, '<' => :left, '>' => :right, '@' => :unspecified }[placement_specifier.text_value]
-      end
-      def text
-        super.text_value
-      end
-    }
-  end
 
 
   # LYRICS
@@ -1577,8 +1754,8 @@ rule decoration do
       end
       def note_count
         count = 1
-        count += stretch.text_value.length if stretch
-        count += hyphen.text_value.length - 1 if hyphen && hyphen.text_value.length > 1
+        count += stretch.text_value.length
+        count += hyphen.text_value.length - 1 if hyphen.text_value.length > 1
         count
       end
       def hyphen?
@@ -1587,11 +1764,7 @@ rule decoration do
     } /
       ('*' / '|') space* <LyricUnit> {
       def skip
-        if text_value[0] == '*'
-          :note
-        else
-          :bar
-        end
+        text_value[0] == '*' ? :note : :bar
       end
     }
   end
@@ -1599,23 +1772,6 @@ rule decoration do
   rule lyric_divider do
     space+ / line_ender
   end
-
-  # SYMBOL LINES
-  rule symbol_line do
-    's' ':' (field_space+ / symbol_skip / chord_annotation / annotation / decoration )+ <SymbolLine>
-    end
-
-    rule symbol_skip do
-      ('*' / '|') '' <SymbolUnit> {
-        def skip
-          if text_value == '*'
-            :note
-          else
-            :bar
-          end
-        end
-      }
-    end
 
 
     # MULTIPLE VOICES
@@ -1692,10 +1848,14 @@ rule decoration do
 
 
     # TODO find a better place for this
-    # TODO spacer should be a stroke in the note definition
+    # TODO spacer can have embellishments
 
     rule spacer do
-      "y" <Spacer>
+      embellishments 'y' <ValueNode> {
+        def value
+          @value ||= Spacer.new(embellishments.empty? ? {} : embellishments.value)
+        end
+      }
     end
 
     # BASICS

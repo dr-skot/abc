@@ -555,20 +555,6 @@ describe "abc-2.1 PEG" do
 
 
 
-  describe "decorations" do
-    it "recognizes +symbol+ decorations" do
-      p = parse_fragment "+trill+ A"
-      p.items[0].decorations[0].should == "trill";
-    end
-    it "recognizes shortcut decorations" do
-      p = parse_fragment ".A~BuC"
-      p.items[0].decorations[0].should == "staccato";
-      p.items[1].decorations[0].should == "roll";
-      p.items[2].decorations[0].should == "upbow";
-    end
-
-  end
-
   describe "chords" do
     it "recognizes chords" do
       p = parse_fragment "[CEG]"

@@ -3,9 +3,6 @@ require 'abc/parser/parsed_elements/music_unit'
 module ABC
   
   class NoteOrChord < MusicUnit
-    attr_reader :decorations
-    attr_reader :annotations
-    attr_accessor :chord_symbol
     attr_accessor :grace_notes
     attr_reader :broken_rhythm_marker
     attr_accessor :tied_left
@@ -16,10 +13,7 @@ module ABC
     attr_accessor :end_slur
 
     def initialize(length, options={})
-      super(length)
-      @decorations = options[:decorations] || []
-      @annotations = options[:annotations] || []
-      @chord_symbol = options[:chord_symbol]
+      super(length, options)
       @grace_notes = options[:grace_notes]
       @broken_rhythm_marker = options[:broken_rhythm_marker]
       @tied_left, @tied_right, @tied_right_dotted = false, false, false

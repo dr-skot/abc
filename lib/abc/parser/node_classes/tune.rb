@@ -166,7 +166,7 @@ module ABC
               i += 1
             elsif symbol.skip == :bar
               # advance to next (undotted) bar, then skip it
-              i += 1 until items.count <= i || items[i].is_a?(BarLine) && items[i].type != :dotted
+              i += 1 until items.count <= i || (items[i].is_a?(BarLine) && !items[i].dotted?)
               i += 1
             else
               # find next note and set this symbol on it

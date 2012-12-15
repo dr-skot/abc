@@ -1223,7 +1223,7 @@ describe "abc 2.1:" do
       p.notes[3].lyric.text.should == "fleas"
     end
     it "combines symbol lines with '+:'" do
-      p = parse_fragment "GCEA\ns:**\n+:*+f+"
+      p = parse_fragment "GCEA\ns:**\n+:*!f!"
       p.notes[3].decorations[0].symbol.should == "f"
     end
     it "combines more than two lines" do
@@ -1867,7 +1867,7 @@ describe "abc 2.1:" do
       p.items.count.should == 3
       bar = p.items[1]
       bar.is_a?(BarLine).should == true
-      bar.type.should == :dotted
+      bar.dotted?.should == true
     end
     it "can be invisible" do
       p = parse_fragment "a[|]b"
@@ -2143,7 +2143,6 @@ describe "abc 2.1:" do
       p.notes[5].length.should == 1
     end
 
-    # TODO maybe the tuplet marker should be an attribute of the first note, like slurs and ties
     it "can be inspected" do
       p = parse_fragment "[L:1] [M:C] (2abc [M:3/4] (2abc"
       marker = p.notes[0].tuplet_marker
@@ -2395,6 +2394,51 @@ describe "abc 2.1:" do
   # Note that symbol names may not contain any spaces, [, ], | or : signs, e.g. while !dacapo! is legal, !da capo! is not.
   # If an unimplemented or unknown symbol is found, it should be ignored.
   # Recommendation: A good source of general information about decorations can be found at http://www.dolmetsch.com/musicalsymbols.htm.
+
+  describe "a decoration" do
+    it "can be expressed as !symbol!" do
+      p = parse_fragment "!trill! A"
+      p.notes[0].decorations[0].should == "trill"
+    end
+    it "can be applied to chords" do
+      p = parse_fragment "!f! [CGE]"
+      p.notes[0].decorations[0].should == "f"
+    end
+    it "can be applied to bar lines" do
+      p = parse_fragment "abc !fermata! |"
+      p.items[3].decorations[0].should == "fermata"
+    end
+    it "can be applied to spacers" do
+      p = parse_fragment "abc !fermata! y"
+      p.items[3].decorations[0].should == "fermata"
+    end
+    it "can be one of several applied to the same note" do
+      p = parse_fragment "!p! !trill! a"
+      p.notes[0].decorations.count.should == 2
+      p.notes[0].decorations[0].should == "p"
+      p.notes[0].decorations[1].should == "trill"
+    end
+    it "cannot include spaces" do
+      fail_to_parse_fragment "!da capo! A"
+    end
+    it "cannot include colons" do
+      fail_to_parse_fragment "!da:capo! A"
+    end
+    it "cannot include a vertical bar" do
+      fail_to_parse_fragment "!da|capo! A"
+    end
+    it "cannot include square brackets" do
+      fail_to_parse_fragment "![dacapo]! A"
+    end
+    it "can be expressed by certain shortcuts" do
+      p = parse_fragment ".A~BuCvD"
+      p.notes[0].decorations[0].should == "staccato";
+      p.notes[1].decorations[0].should == "roll";
+      p.notes[2].decorations[0].should == "upbow";
+      p.notes[3].decorations[0].should == "downbow";
+    end
+
+  end
 
 
 end
