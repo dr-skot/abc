@@ -20,3 +20,4 @@ require "abc/parser/parsed_elements/part"
 
 require "abc/parser/parsed_elements/bar_line"
 require "abc/parser/parsed_elements/variant_ending"
+require "abc/parser/parsed_elements/tuplet_marker"

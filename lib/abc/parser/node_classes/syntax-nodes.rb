@@ -77,11 +77,6 @@ module ABC
   class Spacer < MusicNode
   end
 
-  # TUPLET MARKERS
-  class TupletMarker < MusicNode    
-  end
-
-
   # SYMBOL LINE
   class SymbolLine < ABCNode
   end

@@ -1229,32 +1229,11 @@ rule key_field do
   # Spaces that appear between the tuplet specifier and the following notes are to be ignored.
   
   rule tuplet_symbol do
-    '(' p:posint extra:(':' q:posint? extra:(':' r:posint?)?)? <TupletMarker> {
-      attr_accessor :compound_meter
-      alias_method :compound_meter?, :compound_meter
-      def ratio
-        pval = p.value
-        if !extra.empty? && !extra.q.empty?
-          qval = extra.q.value
-        else
-          # TODO raise error unless p is 2-9
-          qval = "  323n2n3n"[pval]
-          if qval != 'n'
-            qval = qval.to_i
-          elsif compound_meter
-            qval = 3
-          else
-            qval = 2
-          end
-        end
-        Rational(qval, pval);
-      end
-      def num_notes
-        if !extra.empty? && !extra.extra.empty? && !extra.extra.r.empty?
-          extra.extra.r.value
-        else
-          p.value
-        end
+    '(' p:[2-9] x:(':' q:posint? x:(':' r:posint?)?)? <ValueNode> {
+      def value
+        q = (!x.empty? && !x.q.empty?) ? x.q.value : nil
+        r = (!x.empty? && !x.x.empty? && !x.x.r.empty?) ? x.x.r.value : nil
+        @value ||= TupletMarker.new(p.text_value.to_i, q, r)
       end
     }
   end
