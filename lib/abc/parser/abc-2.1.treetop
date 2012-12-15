@@ -872,8 +872,7 @@ rule key_field do
    # Note that the use of broken rhythm markers between notes of unequal lengths will produce undefined results, and should be avoided.
 
   rule broken_rhythm do 
-    # TODO: instead of lookahead do postparse check
-    ('>'+ / '<'+) &(space* notelike_thing) <BrokenRhythm> {
+    ('>'+ / '<'+) '' <BrokenRhythm> {
       # direction = '<' or '>'; which note's timing are you changing?
       def change(direction) 
         x = Rational 1, 2 ** text_value.length
@@ -961,258 +960,305 @@ rule key_field do
   # Example:
   # V:p1 perc stafflines=3 m=C  mozart:noteC=snare-drum
 
-    rule clef_transpose do
-      ('transpose'/'t') '=' transpose:integer {
-        def set_clef_opts(opts)
-          opts[:transpose] = transpose.value 
-        end
-      }
-    end
-
-    rule clef_octave do
-      'octave' '=' octave:integer {
-        def set_clef_opts(opts)
-          opts[:octave] = opts[:octave].to_i + octave.value 
-        end
-      }
-    end
-
-    rule clef_stafflines do
-      'stafflines' '=' stafflines:wholenum {
-        def set_clef_opts(opts)
-          opts[:stafflines] = stafflines.value 
-        end
-      }
-    end
-
-    rule clef_name do
-      'clef='? name:[a-zA-Z]+ line_number:posint? octave:('+8'/'-8')? {
-        def set_clef_opts(opts)
-          opts[:name] = name.text_value
-          opts[:line_number] = line_number.value unless line_number.empty? 
-          opts[:octave] = opts[:octave].to_i
-          opts[:octave] += { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
-        end
-      }
-    end
-
-    rule clef_middle do
-      ('middle'/'m') '=' middle:pitch {
-        def set_clef_opts(opts)
-          opts[:middle] = middle.value
-        end
-      }
-    end
-
-    rule clef_app_specific do
-      app:alphanum+ ':' field:alphanum+ '=' value:alphanum+ {
-        def set_clef_opts(opts)
-          # TODO pass this data to the clef object
-        end
-      }
-    end
-
-    rule clef_specifier do
-      clef_transpose / clef_octave / clef_stafflines / clef_middle / clef_app_specific / clef_name
-    end
-
-    rule clef do
-      first:clef_specifier extras:(space+ specifier:clef_specifier)* {
-        def value
-          if @clef
-            @clef
-          else
-            opts = {}
-            first.set_clef_opts(opts)
-            extras.elements.each { |node| node.specifier.set_clef_opts(opts) }
-            @clef = Clef.new(opts)
-          end
-        end
-      }
-    end
-
-    # 4.7 Beams
-    # To group notes together under one beam they must be grouped together without spaces. Thus in 2/4, A2BC will produce an eighth note followed by two sixteenth notes under one beam whilst A2 B C will produce the same notes separated. The beam slopes and the choice of upper or lower stems are typeset automatically.
-    # Notes that cannot be beamed may be placed next to each other. For example, if L:1/8 then ABC2DE is equivalent to AB C2 DE.
-    # Back quotes ` may be used freely between notes to be beamed, to increase legibility. They are ignored by computer programs. For example, A2``B``C is equivalent to A2BC.
+  rule clef_transpose do
+    ('transpose'/'t') '=' transpose:integer {
+      def set_clef_opts(opts)
+        opts[:transpose] = transpose.value 
+      end
+    }
+  end
   
-    rule beam do
-      "`"
-    end
-   
-    rule music_space do
-      space+ <ValueNode> {
-        def value
-          @value ||= ABCElement.new(:beam_break)
+  rule clef_octave do
+    'octave' '=' octave:integer {
+      def set_clef_opts(opts)
+        opts[:octave] = opts[:octave].to_i + octave.value 
+      end
+    }
+  end
+  
+  rule clef_stafflines do
+    'stafflines' '=' stafflines:wholenum {
+      def set_clef_opts(opts)
+        opts[:stafflines] = stafflines.value 
+      end
+    }
+  end
+  
+  rule clef_name do
+    'clef='? name:[a-zA-Z]+ line_number:posint? octave:('+8'/'-8')? {
+      def set_clef_opts(opts)
+        opts[:name] = name.text_value
+        opts[:line_number] = line_number.value unless line_number.empty? 
+        opts[:octave] = opts[:octave].to_i
+        opts[:octave] += { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
+      end
+    }
+  end
+  
+  rule clef_middle do
+    ('middle'/'m') '=' middle:pitch {
+      def set_clef_opts(opts)
+        opts[:middle] = middle.value
+      end
+    }
+  end
+  
+  rule clef_app_specific do
+    app:alphanum+ ':' field:alphanum+ '=' value:alphanum+ {
+      def set_clef_opts(opts)
+        # TODO pass this data to the clef object
+      end
+    }
+  end
+  
+  rule clef_specifier do
+    clef_transpose / clef_octave / clef_stafflines / clef_middle / clef_app_specific / clef_name
+  end
+  
+  rule clef do
+    first:clef_specifier extras:(space+ specifier:clef_specifier)* {
+      def value
+        if @clef
+          @clef
+        else
+          opts = {}
+          first.set_clef_opts(opts)
+          extras.elements.each { |node| node.specifier.set_clef_opts(opts) }
+          @clef = Clef.new(opts)
         end
-      }
-    end
-    
-
-    # 4.8 Repeat/bar symbols
-    # Bar line symbols are notated as follows:
-    # |	  bar line
-    # |]  thin-thick double bar line
-    # ||  thin-thin double bar line
-    # [|  thick-thin double bar line
-    # |:  start of repeated section
-    # :|  end of repeated section
-    # ::  start & end of two repeated sections
-    # Recommendation for developers: If an 'end of repeated section' is found without a previous 'start of repeated section', playback programs should restart the music from the beginning of the tune, or from the latest double bar line or end of repeated section.
-    # Note that the notation :: is short for :| followed by |:. The variants ::, :|: and :||: are all equivalent.
-    # By extension, |:: and ::| mean the start and end of a section that is to be repeated three times, and so on.
-    # A dotted bar line can be notated by preceding it with a dot, e.g. .| - this may be useful for notating editorial bar lines in music with very long measures.
-    # An invisible bar line may be notated by putting the bar line in brackets, e.g. [|] - this may be useful for notating voice overlay in meter-free music.
-    # Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of | (thin bar line), [ or ] (thick bar line), and : (dots), e.g. |[| or [|::: .
-
-    rule bar_line do
-      bar_line_with_variant_ending / standard_bar_line / double_colon_bar_line
-    end
-
-    rule standard_bar_line do
-      before:repeat bar after:repeat <ValueNode> {
-        def value
-          @value ||= BarLine.new(bar.type, before.count, after.count)
+      end
+    }
+  end
+  
+  # 4.7 Beams
+  # To group notes together under one beam they must be grouped together without spaces. Thus in 2/4, A2BC will produce an eighth note followed by two sixteenth notes under one beam whilst A2 B C will produce the same notes separated. The beam slopes and the choice of upper or lower stems are typeset automatically.
+  # Notes that cannot be beamed may be placed next to each other. For example, if L:1/8 then ABC2DE is equivalent to AB C2 DE.
+  # Back quotes ` may be used freely between notes to be beamed, to increase legibility. They are ignored by computer programs. For example, A2``B``C is equivalent to A2BC.
+  
+  rule beam do
+    "`"
+  end
+  
+  rule music_space do
+    space+ <ValueNode> {
+      def value
+        @value ||= ABCElement.new(:beam_break)
+      end
+    }
+  end
+  
+  
+  # 4.8 Repeat/bar symbols
+  # Bar line symbols are notated as follows:
+  # |	  bar line
+  # |]  thin-thick double bar line
+  # ||  thin-thin double bar line
+  # [|  thick-thin double bar line
+  # |:  start of repeated section
+  # :|  end of repeated section
+  # ::  start & end of two repeated sections
+  # Recommendation for developers: If an 'end of repeated section' is found without a previous 'start of repeated section', playback programs should restart the music from the beginning of the tune, or from the latest double bar line or end of repeated section.
+  # Note that the notation :: is short for :| followed by |:. The variants ::, :|: and :||: are all equivalent.
+  # By extension, |:: and ::| mean the start and end of a section that is to be repeated three times, and so on.
+  # A dotted bar line can be notated by preceding it with a dot, e.g. .| - this may be useful for notating editorial bar lines in music with very long measures.
+  # An invisible bar line may be notated by putting the bar line in brackets, e.g. [|] - this may be useful for notating voice overlay in meter-free music.
+  # Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have any shape, using a sequence of | (thin bar line), [ or ] (thick bar line), and : (dots), e.g. |[| or [|::: .
+  
+  rule bar_line do
+    bar_line_with_variant_ending / standard_bar_line / double_colon_bar_line
+  end
+  
+  rule standard_bar_line do
+    before:repeat bar after:repeat <ValueNode> {
+      def value
+        @value ||= BarLine.new(bar.type, before.count, after.count)
+      end
+    }
+  end
+  
+  rule double_colon_bar_line do
+    '::' <ValueNode> {
+      def value
+        @value ||= BarLine.new(:thin, 1, 1, nil)
+      end
+    }
+  end
+  
+  rule repeat do
+    ':'* {
+      def count
+        text_value.length
+      end
+    }
+  end
+  
+  rule bar do
+    ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
+      def type
+        {'[|]' => :invisible,
+          '.|' => :dotted,
+          '||' => :double,
+          '[|' => :thick_thin,
+          '|]' => :thin_thick,
+          '|' => :thin,
+        }[text_value]
+      end
+    }
+  end
+  
+  
+  # 4.9 First and second repeats
+  # First and second repeats can be notated with the symbols [1 and [2, e.g.
+  #   faf gfe|[1 dfe dBA:|[2 d2e dcB|].
+  # When adjacent to bar lines, these can be shortened to |1 and :|2, but with regard to spaces
+  #   | [1
+  # is legal, while
+  #   | 1
+  # is not.
+  # Thus, a tune with different ending for the first and second repeats has the general form:
+  #   |:  <common body of tune>  |1  <first ending>  :|2  <second ending>  |]
+  # Note that in many abc files the |: may not be present.
+  
+  # 4.10 Variant endings
+  # In combination with P: part notation, it is possible to notate more than two variant endings for a section that is to be repeated a number of times.
+  # For example, if the header of the tune contains P:A4.B4 then parts A and B will each be played 4 times. To play a different ending each time, you could write in the tune:
+  #   P:A
+  #   <notes> | [1  <notes>  :| [2 <notes> :| [3 <notes> :| [4 <notes> |]
+  # The Nth ending starts with [N and ends with one of ||, :| |] or [|. You can also mark a section as being used for more than one ending e.g.
+  #   [1,3 <notes> :|
+  # plays on the 1st and 3rd endings and
+  #   [1-3 <notes> :|
+  # plays on endings 1, 2 and 3. In general, '[' can be followed by any list of numbers and ranges as long as it contains no spaces e.g.
+  #   [1,3,5-7  <notes>  :| [2,4,8 <notes> :|
+  
+  rule variant_ending do
+    '[' variant_ending_list space+
+  end
+  
+  rule bar_line_with_variant_ending do
+    standard_bar_line variant_ending_list space+
+  end
+  
+  rule variant_ending_list do
+    range_list '' <ValueNode> {
+      def value
+        @value ||= VariantEnding.new(range_list.value)
+      end
+    }   
+  end
+  
+  rule range_list do
+    first:(range / posint) rest:(',' node:(range / posint))* {
+      def value
+        rest.elements.inject([first.value]) do |result, el|
+          result << el.node.value; result
         end
-      }
-    end
+      end
+    }
+  end
+  
 
-    rule double_colon_bar_line do
-      '::' <ValueNode> {
-        def value
-          @value ||= BarLine.new(:thin, 1, 1, nil)
+  # 4.11 Ties and slurs
+  # You can tie two notes of the same pitch together, within or between bars, with a - symbol, e.g. abc-|cba or c4-c4. The tie symbol must always be adjacent to the first note of the pair, but does not need to be adjacent to the second, e.g. c4 -c4 and abc|-cba are not legal - see order of abc constructs.
+  # More general slurs can be put in with () symbols. Thus (DEFG) puts a slur over the four notes. Spaces within a slur are OK, e.g. ( D E F G ) .
+  # Slurs may be nested:
+  # (c (d e f) g a)
+  # and they may also start and end on the same note:
+  # (c d (e) f g a)
+  # A dotted slur may be notated by preceding the opening brace with a dot, e.g. .(cde); it is optional to place a dot immediately before the closing brace. Likewise, a dotted tie can be transcribed by preceding it with a dot, e.g. C.-C. This is especially useful in parts with multiple verses: some verses may require a slur, some may not.
+  # It should be noted that although the tie - and slur () produce similar symbols in staff notation they have completely different meanings to player programs and should not be interchanged. Ties connect two successive notes of the same pitch, causing them to be played as a single note, while slurs connect the first and last note of any series of notes, and may be used to indicate phrasing, or that the group should be played legato. Both ties and slurs may be used into, out of and between chords, and in this case the distinction between them is particularly important.
+  
+  rule tie do
+    '.'? '-' <ValueNode> {
+      def value
+        @value ||= ABCElement.new(text_value[0] == '.' ? :dotted_tie : :tie)
+      end
+    }
+  end
+  
+  rule slur do
+    ('.(' / '(' / ')') '' <ValueNode> {
+      def value
+        @value ||= ABCElement.new(text_value == '.(' ? :start_dotted_slur : 
+                                  text_value == '(' ? :start_slur : :end_slur)
+      end
+    }
+  end
+  
+  
+  # 4.12 Grace notes
+  # Grace notes can be written by enclosing them in curly braces, {}. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some software may ignore them. The unit duration to use for gracenotes is not specified by the abc file, but by the software, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
+  # To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
+  # The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
+  
+  rule grace_note do
+    '{' '/'? grace_note_series '}' {
+      def value
+        @value ||= GraceNotes.new(text_value[1] == '/' ? :acciaccatura : :appoggiatura, 
+                                  grace_note_series.value)
+      end
+    }
+  end
+  
+  rule grace_note_series do
+    first:note rest:(br:broken_rhythm? note)* {
+      def value
+        @value ||= rest.elements.inject([first.value]) do |result, el|
+          result << el.note.value(:broken_rhythm_marker => el.br.empty? ? nil : el.br); result
         end
-      }
-    end
-
-    rule repeat do
-      ':'* {
-        def count
-          text_value.length
-        end
-      }
-    end
-
-    rule bar do
-      ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
-        def type
-          {'[|]' => :invisible,
-            '.|' => :dotted,
-            '||' => :double,
-            '[|' => :thick_thin,
-            '|]' => :thin_thick,
-            '|' => :thin,
-          }[text_value]
-        end
-      }
-    end
-
-
-    # 4.9 First and second repeats
-    # First and second repeats can be notated with the symbols [1 and [2, e.g.
-    #   faf gfe|[1 dfe dBA:|[2 d2e dcB|].
-    # When adjacent to bar lines, these can be shortened to |1 and :|2, but with regard to spaces
-    #   | [1
-    # is legal, while
-    #   | 1
-    # is not.
-    # Thus, a tune with different ending for the first and second repeats has the general form:
-    #   |:  <common body of tune>  |1  <first ending>  :|2  <second ending>  |]
-    # Note that in many abc files the |: may not be present.
-
-    # 4.10 Variant endings
-    # In combination with P: part notation, it is possible to notate more than two variant endings for a section that is to be repeated a number of times.
-    # For example, if the header of the tune contains P:A4.B4 then parts A and B will each be played 4 times. To play a different ending each time, you could write in the tune:
-    #   P:A
-    #   <notes> | [1  <notes>  :| [2 <notes> :| [3 <notes> :| [4 <notes> |]
-    # The Nth ending starts with [N and ends with one of ||, :| |] or [|. You can also mark a section as being used for more than one ending e.g.
-    #   [1,3 <notes> :|
-    # plays on the 1st and 3rd endings and
-    #   [1-3 <notes> :|
-    # plays on endings 1, 2 and 3. In general, '[' can be followed by any list of numbers and ranges as long as it contains no spaces e.g.
-    #   [1,3,5-7  <notes>  :| [2,4,8 <notes> :|
-
-    rule variant_ending do
-      '[' variant_ending_list space+
-    end
-
-    rule bar_line_with_variant_ending do
-      standard_bar_line variant_ending_list space+
-    end
-
-    rule variant_ending_list do
-      range_list '' <ValueNode> {
-        def value
-          @value ||= VariantEnding.new(range_list.value)
-        end
-      }   
-    end
-
-    rule range_list
-      first:(range / posint) rest:(',' node:(range / posint))* {
-        def value
-          rest.elements.inject([first.value]) do |result, el|
-            result << el.node.value; result
+      end
+    }
+  end
+  
+  
+  # 4.13 Duplets, triplets, quadruplets, etc.
+  # These can be simply coded with the notation (2ab for a duplet, (3abc for a triplet or (4abcd for a quadruplet, etc, up to (9. The musical meanings are:
+  # Symbol	Meaning
+  # (2	 2 notes in the time of 3
+  # (3	 3 notes in the time of 2
+  # (4	 4 notes in the time of 3
+  # (5	 5 notes in the time of n
+  # (6	 6 notes in the time of 2
+  # (7	 7 notes in the time of n
+  # (8	 8 notes in the time of 3
+  # (9	 9 notes in the time of n
+  # If the time signature is compound (6/8, 9/8, 12/8) then n is three, otherwise n is two.
+  # More general tuplets can be specified using the syntax (p:q:r which means 'put p notes into the time of q for the next r notes'. If q is not given, it defaults as above. If r is not given, it defaults to p.
+  # For example, (3 is equivalent to (3:: or (3:2 , which in turn are equivalent to (3:2:3, whereas (3::2 is equivalent to (3:2:2.
+  # This can be useful to include notes of different lengths within a tuplet, for example (3:2:2 G4c2 or (3:2:4 G2A2Bc. It also describes more precisely how the simple syntax works in cases like (3 D2E2F2 or even (3 D3EF2. The number written over the tuplet is p.
+  # Spaces that appear between the tuplet specifier and the following notes are to be ignored.
+  
+  rule tuplet_symbol do
+    '(' p:posint extra:(':' q:posint? extra:(':' r:posint?)?)? <TupletMarker> {
+      attr_accessor :compound_meter
+      alias_method :compound_meter?, :compound_meter
+      def ratio
+        pval = p.value
+        if !extra.empty? && !extra.q.empty?
+          qval = extra.q.value
+        else
+          # TODO raise error unless p is 2-9
+          qval = "  323n2n3n"[pval]
+          if qval != 'n'
+            qval = qval.to_i
+          elsif compound_meter
+            qval = 3
+          else
+            qval = 2
           end
         end
-      }
-    end
-
-
-    # 4.11 Ties and slurs
-    # You can tie two notes of the same pitch together, within or between bars, with a - symbol, e.g. abc-|cba or c4-c4. The tie symbol must always be adjacent to the first note of the pair, but does not need to be adjacent to the second, e.g. c4 -c4 and abc|-cba are not legal - see order of abc constructs.
-    # More general slurs can be put in with () symbols. Thus (DEFG) puts a slur over the four notes. Spaces within a slur are OK, e.g. ( D E F G ) .
-    # Slurs may be nested:
-    # (c (d e f) g a)
-    # and they may also start and end on the same note:
-    # (c d (e) f g a)
-    # A dotted slur may be notated by preceding the opening brace with a dot, e.g. .(cde); it is optional to place a dot immediately before the closing brace. Likewise, a dotted tie can be transcribed by preceding it with a dot, e.g. C.-C. This is especially useful in parts with multiple verses: some verses may require a slur, some may not.
-    # It should be noted that although the tie - and slur () produce similar symbols in staff notation they have completely different meanings to player programs and should not be interchanged. Ties connect two successive notes of the same pitch, causing them to be played as a single note, while slurs connect the first and last note of any series of notes, and may be used to indicate phrasing, or that the group should be played legato. Both ties and slurs may be used into, out of and between chords, and in this case the distinction between them is particularly important.
-
-    rule tie do
-      '.'? '-' <ValueNode> {
-        def value
-          @value ||= ABCElement.new(text_value[0] == '.' ? :dotted_tie : :tie)
+        Rational(qval, pval);
+      end
+      def num_notes
+        if !extra.empty? && !extra.extra.empty? && !extra.extra.r.empty?
+          extra.extra.r.value
+        else
+          p.value
         end
-      }
-    end
-
-    rule slur do
-      ('.(' / '(' / ')') '' <ValueNode> {
-        def value
-          @value ||= ABCElement.new(text_value == '.(' ? :start_dotted_slur : 
-                                    text_value == '(' ? :start_slur : :end_slur)
-        end
-      }
-    end
-
-
-    # 4.12 Grace notes
-    # Grace notes can be written by enclosing them in curly braces, {}. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some software may ignore them. The unit duration to use for gracenotes is not specified by the abc file, but by the software, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
-    # To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
-    # The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
-
-    rule grace_note do
-      '{' '/'? grace_note_series '}' <GraceNotesNode> {
-        def value
-          @value ||= GraceNotes.new(text_value[1] == '/' ? :acciaccatura : :appoggiatura, 
-                                    grace_note_series.value)
-        end
-      }
-    end
-
-    rule grace_note_series do
-      first:note rest:(br:broken_rhythm? note)* {
-        def value
-          @value ||= rest.elements.inject([first.value]) do |result, el|
-            result << el.note.value(:broken_rhythm_marker => el.br.empty? ? nil : el.br); result
-          end
-        end
-      }
-    end
-    
-
-
+      end
+    }
+  end
+  
 
    rule macro_field do
      'not implemented'
@@ -1406,54 +1452,6 @@ rule key_field do
    end
 
 
-
-
-
-
-# DUPLETS, TRIPLETS, QUADRUPLETS, ETC.
-
-## These can be simply coded with the notation (2ab for a duplet, (3abc for a triplet or (4abcd for a quadruplet, etc, up to (9. The musical meanings are:
-## (2  2 notes in the time of 3
-## (3  3 notes in the time of 2
-## (4  4 notes in the time of 3
-## (5  5 notes in the time of n
-## (6  6 notes in the time of 2
-## (7  7 notes in the time of n
-## (8  8 notes in the time of 3
-## (9  9 notes in the time of n
-## If the time signature is compound (6/8, 9/8, 12/8) then n is three, otherwise n is two.
-## More general tuplets can be specified using the syntax (p:q:r which means 'put p notes into the time of q for the next r notes'. If q is not given, it defaults as above. If r is not given, it defaults to p. 
-
-rule tuplet_symbol do
-  '(' p:wholenum extra:(':' q:wholenum? extra:(':' r:wholenum?)?)? <TupletMarker> {
-    attr_accessor :compound_meter
-    alias_method :compound_meter?, :compound_meter
-    def ratio
-      pval = p.value
-      if !extra.empty? && !extra.q.empty?
-        qval = extra.q.value
-      else
-        # TODO raise error unless p is 2-9
-        qval = "  323n2n3n"[pval]
-        if qval != 'n'
-          qval = qval.to_i
-        elsif compound_meter
-          qval = 3
-        else
-          qval = 2
-        end
-      end
-      Rational(qval, pval);
-    end
-    def num_notes
-      if !extra.empty? && !extra.extra.empty? && !extra.extra.r.empty?
-        extra.extra.r.value
-      else
-        p.value
-      end
-    end
-  }
-end
 
 # DECORATIONS
 

@@ -4,7 +4,6 @@
 # TODO dotted bar should not make a new measure
 # TODO data structure: tunes[t].measures[m].notes[n] note can be: note, chord, rest, !measure rest! which can make the measure several measures long
 # TODO data structure: tunes[t].measures[m].items[i] item is any of the above plus spacer, dotted bar and fields
-# TODO handle continuation lines with a preprocess
 
 module ABC
 
@@ -75,12 +74,6 @@ module ABC
 
   # TIES AND SLURS
 
-  class Tie < MusicNode
-  end
-
-  class Slur < MusicNode
-  end
-
   class Spacer < MusicNode
   end
 
@@ -113,9 +106,6 @@ module ABC
   # BASICS
 
   class ABCString < ABCNode
-  end
-
-  class GraceNotesNode < ABCNode
   end
 
 end
