@@ -5,7 +5,6 @@ module ABC
     alias_method :compound_meter?, :compound_meter
 
     def initialize(p, q, r)
-      puts "TUPLET! #{p} #{q} #{r}"
       @p, @q, @r = p, q, r
       @q = "  323n2n3n"[@p] unless @q
       @r = @p unless @r
@@ -18,6 +17,10 @@ module ABC
 
     def num_notes
       @r
+    end
+
+    def number_to_print
+      @p
     end
 
   end

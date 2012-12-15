@@ -298,13 +298,20 @@ module ABC
     def apply_tuplets
       tuplet_ratio = 1
       tuplet_notes = 0
+      tuplet_marker = nil
       items.each do |item|
         if item.is_a?(TupletMarker)
           tuplet_notes = item.num_notes
           tuplet_ratio = item.ratio
+          tuplet_marker = item
         elsif item.is_a?(MusicUnit) && tuplet_notes > 0
           item.tuplet_ratio = tuplet_ratio
           tuplet_notes -= 1
+          if tuplet_marker
+            # place marker on the first note
+            item.tuplet_marker = tuplet_marker
+            tuplet_marker = nil
+          end
         end
       end
     end

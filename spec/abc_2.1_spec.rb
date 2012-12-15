@@ -2132,7 +2132,7 @@ describe "abc 2.1:" do
   # Spaces that appear between the tuplet specifier and the following notes are to be ignored.
   
   describe "a tuplet marker" do
-    it "uses (2 to mean 2 notes in the time of 3, irregardless of meter" do
+    it "uses (2 to mean 2 notes in the time of 3, regardless of meter" do
       p = parse_fragment "[L:1] [M:C] (2abc [M:3/4] (2abc"
       p.notes[0].tuplet_ratio.should == Rational(3, 2)
       p.notes[0].length.should == Rational(3, 2)
@@ -2141,16 +2141,22 @@ describe "abc 2.1:" do
       p.notes[3].length.should == Rational(3, 2)
       p.notes[4].length.should == Rational(3, 2)
       p.notes[5].length.should == 1
+    end
 
-      p.items[2].is_a?(TupletMarker).should == true
-      p.items[2].compound_meter?.should be_false
-      p.items[2].ratio.should == Rational(3, 2)
-      p.items[2].num_notes.should == 2
-
-      p.items[7].is_a?(TupletMarker).should == true
-      p.items[7].compound_meter.should == true
-      p.items[7].ratio.should == Rational(3, 2)
-      p.items[7].num_notes.should == 2
+    # TODO maybe the tuplet marker should be an attribute of the first note, like slurs and ties
+    it "can be inspected" do
+      p = parse_fragment "[L:1] [M:C] (2abc [M:3/4] (2abc"
+      marker = p.notes[0].tuplet_marker
+      marker.compound_meter?.should be_false
+      marker.ratio.should == Rational(3, 2)
+      marker.num_notes.should == 2
+      marker.number_to_print.should == 2
+      p.notes[1].tuplet_marker.should == nil
+      marker = p.notes[3].tuplet_marker
+      marker.compound_meter.should == true
+      marker.ratio.should == Rational(3, 2)
+      marker.num_notes.should == 2
+      marker.number_to_print.should == 2
     end
 
     it "conspires with the unit note length to determine note length" do
@@ -2165,7 +2171,7 @@ describe "abc 2.1:" do
       p.notes[5].length.should == Rational(1, 4)
     end
       
-    it "uses (3 to mean 3 notes in the time of 2, irregardless of meter" do
+    it "uses (3 to mean 3 notes in the time of 2, regardless of meter" do
       p = parse_fragment "[L:1] [M:C] (3abcd [M:3/4] (3abcd"
       p.notes[0].length.should == Rational(2, 3)
       p.notes[1].length.should == Rational(2, 3)
@@ -2177,7 +2183,7 @@ describe "abc 2.1:" do
       p.notes[7].length.should == 1
     end
     
-    it "uses (4 to mean 4 notes in the time of 3, irregardless of meter" do
+    it "uses (4 to mean 4 notes in the time of 3, regardless of meter" do
       p = parse_fragment "[L:1] [M:C] (4abcde [M:3/4] (4abcde"
       p.notes[0].length.should == Rational(3, 4)
       p.notes[1].length.should == Rational(3, 4)
@@ -2307,6 +2313,88 @@ describe "abc 2.1:" do
     # TODO generate errors if not enough notes in tuplet
 
   end
+
+
+  # 4.14 Decorations
+  # A number of shorthand decoration symbols are available:
+  # .       staccato mark
+  # ~       Irish roll
+  # H       fermata
+  # L       accent or emphasis
+  # M       lowermordent
+  # O       coda
+  # P       uppermordent
+  # S       segno
+  # T       trill
+  # u       up-bow
+  # v       down-bow
+  # Decorations should be placed before the note which they decorate - see order of abc constructs
+  # Examples:
+  # (3.a.b.c    % staccato triplet
+  # vAuBvA      % bowing marks (for fiddlers)
+  # Most of the characters above (~HLMOPSTuv) are just short-cuts for commonly used decorations and can even be redefined (see redefinable symbols).
+  # More generally, symbols can be entered using the syntax !symbol!, e.g. !trill!A4 for a trill symbol. (Note that the abc standard version 2.0 used instead the syntax +symbol+ - this dialect of abc is still available, but is now deprecated - see decoration dialects.)
+  # The currently defined symbols are:
+  # !trill!                "tr" (trill mark)
+  # !trill(!               start of an extended trill
+  # !trill)!               end of an extended trill
+  # !lowermordent!         short /|/|/ squiggle with a vertical line through it
+  # !uppermordent!         short /|/|/ squiggle
+  # !mordent!              same as !lowermordent!
+  # !pralltriller!         same as !uppermordent!
+  # !roll!                 a roll mark (arc) as used in Irish music
+  # !turn!                 a turn mark (also known as gruppetto)
+  # !turnx!                a turn mark with a line through it
+  # !invertedturn!         an inverted turn mark
+  # !invertedturnx!        an inverted turn mark with a line through it
+  # !arpeggio!             vertical squiggle
+  # !>!                    > mark
+  # !accent!               same as !>!
+  # !emphasis!             same as !>!
+  # !fermata!              fermata or hold (arc above dot)
+  # !invertedfermata!      upside down fermata
+  # !tenuto!               horizontal line to indicate holding note for full duration
+  # !0! - !5!              fingerings
+  # !+!                    left-hand pizzicato, or rasp for French horns
+  # !plus!                 same as !+!
+  # !snap!                 snap-pizzicato mark, visually similar to !thumb!
+  # !slide!                slide up to a note, visually similar to a half slur
+  # !wedge!                small filled-in wedge mark
+  # !upbow!                V mark
+  # !downbow!              squared n mark
+  # !open!                 small circle above note indicating open string or harmonic
+  # !thumb!                cello thumb symbol
+  # !breath!               a breath mark (apostrophe-like) after note
+  # !pppp! !ppp! !pp! !p!  dynamics marks
+  # !mp! !mf! !f! !ff!     more dynamics marks
+  # !fff! !ffff! !sfz!     more dynamics marks
+  # !crescendo(!           start of a < crescendo mark
+  # !<(!                   same as !crescendo(!
+  # !crescendo)!           end of a < crescendo mark, placed after the last note
+  # !<)!                   same as !crescendo)!
+  # !diminuendo(!          start of a > diminuendo mark
+  # !>(!                   same as !diminuendo(!
+  # !diminuendo)!          end of a > diminuendo mark, placed after the last note
+  # !>)!                   same as !diminuendo)!
+  # !segno!                2 ornate s-like symbols separated by a diagonal line
+  # !coda!                 a ring with a cross in it
+  # !D.S.!                 the letters D.S. (=Da Segno)
+  # !D.C.!                 the letters D.C. (=either Da Coda or Da Capo)
+  # !dacoda!               the word "Da" followed by a Coda sign
+  # !dacapo!               the words "Da Capo"
+  # !fine!                 the word "fine"
+  # !shortphrase!          vertical line on the upper part of the staff
+  # !mediumphrase!         same, but extending down to the centre line
+  # !longphrase!           same, but extending 3/4 of the way down
+  # Note that the decorations may be applied to notes, rests, note groups, and bar lines. If a decoration is to be typeset between notes, it may be attached to the y spacer - see typesetting extra space.
+  # Spaces may be used freely between each of the symbols and the object to which it should be attached. Also an object may be preceded by multiple symbols, which should be printed one over another, each on a different line.
+  # Example:
+  # [!1!C!3!E!5!G]  !coda! y  !p! !trill! C   !fermata!|
+  # Player programs may choose to ignore most of the symbols mentioned above, though they may be expected to implement the dynamics marks, the accent mark and the staccato dot. Default volume is equivalent to !mf!. On a scale from 0-127, the relative volumes can be roughly defined as: !pppp! = !ppp! = 30, !pp! = 45, !p! = 60, !mp! = 75, !mf! = 90, !f! = 105, !ff! = 120, !fff! = !ffff! = 127.
+  # Abc software may also allow users to define new symbols in a package dependent way.
+  # Note that symbol names may not contain any spaces, [, ], | or : signs, e.g. while !dacapo! is legal, !da capo! is not.
+  # If an unimplemented or unknown symbol is found, it should be ignored.
+  # Recommendation: A good source of general information about decorations can be found at http://www.dolmetsch.com/musicalsymbols.htm.
 
 
 end

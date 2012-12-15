@@ -8,6 +8,7 @@ module ABC
     attr_accessor :broken_rhythm_marker
     attr_accessor :chord_length
     attr_accessor :tuplet_ratio
+    attr_accessor :tuplet_marker
     attr_accessor :beam
     attr_accessor :lyric
 
