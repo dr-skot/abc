@@ -1,14 +1,13 @@
 module ABC
-  class Decoration
+  class Decoration < SymbolUnit
 
     attr_reader :symbol
+    attr_reader :original_text
 
-    def initialize(symbol)
+    def initialize(symbol, original_text=nil)
+      super()
       @symbol = symbol
-    end
-
-    def type
-      :decoration
+      @original_text = original_text
     end
 
   end

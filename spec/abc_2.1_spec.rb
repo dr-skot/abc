@@ -2396,27 +2396,53 @@ describe "abc 2.1:" do
   # Recommendation: A good source of general information about decorations can be found at http://www.dolmetsch.com/musicalsymbols.htm.
 
   describe "a decoration" do
-    it "can be expressed as !symbol!" do
+    it "can be one of the default redefinable symbols" do
+      p = parse_fragment ".a ~b Hc Ld Me Of Pg Sa Tb uC vD"
+      p.notes[0].decorations[0].original_text.should == "."
+      p.notes[0].decorations[0].symbol.should == "staccato"
+      p.notes[1].decorations[0].original_text.should == "~"
+      p.notes[1].decorations[0].symbol.should == "roll"
+      p.notes[2].decorations[0].original_text.should == "H"
+      p.notes[2].decorations[0].symbol.should == "fermata"
+      p.notes[3].decorations[0].original_text.should == "L"
+      p.notes[3].decorations[0].symbol.should == "emphasis"
+      p.notes[4].decorations[0].original_text.should == "M"
+      p.notes[4].decorations[0].symbol.should == "lowermordent"
+      p.notes[5].decorations[0].original_text.should == "O"
+      p.notes[5].decorations[0].symbol.should == "coda"
+      p.notes[6].decorations[0].original_text.should == "P"
+      p.notes[6].decorations[0].symbol.should == "uppermordent"
+      p.notes[7].decorations[0].original_text.should == "S"
+      p.notes[7].decorations[0].symbol.should == "segno"
+      p.notes[8].decorations[0].original_text.should == "T"
+      p.notes[8].decorations[0].symbol.should == "trill"
+      p.notes[9].decorations[0].original_text.should == "u"
+      p.notes[9].decorations[0].symbol.should == "upbow"
+      p.notes[10].decorations[0].original_text.should == "v"
+      p.notes[10].decorations[0].symbol.should == "downbow"
+    end
+    it "can be of the form !symbol!" do
       p = parse_fragment "!trill! A"
-      p.notes[0].decorations[0].should == "trill"
+      p.notes[0].decorations[0].symbol.should == "trill"
     end
     it "can be applied to chords" do
       p = parse_fragment "!f! [CGE]"
-      p.notes[0].decorations[0].should == "f"
+      p.notes[0].decorations[0].symbol.should == "f"
     end
     it "can be applied to bar lines" do
       p = parse_fragment "abc !fermata! |"
-      p.items[3].decorations[0].should == "fermata"
+      p.items[3].decorations[0].symbol.should == "fermata"
     end
     it "can be applied to spacers" do
       p = parse_fragment "abc !fermata! y"
-      p.items[3].decorations[0].should == "fermata"
+      p.items[3].decorations[0].symbol.should == "fermata"
     end
     it "can be one of several applied to the same note" do
-      p = parse_fragment "!p! !trill! a"
-      p.notes[0].decorations.count.should == 2
-      p.notes[0].decorations[0].should == "p"
-      p.notes[0].decorations[1].should == "trill"
+      p = parse_fragment "!p! !trill! .a"
+      p.notes[0].decorations.count.should == 3
+      p.notes[0].decorations[0].symbol.should == "p"
+      p.notes[0].decorations[1].symbol.should == "trill"
+      p.notes[0].decorations[2].symbol.should == "staccato"
     end
     it "cannot include spaces" do
       fail_to_parse_fragment "!da capo! A"
@@ -2429,13 +2455,6 @@ describe "abc 2.1:" do
     end
     it "cannot include square brackets" do
       fail_to_parse_fragment "![dacapo]! A"
-    end
-    it "can be expressed by certain shortcuts" do
-      p = parse_fragment ".A~BuCvD"
-      p.notes[0].decorations[0].should == "staccato";
-      p.notes[1].decorations[0].should == "roll";
-      p.notes[2].decorations[0].should == "upbow";
-      p.notes[3].decorations[0].should == "downbow";
     end
 
   end

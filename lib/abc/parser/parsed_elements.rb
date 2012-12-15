@@ -6,7 +6,13 @@ require "abc/parser/parsed_elements/pitch"
 require "abc/parser/parsed_elements/rest"
 require "abc/parser/parsed_elements/note"
 require "abc/parser/parsed_elements/grace_notes"
+
+require "abc/parser/parsed_elements/symbol_unit"
 require "abc/parser/parsed_elements/decoration"
+require "abc/parser/parsed_elements/annotation"
+require "abc/parser/parsed_elements/chord_symbol"
+require "abc/parser/parsed_elements/symbol_skip"
+require "abc/parser/parsed_elements/symbol_line"
 
 require "abc/parser/parsed_elements/field"
 require "abc/parser/parsed_elements/tempo"

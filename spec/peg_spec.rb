@@ -603,15 +603,15 @@ describe "abc-2.1 PEG" do
   describe "chord symbols" do
     it "can attach a chord symbol to a note" do
       p = parse_fragment '"Am7"A2D2'
-      p.items[0].chord_symbol.should == "Am7"
+      p.items[0].chord_symbol.text.should == "Am7"
     end
     it "can handle bass notes" do
       p = parse_fragment '"C/E"G'
-      p.items[0].chord_symbol.should == "C/E"
+      p.items[0].chord_symbol.text.should == "C/E"
     end
     it "can handle alternate chords" do
       p = parse_fragment '"G(Em/G)"G'
-      p.items[0].chord_symbol.should == "G(Em/G)"
+      p.items[0].chord_symbol.text.should == "G(Em/G)"
     end
     # TODO parse the chord symbols for note, type, bassnote etc
   end

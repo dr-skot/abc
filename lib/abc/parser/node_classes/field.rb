@@ -5,7 +5,7 @@ module ABC
       FField.new(text_value[0], content_value)
     end
     def content_value
-      @value ||= content.respond_to?(:value) ? content.value :
+      @value ||= content.value ? content.value :
         content.respond_to?(:text_value) ? content.text_value :
         content
     end

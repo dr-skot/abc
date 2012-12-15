@@ -1075,8 +1075,9 @@ rule key_field do
           @value
         else
           b = bare_bar_line.value(embellishments.empty? ? {} : embellishments.value)
-          # kludge to reinterpret staccato mark as dotted bar line
-          if b.decorations[-1] && b.decorations[-1] == "staccato"
+          # kludge to reinterpret a last . decoration as a dotted bar line marker
+          # TODO should be last embellishment of any kind, not last decoration
+          if b.decorations[-1] && b.decorations[-1].original_text == "."
             b.decorations.pop
             b.dotted = true
           end
@@ -1115,10 +1116,9 @@ rule key_field do
   end
   
   rule bar do
-    ("[|]" / ".|" / "||" / "[|" / "|]" / "|") '' {
+    ("[|]" / "||" / "[|" / "|]" / "|") '' {
       def type
         {'[|]' => :invisible,
-          '.|' => :dotted,
           '||' => :double,
           '[|' => :thick_thin,
           '|]' => :thin_thick,
@@ -1341,12 +1341,9 @@ rule key_field do
   end
   
   rule explicit_declaration do
-    decoration_delimiter label:legal_decoration_char+ decoration_delimiter <SymbolUnit> {
-      def type
-        :decoration
-      end
-      def symbol
-        label.text_value
+    decoration_delimiter symbol:legal_decoration_char+ decoration_delimiter {
+      def value
+        @value ||= Decoration.new(symbol.text_value, text_value)
       end
     }
   end
@@ -1374,13 +1371,25 @@ rule key_field do
   # "C" C2 C2 "Am" !>! Ez A2|
 
   rule symbol_line do
-    's:' (field_space+ / symbol_skip / chord_annotation / annotation / decoration)+ <SymbolLine>
+    's:' symbol_sequence <ValueNode> {
+      def value
+        @value ||= SymbolLine.new(symbol_sequence.value)
+      end
+    }
+  end
+
+  rule symbol_sequence do
+    (field_space+ / symbol_skip / chord_annotation / annotation / decoration)+ {
+      def value
+        @value ||= elements.map { |e| e.value }.select { |v| v != nil }
+      end
+    }
   end
 
   rule symbol_skip do
-    ('*' / '|') '' <SymbolUnit> {
-      def skip
-        text_value == '*' ? :note : :bar
+    ('*' / '|') {
+      def value
+        SymbolSkip.new(text_value == '*' ? :note : :bar)
       end
     }
   end
@@ -1418,14 +1427,8 @@ rule key_field do
       def user_defined_symbols
         @user_defined_symbols || ABC::DEFAULT_USER_DEFINED_SYMBOLS
       end
-      def type
-        user_defined_symbols[text_value].type if user_defined_symbols[text_value]
-      end
-      def symbol
-        user_defined_symbols[text_value].symbol if type == :decoration
-      end
-      def text
-        user_defined_symbols[text_value].text if type == :annotation
+      def value
+        user_defined_symbols[text_value]
       end
     }
   end
@@ -1476,16 +1479,14 @@ rule key_field do
   # Note to developers: Software should also be able to recognise and handle appropriately the unicode versions of flat, natural and sharp symbols (♭, ♮, ♯) - see special symbols.
 
   rule chord_annotation do
-    '"' symbol:(chord_symbol space* ('(' chord_symbol ')')?) '"' <SymbolUnit> {
-      def type
-        :chord_symbol
-      end
-      def symbol
-        super.text_value
+    '"' symbol:(chord_symbol space* ('(' chord_symbol ')')?) '"' {
+      def value
+        @value ||= ChordSymbol.new(symbol.text_value)
       end
     }
   end
 
+  # TODO further parsing of chord symbol
   rule chord_symbol do
     [A-G] 
     ('b' / '#')? 
@@ -1502,15 +1503,9 @@ rule key_field do
 
   # TODO support \"
   rule annotation do
-    '"' placement_specifier text:(!'"' .)* '"' space* <SymbolUnit> {
-      def type
-        :annotation
-      end
-      def placement
-        placement_specifier.value
-      end
-      def text
-        super.text_value
+    '"' placement_specifier text:(!'"' .)* '"' space* {
+      def value
+        @value ||= Annotation.new(placement_specifier.value, text.text_value)
       end
     }
   end
@@ -1559,16 +1554,16 @@ rule key_field do
            :chord_symbol => chord_symbol }
        end
        def chord_symbol
-         chord.symbol unless chord.empty?
+         chord.value unless chord.empty?
        end
        def decorations
          @decorations ||= dec.elements.inject([]) do |result, el|
-           result << el.node.symbol if el.node.type == :decoration
+           result << el.node.value if el.node.value.is_a?(Decoration)
          end
        end
        def annotations
          @annotations ||= dec.elements.inject([]) do |result, el| 
-           result << el.node if el.node.type == :annotation
+           result << el.node.value if el.node.value.is_a?(Annotation)
          end
        end
      }

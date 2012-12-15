@@ -23,7 +23,7 @@ module ABC
             line.hard_break = it.hard?
             @lines << line
           elsif it.is_a?(SymbolLine)
-            @lines[-2].symbols = it.children(SymbolUnit) if @lines.count > 1
+            @lines[-2].symbols = it.symbols if @lines.count > 1
           elsif it.is_a?(LyricsLine)
             @lines[-2].lyrics = it.children(LyricUnit) if @lines.count > 1
           else
@@ -160,11 +160,11 @@ module ABC
           i = 0
           line.symbols.each do |symbol|
             break if i >= items.count
-            if symbol.skip == :note
+            if symbol.is_a?(SymbolSkip, :type => :note)
               # advance to next note, then skip it
               i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
               i += 1
-            elsif symbol.skip == :bar
+           elsif symbol.is_a?(SymbolSkip, :type => :bar)
               # advance to next (undotted) bar, then skip it
               i += 1 until items.count <= i || (items[i].is_a?(BarLine) && !items[i].dotted?)
               i += 1
@@ -172,9 +172,9 @@ module ABC
               # find next note and set this symbol on it
               i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
               if i < items.count
-                items[i].annotations << symbol if symbol.type == :annotation
-                items[i].decorations << symbol if symbol.type == :decoration
-                items[i].chord_symbol = symbol.symbol if symbol.type == :chord_symbol
+                items[i].annotations << symbol if symbol.is_a?(Annotation)
+                items[i].decorations << symbol if symbol.is_a?(Decoration)
+                items[i].chord_symbol = symbol if symbol.is_a?(ChordSymbol)
                 i += 1
               end
             end

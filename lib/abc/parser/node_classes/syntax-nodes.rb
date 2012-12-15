@@ -28,17 +28,17 @@ module ABC
   }
 
   DEFAULT_USER_DEFINED_SYMBOLS = {
-    '.' => Decoration.new('staccato'),
-    '~' => Decoration.new('roll'),
-    'T' => Decoration.new('trill'),
-    'H' => Decoration.new('fermata'),
-    'L' => Decoration.new('emphasis'),
-    'M' => Decoration.new('lowermordent'),
-    'P' => Decoration.new('uppermordent'),
-    'S' => Decoration.new('segno'),
-    'O' => Decoration.new('coda'),
-    'u' => Decoration.new('upbow'),
-    'v' => Decoration.new('downbow'),
+    '.' => Decoration.new('staccato', '.'),
+    '~' => Decoration.new('roll', '~'),
+    'T' => Decoration.new('trill', 'T'),
+    'H' => Decoration.new('fermata', 'H'),
+    'L' => Decoration.new('emphasis', 'L'),
+    'M' => Decoration.new('lowermordent', 'M'),
+    'P' => Decoration.new('uppermordent', 'P'),
+    'S' => Decoration.new('segno', 'S'),
+    'O' => Decoration.new('coda', 'O'),
+    'u' => Decoration.new('upbow', 'u'),
+    'v' => Decoration.new('downbow', 'v'),
   }
 
   class ABCSection < ABCNode
@@ -70,16 +70,6 @@ module ABC
   # NOTES AND RESTS
 
   class BrokenRhythm < MusicNode
-  end
-
-  # SYMBOL LINE
-  class SymbolLine < ABCNode
-  end
-
-  class SymbolUnit < ABCNode
-    def skip
-      :none
-    end
   end
 
   # LYRICS

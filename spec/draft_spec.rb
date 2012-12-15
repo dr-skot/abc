@@ -232,7 +232,7 @@ describe "abc 2.0 draft 4" do
       p.notes[5].decorations.should == []
       p.notes[6].decorations.should == []
       p.notes[7].decorations[0].symbol.should == 'fff'
-      p.notes[8].chord_symbol.should == 'Gm'
+      p.notes[8].chord_symbol.text.should == 'Gm'
     end
     it "skips dotted bar lines" do
       p = parse_fragment("abc.|de|f\ns:!f!|!f!")

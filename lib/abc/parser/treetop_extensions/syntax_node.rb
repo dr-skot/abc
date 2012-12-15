@@ -55,6 +55,10 @@ module Treetop
         c = children(type)[0]
       end
 
+      def value
+        nil
+      end
+
     end
 
   end
