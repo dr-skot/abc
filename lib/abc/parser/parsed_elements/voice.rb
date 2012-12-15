@@ -104,13 +104,13 @@ module ABC
     end
 
     def apply_meter(meter)
-      if meter && measure_length = meter.measure_length
-        items.each do |item|
-          if item.is_a? MeasureRest
-            item.measure_length = measure_length
-          elsif item.is_a?(Field, :type => :meter)
-            measure_length = item.value.measure_length
-          end
+      items.each do |item|
+        if item.is_a? MeasureRest
+          item.measure_length = meter.measure_length if meter
+        elsif item.is_a?(TupletMarker)
+          item.compound_meter = meter.compound? if meter
+        elsif item.is_a?(Field, :type => :meter)
+          meter = item.value
         end
       end
     end

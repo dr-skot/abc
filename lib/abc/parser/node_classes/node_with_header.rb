@@ -40,6 +40,7 @@ module ABC
     end
     
     def method_missing(meth, *args, &block)
+      #puts "METHOD MISSING: #{meth}" unless STRING_FIELDS[meth]
       field_value(STRING_FIELDS[meth])
     end
 

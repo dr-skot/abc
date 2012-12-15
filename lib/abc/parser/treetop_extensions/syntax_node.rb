@@ -35,8 +35,8 @@ module Treetop
 
       def values(*types)
         types << ValueNode if types.count > 0
-        values = children(*types).map { |el| el.is_a?(ValueNode) ? el.value : el }
-        types.count == 0 ? values : values.select { |v| v.is_one_of? *types }
+        vals = children(*types).map { |el| el.is_a?(ValueNode) ? el.value : el }
+        types.count == 0 ? vals : vals.select { |v| v.is_one_of? *types }
       end
 
       # returns the ABCNodes that are immediate descendants of this node

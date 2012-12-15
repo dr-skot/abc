@@ -115,4 +115,7 @@ module ABC
   class ABCString < ABCNode
   end
 
+  class GraceNotesNode < ABCNode
+  end
+
 end

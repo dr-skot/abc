@@ -1942,7 +1942,7 @@ describe "abc 2.1:" do
       p.items[9].is_a?(VariantEnding).should == true
       p.items[9].range_list.should == [2]
     end
-    it "cannot be notated iwth | 1" do 
+    it "cannot be notated with | 1" do 
       fail_to_parse_fragment "abc| 1 abc:|2 def |]"
     end
   end
@@ -2065,6 +2065,249 @@ describe "abc 2.1:" do
       p.notes[2].end_slur.should == 2
     end
   end
+
+
+    # 4.12 Grace notes
+    # Grace notes can be written by enclosing them in curly braces, {}. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some software may ignore them. The unit duration to use for gracenotes is not specified by the abc file, but by the software, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
+    # To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
+    # The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
+
+  describe "a grace note marker" do
+    it "can indicate an appogiatura" do
+      p = parse_fragment "{gege}B"
+      p.notes[0].grace_notes.type.should == :appoggiatura
+    end
+    it "can indicate an acciaccatura" do
+      p = parse_fragment "{/ge4d}B"
+      p.notes[0].grace_notes.type.should == :acciaccatura
+    end
+    it "has notes" do
+      p = parse_fragment "{gege}B"
+      p.notes[0].grace_notes.notes.count.should == 4
+      p.notes[0].grace_notes.notes[0].pitch.note.should == "G"
+    end
+    it "applies the current key to the notes" do
+      p = parse_fragment "[K:HP]{gf}B"
+      p.notes[0].grace_notes.notes[1].pitch.height.should == 18 # F sharp
+    end
+    it "can include note length markers" do
+      p = parse_fragment "{a3/2b/}B"
+    end
+    it "is independent of the unit note length" do
+      p = parse_fragment "{a3/2b/}B"
+      p.notes[0].length.should == Rational(1, 8)
+      p.notes[0].grace_notes.notes[0].length.should == Rational(3, 2)
+      p.notes[0].grace_notes.notes[1].length.should == Rational(1, 2)
+    end
+    it "can include broken rhythm markers" do
+      p = parse_fragment "{a>b}B"
+      p.notes[0].grace_notes.notes[0].length.should == Rational(3, 2)
+      p.notes[0].grace_notes.notes[1].length.should == Rational(1, 2)
+    end
+    it "is transparent to the broken rhythm construct" do
+      p = parse_fragment "B{ab}>A"
+      p.notes[0].length.should == Rational(3, 16)
+      p.notes[1].length.should == Rational(1, 16)
+      p.notes[0].grace_notes.should == nil
+      p.notes[1].grace_notes.notes.count.should == 2
+    end
+  end
+
+
+  # 4.13 Duplets, triplets, quadruplets, etc.
+  # These can be simply coded with the notation (2ab for a duplet, (3abc for a triplet or (4abcd for a quadruplet, etc, up to (9. The musical meanings are:
+  # Symbol	Meaning
+  # (2	 2 notes in the time of 3
+  # (3	 3 notes in the time of 2
+  # (4	 4 notes in the time of 3
+  # (5	 5 notes in the time of n
+  # (6	 6 notes in the time of 2
+  # (7	 7 notes in the time of n
+  # (8	 8 notes in the time of 3
+  # (9	 9 notes in the time of n
+  # If the time signature is compound (6/8, 9/8, 12/8) then n is three, otherwise n is two.
+  # More general tuplets can be specified using the syntax (p:q:r which means 'put p notes into the time of q for the next r notes'. If q is not given, it defaults as above. If r is not given, it defaults to p.
+  # For example, (3 is equivalent to (3:: or (3:2 , which in turn are equivalent to (3:2:3, whereas (3::2 is equivalent to (3:2:2.
+  # This can be useful to include notes of different lengths within a tuplet, for example (3:2:2 G4c2 or (3:2:4 G2A2Bc. It also describes more precisely how the simple syntax works in cases like (3 D2E2F2 or even (3 D3EF2. The number written over the tuplet is p.
+  # Spaces that appear between the tuplet specifier and the following notes are to be ignored.
+  
+  describe "a tuplet marker" do
+    it "uses (2 to mean 2 notes in the time of 3, irregardless of meter" do
+      p = parse_fragment "[L:1] [M:C] (2abc [M:3/4] (2abc"
+      p.notes[0].tuplet_ratio.should == Rational(3, 2)
+      p.notes[0].length.should == Rational(3, 2)
+      p.notes[1].length.should == Rational(3, 2)
+      p.notes[2].length.should == 1
+      p.notes[3].length.should == Rational(3, 2)
+      p.notes[4].length.should == Rational(3, 2)
+      p.notes[5].length.should == 1
+
+      p.items[2].is_a?(TupletMarker).should == true
+      p.items[2].compound_meter?.should be_false
+      p.items[2].ratio.should == Rational(3, 2)
+      p.items[2].num_notes.should == 2
+
+      p.items[7].is_a?(TupletMarker).should == true
+      p.items[7].compound_meter.should == true
+      p.items[7].ratio.should == Rational(3, 2)
+      p.items[7].num_notes.should == 2
+    end
+
+    it "conspires with the unit note length to determine note length" do
+      p = parse_fragment "[L:1/8] (2abc [L:1/4] (2abc"
+      p.notes[0].tuplet_ratio.should == Rational(3, 2)
+      p.notes[0].length.should == Rational(3, 16)
+      p.notes[1].length.should == Rational(3, 16)
+      p.notes[2].length.should == Rational(1, 8)
+      p.notes[3].tuplet_ratio.should == Rational(3, 2)
+      p.notes[3].length.should == Rational(3, 8)
+      p.notes[4].length.should == Rational(3, 8)
+      p.notes[5].length.should == Rational(1, 4)
+    end
+      
+    it "uses (3 to mean 3 notes in the time of 2, irregardless of meter" do
+      p = parse_fragment "[L:1] [M:C] (3abcd [M:3/4] (3abcd"
+      p.notes[0].length.should == Rational(2, 3)
+      p.notes[1].length.should == Rational(2, 3)
+      p.notes[2].length.should == Rational(2, 3)
+      p.notes[3].length.should == 1
+      p.notes[4].length.should == Rational(2, 3)
+      p.notes[5].length.should == Rational(2, 3)
+      p.notes[6].length.should == Rational(2, 3)
+      p.notes[7].length.should == 1
+    end
+    
+    it "uses (4 to mean 4 notes in the time of 3, irregardless of meter" do
+      p = parse_fragment "[L:1] [M:C] (4abcde [M:3/4] (4abcde"
+      p.notes[0].length.should == Rational(3, 4)
+      p.notes[1].length.should == Rational(3, 4)
+      p.notes[2].length.should == Rational(3, 4)
+      p.notes[3].length.should == Rational(3, 4)
+      p.notes[4].length.should == 1
+      p.notes[5].length.should == Rational(3, 4)
+      p.notes[6].length.should == Rational(3, 4)
+      p.notes[7].length.should == Rational(3, 4)
+      p.notes[8].length.should == Rational(3, 4)
+      p.notes[9].length.should == 1
+    end
+    
+    it "uses (5 to mean 5 notes in the time of 2, if meter is simple" do
+      p = parse_fragment "[L:1] [M:C] (5abcdef"
+      p.notes[0].length.should == Rational(2, 5)
+      p.notes[1].length.should == Rational(2, 5)
+      p.notes[2].length.should == Rational(2, 5)
+      p.notes[3].length.should == Rational(2, 5)
+      p.notes[4].length.should == Rational(2, 5)
+      p.notes[5].length.should == 1
+    end
+    
+    it "uses (5 to mean 5 notes in the time of 3, if meter is compound" do
+      p = parse_fragment "[L:1] [M:6/8] (5abcdef"
+      p.notes[0].length.should == Rational(3, 5)
+      p.notes[1].length.should == Rational(3, 5)
+      p.notes[2].length.should == Rational(3, 5)
+      p.notes[3].length.should == Rational(3, 5)
+      p.notes[4].length.should == Rational(3, 5)
+      p.notes[5].length.should == 1
+    end
+
+    it "uses (6 to mean 6 notes in the time of 2" do
+      p = parse_fragment "[L:1] [M:C] (6 abc abc d [M:6/8] (6 abc abc d"
+      p.notes[5].length.should == Rational(2, 6)
+      p.notes[6].length.should == 1
+      p.notes[12].length.should == Rational(2, 6)
+      p.notes[13].length.should == 1
+    end
+
+    it "uses (6 to mean 6 notes in the time of 2" do
+      p = parse_fragment "[L:1] [M:C] (6 abc abc d [M:6/8] (6 abc abc d"
+      p.notes[5].length.should == Rational(2, 6)
+      p.notes[6].length.should == 1
+      p.notes[12].length.should == Rational(2, 6)
+      p.notes[13].length.should == 1
+    end
+    
+    it "uses (7 to mean 7 notes in the time of 2 (or 3 for compound meter)" do
+      p = parse_fragment "[L:1] [M:C] (7 abcd abc d [M:6/8] (7 abcd abc d"
+      p.notes[6].length.should == Rational(2, 7)
+      p.notes[7].length.should == 1
+      p.notes[14].length.should == Rational(3, 7)
+      p.notes[15].length.should == 1
+    end
+    
+    it "uses (8 to mean 8 notes in the time of 3" do
+      p = parse_fragment "[L:1] [M:C] (8 abcd abcd e [M:6/8] (8 abcd abcd e"
+      p.notes[7].length.should == Rational(3, 8)
+      p.notes[8].length.should == 1
+      p.notes[16].length.should == Rational(3, 8)
+      p.notes[17].length.should == 1
+    end
+    
+    it "uses (9 to mean 9 notes in the time of 2 (or 3 for compound meter)" do
+      p = parse_fragment "[L:1] [M:C] (9 abcde abcd e [M:6/8] (9 abcde abcd e"
+      p.notes[8].length.should == Rational(2, 9)
+      p.notes[9].length.should == 1
+      p.notes[18].length.should == Rational(3, 9)
+      p.notes[19].length.should == 1
+    end
+    
+    it "uses the form (p:q:r to mean p notes in the time of q for r notes" do
+      p = parse_fragment "[L:1] (3:4:6 abc abc d"
+      p.notes[5].length.should == Rational(4, 3)
+      p.notes[6].length.should == 1
+    end
+
+    it "uses the form (p:q to mean p notes in the time of q for p notes" do
+      p = parse_fragment "[L:1] (3:4 abc d"
+      p.notes[2].length.should == Rational(4, 3)
+      p.notes[3].length.should == 1
+    end
+
+    it "treats the form (p:q: as a synonym for (p:q" do
+      p = parse_fragment "[L:1] (3:4: abc d"
+      p.notes[2].length.should == Rational(4, 3)
+      p.notes[3].length.should == 1
+    end
+
+    it "uses the form (p::r to mean p notes in the time of 2 for r notes with simple meter" do
+      p = parse_fragment "[L:1] [M:C] (3::4 abcd e"
+      p.notes[3].length.should == Rational(2, 3)
+      p.notes[4].length.should == 1
+    end
+
+    it "uses the form (p::r to mean p notes in the time of 2 for r notes with compound meter" do
+      p = parse_fragment "[L:1] [M:6/8] (2::4 abcd e"
+      p.notes[3].length.should == Rational(3, 2)
+      p.notes[4].length.should == 1
+    end
+
+    it "treats the form (p:: as a synonym for (p" do
+      p = parse_fragment "[L:1] [M:C] (5:: abcde f [M:6/8] (5:: abcde f"
+      p.notes[4].length.should == Rational(2, 5)
+      p.notes[5].length.should == 1
+      p.notes[10].length.should == Rational(3, 5)
+      p.notes[11].length.should == 1
+    end
+
+    it "treats the form (p: as a synonym for (p" do
+      p = parse_fragment "[L:1] [M:C] (5: abcde f [M:6/8] (5: abcde f"
+      p.notes[4].length.should == Rational(2, 5)
+      p.notes[5].length.should == 1
+      p.notes[10].length.should == Rational(3, 5)
+      p.notes[11].length.should == 1
+    end
+
+    it "can operate on notes of different lengths" do
+      p = parse_fragment "[L:1] [M:C] (3 D3EF2"
+      p.notes[0].length.should == 2
+      p.notes[1].length.should == Rational(2, 3)
+      p.notes[2].length.should == Rational(4, 3)
+    end
+
+    # TODO generate errors if not enough notes in tuplet
+
+  end
+
 
 end
 

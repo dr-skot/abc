@@ -7,6 +7,7 @@ module ABC
     attr_accessor :broken_rhythm
     attr_accessor :broken_rhythm_marker
     attr_accessor :chord_length
+    attr_accessor :tuplet_ratio
     attr_accessor :beam
     attr_accessor :lyric
 
@@ -30,8 +31,12 @@ module ABC
       @chord_length || 1
     end
 
+    def tuplet_ratio
+      @tuplet_ratio || 1
+    end
+
     def note_length
-      specified_length * unit_note_length * broken_rhythm * chord_length
+      specified_length * unit_note_length * broken_rhythm * chord_length * tuplet_ratio
     end
     alias_method :length, :note_length
 

@@ -6,6 +6,7 @@ require "abc/parser/parsed_elements/decoration"
 require "abc/parser/parsed_elements/pitch"
 require "abc/parser/parsed_elements/rest"
 require "abc/parser/parsed_elements/note"
+require "abc/parser/parsed_elements/grace_notes"
 
 require "abc/parser/parsed_elements/field"
 require "abc/parser/parsed_elements/tempo"

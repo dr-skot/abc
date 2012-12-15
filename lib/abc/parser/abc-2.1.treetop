@@ -1043,7 +1043,7 @@ rule key_field do
     rule music_space do
       space+ <ValueNode> {
         def value
-          ABCElement.new(:beam_break)
+          @value ||= ABCElement.new(:beam_break)
         end
       }
     end
@@ -1187,6 +1187,30 @@ rule key_field do
     end
 
 
+    # 4.12 Grace notes
+    # Grace notes can be written by enclosing them in curly braces, {}. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some software may ignore them. The unit duration to use for gracenotes is not specified by the abc file, but by the software, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
+    # To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
+    # The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
+
+    rule grace_note do
+      '{' '/'? grace_note_series '}' <GraceNotesNode> {
+        def value
+          @value ||= GraceNotes.new(text_value[1] == '/' ? :acciaccatura : :appoggiatura, 
+                                    grace_note_series.value)
+        end
+      }
+    end
+
+    rule grace_note_series do
+      first:note rest:(br:broken_rhythm? note)* {
+        def value
+          @value ||= rest.elements.inject([first.value]) do |result, el|
+            result << el.note.value(:broken_rhythm_marker => el.br.empty? ? nil : el.br); result
+          end
+        end
+      }
+    end
+    
 
 
 
@@ -1331,18 +1355,27 @@ rule key_field do
    # NOTES AND RESTS
 
    rule notelike_thing do
-     grace_and_broken? space* chord:chord_annotation? space* embellishments stroke <ValueNode> {
+     gb:grace_and_broken? space* chord:chord_annotation? space* embellishments stroke <ValueNode> {
        def value
          @value ||= stroke.value(:decorations => embellishments.decorations,
                                  :annotations => embellishments.annotations,
                                  :chord_symbol => chord.empty? ? nil : chord.symbol,
-                                 :broken_rhythm_marker => child(BrokenRhythm))
+                                 :broken_rhythm_marker => gb.empty? ? nil : gb.broken_rhythm,
+                                 :grace_notes=> gb.empty? ? nil : gb.grace_notes)
        end
      }
    end
 
    rule grace_and_broken do
-     grace_note space* broken_rhythm? / broken_rhythm space* grace_note?
+     (gn:grace_note space* br:broken_rhythm? / br:broken_rhythm space* gn:grace_note?) {
+       def grace_notes
+         gn.empty? ? nil : gn.value
+       end
+       def broken_rhythm
+         child(BrokenRhythm)
+         # br.empty ? nil : br
+       end
+     }
    end
    
    rule embellishments do
@@ -1365,30 +1398,15 @@ rule key_field do
    end
 
    rule note do
-     pitch note_length <ValueNode> {
+     pitch note_length {
        def value(options={})
-         @value ||= Note.new(pitch.value, note_length.value, options)
+         Note.new(pitch.value, note_length.value, options)
        end
      }
    end
 
 
 
-
-
-
-
-## 4.12. GRACE NOTES  
-## Grace notes can be written by enclosing them in curly braces, '{}'. For example, a taorluath on the Highland pipes would be written {GdGe}. The tune 'Athol Brose' (in the file Strspys.abc) has an example of complex Highland pipe gracing in all its glory. Although nominally grace notes have no melodic time value, expressions such as {a3/2b/} or {a>b} can be useful and are legal although some packages may ignore them. The unit duration to use for gracenotes is not specified by the ABC file, but by the package, and might be a specific amount of time (for playback purposes) or a note length (e.g. 1/32 for Highland pipe music, which would allow {ge4d} to code a piobaireachd 'cadence').
-## To distinguish between appoggiaturas and acciaccaturas, the latter are notated with a forward slash immediately following the open brace, e.g. {/g}C or {/gagab}C:
-# TODO implement this:
-## The presence of gracenotes is transparent to the broken rhythm construct. Thus the forms A<{g}A and A{g}<A are legal and equivalent to A/2{g}A3/2.
-
-rule grace_note do
-  '{' '/'? note (broken_rhythm? note)* '}'
-end
-
-# TODO allow broken rhythm notation inside gracenote brackets eg {a>b}
 
 
 
@@ -1409,6 +1427,7 @@ end
 rule tuplet_symbol do
   '(' p:wholenum extra:(':' q:wholenum? extra:(':' r:wholenum?)?)? <TupletMarker> {
     attr_accessor :compound_meter
+    alias_method :compound_meter?, :compound_meter
     def ratio
       pval = p.value
       if !extra.empty? && !extra.q.empty?

@@ -52,6 +52,10 @@ module ABC
     def measure_length
       Rational(numerator, denominator) unless symbol == :free
     end
+
+    def compound?
+      numerator % 3 == 0 if numerator
+    end
   end
 
 end

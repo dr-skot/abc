@@ -60,6 +60,12 @@ module ABC
     def apply_clefs
       tunes.each { |tune| tune.apply_clefs }
     end
+    def apply_ties_and_slurs
+      tunes.each { |tune| tune.apply_ties_and_slurs }
+    end
+    def apply_tuplets
+      tunes.each { |tune| tune.apply_tuplets }
+    end
   end  
 
 end

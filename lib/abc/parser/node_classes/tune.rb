@@ -66,15 +66,16 @@ module ABC
       end
       voices.each_value { |v| v.apply_note_lengths(unit_note_length) }
     end
-    def apply_broken_rhythms
+    def apply_broken_rhythms(notes=all_notes)
       last_note = nil
-      all_notes.each do |item|
-        if (br = item.broken_rhythm_marker)
+      notes.each do |it|
+        if (br = it.broken_rhythm_marker)
           # TODO throw an error if no last note?
           last_note.broken_rhythm *= br.change('<') if last_note
-          item.broken_rhythm *= br.change('>')
+          it.broken_rhythm *= br.change('>')
         end
-        last_note = item
+        apply_broken_rhythms(it.grace_notes.notes) if it.is_a?(NoteOrChord) && it.grace_notes
+        last_note = it
       end
     end
     def apply_meter(tunebook_meter=nil)
@@ -253,16 +254,20 @@ module ABC
     def collect_measures
       voices.each_value { |v| v.collect_measures }
     end
+
     def measures
       @first_voice.measures
     end
     alias_method :bars, :measures
+
     def apply_clefs
       voices.each_value { |v| v.apply_clefs(clef) }
     end
+
     def clef
       key.clef
     end
+
     # TODO can't slur across voices (or voice overlays or parts?)
     def apply_ties_and_slurs
       tied_left, start_slur, start_dotted_slur = false, 0, 0
@@ -289,5 +294,20 @@ module ABC
         end
       end
     end
+
+    def apply_tuplets
+      tuplet_ratio = 1
+      tuplet_notes = 0
+      items.each do |item|
+        if item.is_a?(TupletMarker)
+          tuplet_notes = item.num_notes
+          tuplet_ratio = item.ratio
+        elsif item.is_a?(MusicUnit) && tuplet_notes > 0
+          item.tuplet_ratio = tuplet_ratio
+          tuplet_notes -= 1
+        end
+      end
+    end
+
   end
 end

@@ -21,6 +21,7 @@ module ABC
           p.apply_ties_and_slurs
           p.apply_beams
           p.apply_meter
+          p.apply_tuplets
           p.apply_key_signatures
           p.apply_clefs
           p.apply_symbol_lines
