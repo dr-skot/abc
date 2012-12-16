@@ -245,11 +245,7 @@ grammar ABC do
   rule string_field_content do
     start:(!line_ender .)* extra:(line_ender '+:' content:string_field_content)? {
       def value
-        if extra.empty?
-          start.text_value
-        else
-          start.text_value + ' ' + extra.content.value
-        end
+        start.text_value + (extra.empty? ? '' : ' ' + extra.content.value)
       end
     }
   end
@@ -1074,7 +1070,7 @@ rule key_field do
         if @value
           @value
         else
-          b = bare_bar_line.value(embellishments.empty? ? {} : embellishments.value)
+          b = bare_bar_line.value(embellishments.value)
           # kludge to reinterpret a last . decoration as a dotted bar line marker
           # TODO should be last embellishment of any kind, not last decoration
           if b.decorations[-1] && b.decorations[-1].original_text == "."
@@ -1220,7 +1216,7 @@ rule key_field do
     first:note rest:(br:broken_rhythm? note)* {
       def value
         @value ||= rest.elements.inject([first.value]) do |result, el|
-          result << el.note.value(:broken_rhythm_marker => el.br.empty? ? nil : el.br)
+          result << el.note.value(nil, :broken_rhythm_marker => el.br.empty? ? nil : el.br)
         end
       end
     }
@@ -1453,8 +1449,8 @@ rule key_field do
 
   rule chord do
     '[' notes_node:note+ ']' note_length {
-      def value(options={})
-        Chord.new(notes, note_length.value, options)
+      def value(embellishments, options)
+        Chord.new(notes, note_length.value, embellishments, options)
       end
       def notes
         @notes ||= notes_node.elements.map { |node| node.value }
@@ -1528,65 +1524,56 @@ rule key_field do
   # and open and close slur symbols, (), should do likewise, i.e.
   # "Gm7"(v.=G,2~^c'2)
 
-   rule note_or_chord do
-     gb:grace_and_broken? space* embellishments stroke <ValueNode> {
-       def value
-         gr_br = gb.empty? ? {} : gb.value
-         em = embellishments.empty? ? {} : embellishments.value
-         @value ||= stroke.value(gr_br.merge(em))
-       end
-     }
-   end
-
-   rule grace_and_broken do
-     (gn:grace_note space* br:broken_rhythm? / br:broken_rhythm space* gn:grace_note?) {
-       def value
-         @value ||= empty? ? {} : { :grace_notes => gn.empty? ? nil : gn.value,
-           :broken_rhythm_marker => child(BrokenRhythm) }
-       end
-     }
-   end
-   
-   rule embellishments do
-     chord:chord_annotation? space* dec:(node:(annotation / decoration) space*)* {
-       def value
-         @value ||= { :decorations => decorations, :annotations => annotations, 
-           :chord_symbol => chord_symbol }
-       end
-       def chord_symbol
-         chord.value unless chord.empty?
-       end
-       def decorations
-         @decorations ||= dec.elements.inject([]) do |result, el|
-           result << el.node.value if el.node.value.is_a?(Decoration)
-         end
-       end
-       def annotations
-         @annotations ||= dec.elements.inject([]) do |result, el| 
-           result << el.node.value if el.node.value.is_a?(Annotation)
-         end
-       end
-     }
-   end
-
-   rule stroke do
-     chord / note
-   end
-
-   rule note do
-     pitch note_length {
-       def value(options={})
-         Note.new(pitch.value, note_length.value, options)
-       end
-     }
-   end
-
-
-
-   rule macro_field do
-     'not implemented'
-   end
-   
+  rule note_or_chord do
+    gb:grace_and_broken? space* embellishments stroke <ValueNode> {
+      def value
+        @value ||= stroke.value(embellishments.value, gb.value)
+      end
+    }
+  end
+  
+  rule grace_and_broken do
+    (gn:grace_note space* br:broken_rhythm? / br:broken_rhythm space* gn:grace_note?) {
+      def value
+        @value ||= { :grace_notes => gn.value, :broken_rhythm_marker => child(BrokenRhythm) }
+      end
+    }
+  end
+  
+  rule embellishments do
+    chord:chord_annotation? space* annotations_and_decorations {
+      def value
+        @value ||= [chord.value, *annotations_and_decorations.value].select { |v| v != nil }
+      end
+    }
+  end
+  
+  rule annotations_and_decorations do
+    (node:(annotation / decoration) space*)* {
+      def value
+        elements.map { |el| el.node.value }
+      end
+    }
+  end
+  
+  rule stroke do
+    chord / note
+  end
+  
+  rule note do
+    pitch note_length {
+      def value(embellishments=nil, options={})
+        Note.new(pitch.value, note_length.value, embellishments, options)
+      end
+    }
+  end
+  
+  
+  
+  rule macro_field do
+    'not implemented'
+  end
+  
    rule user_defined_field do
      'not implemented'
    end
@@ -1843,12 +1830,11 @@ rule key_field do
 
 
     # TODO find a better place for this
-    # TODO spacer can have embellishments
 
     rule spacer do
       embellishments 'y' <ValueNode> {
         def value
-          @value ||= Spacer.new(embellishments.empty? ? {} : embellishments.value)
+          @value ||= Spacer.new(embellishments.value || {})
         end
       }
     end

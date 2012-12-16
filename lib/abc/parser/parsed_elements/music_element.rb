@@ -1,14 +1,23 @@
 module ABC
   class MusicElement < ABCElement
 
-    attr_reader :decorations
-    attr_reader :annotations
+    attr_reader :embellishments
     attr_accessor :chord_symbol
 
-    def initialize(options={})
-      @decorations = options[:decorations] || []
-      @annotations = options[:annotations] || []
-      @chord_symbol = options[:chord_symbol]
+    def initialize(embellishments)
+      @embellishments = embellishments || []
+    end
+    
+    def decorations
+      embellishments.select { |e| e.is_a?(Decoration) }
+    end
+
+    def annotations
+      embellishments.select { |e| e.is_a?(Annotation) }
+    end
+
+    def chord_symbol
+      @chord_symbol ||= embellishments.select { |e| e.is_a?(ChordSymbol) }[-1]
     end
 
   end

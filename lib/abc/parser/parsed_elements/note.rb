@@ -12,10 +12,12 @@ module ABC
     attr_accessor :start_dotted_slur
     attr_accessor :end_slur
 
-    def initialize(length, options={})
-      super(length, options)
-      @grace_notes = options[:grace_notes]
-      @broken_rhythm_marker = options[:broken_rhythm_marker]
+    def initialize(length, embellishments=nil, options={})
+      super(length, embellishments)
+      if options
+        @grace_notes = options[:grace_notes]
+        @broken_rhythm_marker = options[:broken_rhythm_marker]
+      end
       @tied_left, @tied_right, @tied_right_dotted = false, false, false
       @start_slur, @start_dotted_slur, @end_slur = 0, 0, 0
     end
@@ -26,8 +28,8 @@ module ABC
     attr_reader :pitch
     attr_accessor :chord
 
-    def initialize(pitch, length, options={})
-      super(length, options)
+    def initialize(pitch, length, embellishments=nil, options={})
+      super(length, embellishments, options)
       @pitch = pitch
     end
 
@@ -41,8 +43,8 @@ module ABC
 
     attr_reader :notes
 
-    def initialize(notes, length, options={})
-      super(length, options)
+    def initialize(notes, length, embellishments=nil, options={})
+      super(length, embellishments, options)
       @notes = notes
       notes.each { |note| note.chord = self }
     end

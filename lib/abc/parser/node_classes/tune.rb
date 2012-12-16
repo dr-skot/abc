@@ -66,7 +66,7 @@ module ABC
       end
       voices.each_value { |v| v.apply_note_lengths(unit_note_length) }
     end
-    def apply_broken_rhythms(notes=all_notes)
+    def apply_broken_rhythms(notes=all_notes, p=false)
       last_note = nil
       notes.each do |it|
         if (br = it.broken_rhythm_marker)
@@ -74,7 +74,7 @@ module ABC
           last_note.broken_rhythm *= br.change('<') if last_note
           it.broken_rhythm *= br.change('>')
         end
-        apply_broken_rhythms(it.grace_notes.notes) if it.is_a?(NoteOrChord) && it.grace_notes
+        apply_broken_rhythms(it.grace_notes.notes, true) if it.is_a?(NoteOrChord) && it.grace_notes
         last_note = it
       end
     end
@@ -172,9 +172,7 @@ module ABC
               # find next note and set this symbol on it
               i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
               if i < items.count
-                items[i].annotations << symbol if symbol.is_a?(Annotation)
-                items[i].decorations << symbol if symbol.is_a?(Decoration)
-                items[i].chord_symbol = symbol if symbol.is_a?(ChordSymbol)
+                items[i].embellishments << symbol
                 i += 1
               end
             end
