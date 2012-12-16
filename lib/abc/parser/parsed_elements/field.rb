@@ -20,24 +20,24 @@ module ABC
     'R' => :rhythm,
     'S' => :source,
     'T' => :title,
+    'U' => :user_defined,
     'V' => :voice,
     'Z' => :transcription,
   }
 
-  class FField
-
-
+  class Field
 
     attr_reader :identifier
     attr_reader :value
 
-    def initialize(identifier, content_value)
+    def initialize(identifier, content_value, type=nil)
       @identifier = identifier
       @value = content_value
+      @type = type
     end
 
     def type
-      FIELD_TYPES[identifier]
+      @type || FIELD_TYPES[identifier]
     end
   end
 end

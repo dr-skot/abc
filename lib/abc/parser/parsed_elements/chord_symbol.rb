@@ -3,8 +3,8 @@ module ABC
     
     attr_reader :text
 
-    def initialize(text)
-      super()
+    def initialize(text, shortcut=nil)
+      super(shortcut)
       @text = text
     end
 

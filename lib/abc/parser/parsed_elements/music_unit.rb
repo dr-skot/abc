@@ -12,8 +12,8 @@ module ABC
     attr_accessor :beam
     attr_accessor :lyric
 
-    def initialize(length, options={})
-      super(options)
+    def initialize(length, embellishments=nil)
+      super(embellishments)
       @specified_length = length
     end
 

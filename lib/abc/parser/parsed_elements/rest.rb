@@ -17,6 +17,7 @@ module ABC
     attr_accessor :measure_length
 
     def initialize(measure_count, options = {})
+      super(nil)
       @measure_count = measure_count
       @invisible = options[:invisible]
     end

@@ -44,9 +44,6 @@ module ABC
   class ABCSection < ABCNode
   end
 
-  class ValueNode < ABCNode
-  end
-
   class TypesetText < ABCSection
   end
 
@@ -70,13 +67,6 @@ module ABC
   # NOTES AND RESTS
 
   class BrokenRhythm < MusicNode
-  end
-
-  # LYRICS
-  class LyricsLine < Field
-  end
-
-  class LyricUnit < ABCNode
   end
 
   # OVERLAY DELIMITER

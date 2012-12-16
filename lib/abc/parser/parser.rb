@@ -7,8 +7,9 @@ module ABC
       @parser = ABCParser.new
       p = @parser.parse(input, options)
       if p
-        if @parser.input_changed?
-          parse(p.text_value_with_inclusions, options)
+        input_with_inclusions = p.text_value_with_inclusions
+        if input != input_with_inclusions
+          parse(input_with_inclusions, options)
         else
           if p.is_a? Tunebook
             p.assign_free_text
@@ -25,6 +26,7 @@ module ABC
           p.apply_key_signatures
           p.apply_clefs
           p.apply_symbol_lines
+          p.apply_redefinable_symbols
           p.apply_lyrics
           p.collect_measures
           p

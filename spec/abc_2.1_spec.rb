@@ -1247,7 +1247,7 @@ describe "abc 2.1:" do
                           "+:i-ta-lic",
                           "%%vocalfont Times-Roman 14",
                           "+:nor-mal"].join("\n")
-      p.lines[0].lyrics.map {|lyric| lyric.text }.join("").should == "normalitalicnormal"
+      p.lines[0].lyrics_lines[0].units.map {|u| u.text }.join("").should == "normalitalicnormal"
       # TODO make it easier to recover lyrics
     end
   end
@@ -2398,27 +2398,27 @@ describe "abc 2.1:" do
   describe "a decoration" do
     it "can be one of the default redefinable symbols" do
       p = parse_fragment ".a ~b Hc Ld Me Of Pg Sa Tb uC vD"
-      p.notes[0].decorations[0].original_text.should == "."
+      p.notes[0].decorations[0].shortcut.should == "."
       p.notes[0].decorations[0].symbol.should == "staccato"
-      p.notes[1].decorations[0].original_text.should == "~"
+      p.notes[1].decorations[0].shortcut.should == "~"
       p.notes[1].decorations[0].symbol.should == "roll"
-      p.notes[2].decorations[0].original_text.should == "H"
+      p.notes[2].decorations[0].shortcut.should == "H"
       p.notes[2].decorations[0].symbol.should == "fermata"
-      p.notes[3].decorations[0].original_text.should == "L"
+      p.notes[3].decorations[0].shortcut.should == "L"
       p.notes[3].decorations[0].symbol.should == "emphasis"
-      p.notes[4].decorations[0].original_text.should == "M"
+      p.notes[4].decorations[0].shortcut.should == "M"
       p.notes[4].decorations[0].symbol.should == "lowermordent"
-      p.notes[5].decorations[0].original_text.should == "O"
+      p.notes[5].decorations[0].shortcut.should == "O"
       p.notes[5].decorations[0].symbol.should == "coda"
-      p.notes[6].decorations[0].original_text.should == "P"
+      p.notes[6].decorations[0].shortcut.should == "P"
       p.notes[6].decorations[0].symbol.should == "uppermordent"
-      p.notes[7].decorations[0].original_text.should == "S"
+      p.notes[7].decorations[0].shortcut.should == "S"
       p.notes[7].decorations[0].symbol.should == "segno"
-      p.notes[8].decorations[0].original_text.should == "T"
+      p.notes[8].decorations[0].shortcut.should == "T"
       p.notes[8].decorations[0].symbol.should == "trill"
-      p.notes[9].decorations[0].original_text.should == "u"
+      p.notes[9].decorations[0].shortcut.should == "u"
       p.notes[9].decorations[0].symbol.should == "upbow"
-      p.notes[10].decorations[0].original_text.should == "v"
+      p.notes[10].decorations[0].shortcut.should == "v"
       p.notes[10].decorations[0].symbol.should == "downbow"
     end
     it "can be of the form !symbol!" do
@@ -2456,9 +2456,98 @@ describe "abc 2.1:" do
     it "cannot include square brackets" do
       fail_to_parse_fragment "![dacapo]! A"
     end
-
   end
 
+
+  # 4.15 Symbol lines
+  # Adding many symbols to a line of music can make a tune difficult to read. In such cases, a symbol line (a line that contains only !…! decorations, "…" chord symbols or annotations) can be used, analogous to a line of lyrics.
+  # A symbol line starts with s:, followed by a line of symbols. Matching of notes and symbols follow the alignment rules defined for lyrics (meaning that symbols in an s: line cannot be aligned on grace notes, rests or spacers).
+  # Example:
+  #    CDEF    | G```AB`c
+  # s: "^slow" | !f! ** !fff!
+  # It is also possible to stack s: lines to produced multiple symbols on a note.
+  # Example: The following two excerpts are equivalent and would place a decorations plus a chord on the E.
+  #    C2  C2 Ez   A2|
+  # s: "C" *  "Am" * |
+  # s: *   *  !>!  * |
+  # "C" C2 C2 "Am" !>! Ez A2|
+
+  describe "a symbol line" do
+    it "applies symbol line symbols to notes" do
+      p = parse_fragment([     "CDEF    | G```AB`c     c",
+                          "s: \"^slow\" | u ** !fff! \"Gm\""].join("\n"))
+      p.lines[0].symbol_lines.count.should == 1
+      p.notes[0].annotations[0].placement.should == :above
+      p.notes[0].annotations[0].text.should == "slow"
+      p.notes[1].annotations.should == []
+      p.notes[1].decorations.should == []
+      p.notes[2].decorations.should == []
+      p.notes[3].decorations.should == []
+      p.notes[4].decorations[0].symbol.should == 'upbow'
+      p.notes[5].decorations.should == []
+      p.notes[6].decorations.should == []
+      p.notes[7].decorations[0].symbol.should == 'fff'
+      p.notes[8].chord_symbol.text.should == 'Gm'
+    end
+    it "ignores dotted bar lines when skipping to next bar" do
+      p = parse_fragment("abc.|de|f\ns:!f!|!f!")
+      p.notes[0].decorations[0].symbol.should == "f"
+      p.notes[3].decorations[0].should == nil
+      p.notes[5].decorations[0].symbol.should == "f"
+    end
+    it "can stack symbols with consecutive symbol lines" do
+      p = parse_fragment ['C2 C2 Ez A2 |', 's: "C" * "Am" * |', 's: * * !>! * |'] * "\n"
+      p.notes[0].chord_symbol.text.should == "C"
+      p.notes[2].chord_symbol.text.should == "Am"
+      p.notes[2].decorations[0].symbol.should == ">"
+    end
+  end
+
+
+  # 4.16 Redefinable symbols
+  # As a short cut to writing symbols which avoids the !symbol! syntax (see decorations), the letters H-W and h-w and the symbol ~ can be assigned with the U: field. For example, to assign the letter T to represent the trill, you can write:
+  # U: T = !trill!
+  # You can also use "^text", etc (see annotations below) in definitions
+  # Example: To print a plus sign over notes, define p as follows and use it before the required notes:
+  # U: p = "^+"
+  # Symbol definitions can be written in the file header, in which case they apply to all the tunes in that file, or in a tune header, when they apply only to that tune, and override any previous definitions. Programs may also make use of a set of global default definitions, which apply everywhere unless overridden by local definitions. You can assign the same symbol to two or more letters e.g.
+  # U: T = !trill!
+  # U: U = !trill!
+  # in which case the same visible symbol will be produced by both letters (but they may be played differently), and you can de-assign a symbol by writing:
+  # U: T = !nil!
+  # or
+  # U: T = !none!
+  # The standard set of definitions (if you do not redefine them) is:
+  # U: ~ = !roll!
+  # U: H = !fermata!
+  # U: L = !accent!
+  # U: M = !lowermordent!
+  # U: O = !coda!
+  # U: P = !uppermordent!
+  # U: S = !segno!
+  # U: T = !trill!
+  # U: u = !upbow!
+  # U: v = !downbow!
+  # Please see macros for an advanced macro mechanism.
+
+  describe "a redefinable symbol" do
+    it "can define a new decoration shortcut" do
+      p = parse_fragment("[U:t=!halftrill!] ta")
+      p.notes[0].decorations[0].symbol.should == 'halftrill'
+    end
+    it "can redefine one of the predefined shortcuts" do
+      p = parse_fragment("[U:T=!halftrill!] Ta")
+      p.notes[0].decorations[0].symbol.should == 'halftrill'
+    end
+    it "can define a shortcut in the tune header" do
+      p = parse_fragment("U:t=!halftrill!\nK:C\nta")
+      p.notes[0].decorations[0].symbol.should == 'halftrill'
+    end
+    it "can define a shortcut in the file header" do
+      p = parse("U:t=!halftrill!\n\nX:1\nT:T\nK:C\nta")
+      p.tunes[0].notes[0].decorations[0].symbol.should == 'halftrill'
+    end
+  end
 
 end
 

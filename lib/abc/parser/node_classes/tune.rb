@@ -16,16 +16,16 @@ module ABC
       if !@lines
         line = TuneLine.new
         @lines = [line]
-        all_items = values(MusicNode, Field, TuneLineBreak, SymbolLine, MusicElement)
+        all_items = values(MusicNode, Field, TuneLineBreak, SymbolLine, LyricsLine, MusicElement)
         all_items.each do |it|
           if it.is_a?(TuneLineBreak)
             line = TuneLine.new
             line.hard_break = it.hard?
             @lines << line
           elsif it.is_a?(SymbolLine)
-            @lines[-2].symbols = it.symbols if @lines.count > 1
+            @lines[-2].symbol_lines << it if @lines.count > 1
           elsif it.is_a?(LyricsLine)
-            @lines[-2].lyrics = it.children(LyricUnit) if @lines.count > 1
+            @lines[-2].lyrics_lines << it if @lines.count > 1
           else
             line.items << it
           end
@@ -117,8 +117,8 @@ module ABC
       part = nil
       items.each do |item|
         # TODO lose text_value here, label should already be a string
-        if item.is_a?(Field, :type => :part)
-          id = item.id
+        if item.is_a?(Field, :type => :part_marker)
+          id = item.value
           parts[id] = Part.new(id) if !parts[id]
           part = parts[id]
           @first_part = part if !@first_part
@@ -153,74 +153,82 @@ module ABC
         end
       end
     end
+
     def apply_symbol_lines
       lines.each do |line|
-        if line && line.symbols
+        if line && line.symbol_lines != []
           items = line.items
-          i = 0
-          line.symbols.each do |symbol|
-            break if i >= items.count
-            if symbol.is_a?(SymbolSkip, :type => :note)
-              # advance to next note, then skip it
-              i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
-              i += 1
-           elsif symbol.is_a?(SymbolSkip, :type => :bar)
-              # advance to next (undotted) bar, then skip it
-              i += 1 until items.count <= i || (items[i].is_a?(BarLine) && !items[i].dotted?)
-              i += 1
-            else
-              # find next note and set this symbol on it
-              i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
-              if i < items.count
-                items[i].embellishments << symbol
+          line.symbol_lines.each do |symbol_line|
+            i = 0
+            symbol_line.symbols.each do |symbol|
+              break if i >= items.count
+              if symbol.is_a?(SymbolSkip, :type => :note)
+                # advance to next note, then skip it
+                i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
                 i += 1
+              elsif symbol.is_a?(SymbolSkip, :type => :bar)
+                # advance to next (undotted) bar, then skip it
+                i += 1 until items.count <= i || (items[i].is_a?(BarLine) && !items[i].dotted?)
+                i += 1
+              else
+                # find next note and set this symbol on it
+                i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
+                if i < items.count
+                  items[i].embellishments << symbol
+                  i += 1
+                end
               end
             end
           end
         end
       end
     end
+
     def apply_lyrics
       lines.each do |line|
-        if line && line.lyrics
+        if line && line.lyrics_lines != []
           items = line.items
-          i = 0
-          line.lyrics.each do |lyric|
-            break if i >= items.count
-            if lyric.skip == :note
-              # advance to next note, then skip it
-              i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
-              i += 1
-            elsif lyric.skip == :bar
-              # advance to next (undotted) bar, then skip it
-              i += 1 until items.count <= i || items[i].is_a?(BarLine) && items[i].type != :dotted
-              i += 1
-            else
-              # find next note and set this lyric on it
-              i += 1 until items.count <= i || items[i].is_a?(MusicUnit);
-              items[i].lyric = lyric if i < items.count
-              # how many notes does it apply to?
-              note_count = lyric.note_count
-              # advance that many notes
-              while i < items.count && note_count > 1
-                note_count -= 1 if items[i].is_a?(MusicUnit)
+          line.lyrics_lines.each do |lyrics|
+            i = 0
+            lyrics.units.each do |unit|
+              break if i >= items.count
+              if unit.is_a?(SymbolSkip, :type => :note)
+                # advance to next note, then skip it
+                i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
+                i += 1
+              elsif unit.is_a?(SymbolSkip, :type => :bar)
+                # advance to next (undotted) bar, then skip it
+                i += 1 until items.count <= i || (items[i].is_a?(BarLine) && !items[i].dotted?)
+                i += 1
+              else
+                # find next note and set this lyric on it
+                i += 1 until items.count <= i || items[i].is_a?(MusicUnit);
+                items[i].lyric = unit if i < items.count
+                # how many notes does it apply to?
+                note_count = unit.note_count
+                # advance that many notes
+                while i < items.count && note_count > 1
+                  note_count -= 1 if items[i].is_a?(MusicUnit)
+                  i += 1
+                end
+                # then advance to next item
                 i += 1
               end
-              # then advance to next item
-              i += 1
+              # TODO propagate extra lyrics to next line?
             end
-            # TODO propagate extra lyrics to next line?
           end
         end
       end
     end
+
     def voices
       if !@voices
         @voices = {}
         if header
-          header.fields(/V/).each do |node|
-            @first_voice = node.voice if !@first_voice
-            @voices[node.voice.id] = node.voice
+          header.fields(/V/).each do |f|
+            voice = f.value
+            @first_voice = voice if !@first_voice
+            @voices[voice.id] = voice
           end
         end
       end
@@ -233,8 +241,8 @@ module ABC
       voice = nil
       items.each do |item|
         # TODO lose text_value here, label should already be a string
-        if item.is_a?(Field, :type => :voice)
-          id = item.id
+        if item.is_a?(Field, :type => :voice_marker)
+          id = item.value
           voices[id] = Voice.new(id) if !voices[id]
           voice = voices[id]
           @first_voice = voice if !@first_voice
@@ -311,6 +319,27 @@ module ABC
             tuplet_marker = nil
           end
         end
+      end
+    end
+
+    def apply_redefinable_symbols
+      symbols = redefinable_symbols
+      items.each do |it|
+        if it.is_a?(MusicElement)
+          it.apply_redefinable_symbols(symbols)
+        elsif it.is_a?(Field, :type => :user_defined)
+          symbols[it.value.shortcut] = it.value
+        end
+      end
+    end
+
+    def redefinable_symbols
+      if header
+        header.values(/U/).inject({}) do |result, embellishment| 
+          result.merge!(embellishment.shortcut => embellishment)
+        end
+      else
+        {}
       end
     end
 

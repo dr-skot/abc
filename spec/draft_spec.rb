@@ -212,39 +212,6 @@ describe "abc 2.0 draft 4" do
   end
 
 
-  ## 4.15. Symbol lines
-  ## Adding many symbols to a line of music can make a tune difficult to read. In such cases, a symbol line (a line that contains only +...+ decorations and "..." chord symbols or annotations) can be used, analogous to a lyrics line. A symbol line starts with 's:', followed by a line of symbols. Matching of notes and symbols follows the rules defined in section Lyrics.
-  ## Example:
-  ##   CDEF    | G```AB`c
-  ##   s: "^slow" | +f+ ** +fff+
-  describe "symbol line support" do
-    it "applies symbol line symbols to notes" do
-      p = parse_fragment([     "CDEF    | G```AB`c     c",
-                          "s: \"^slow\" | !f! ** !fff! \"Gm\""].join("\n"))
-      p.lines[0].symbols.should_not == nil
-      p.notes[0].annotations[0].placement.should == :above
-      p.notes[0].annotations[0].text.should == "slow"
-      p.notes[1].annotations.should == []
-      p.notes[1].decorations.should == []
-      p.notes[2].decorations.should == []
-      p.notes[3].decorations.should == []
-      p.notes[4].decorations[0].symbol.should == 'f'
-      p.notes[5].decorations.should == []
-      p.notes[6].decorations.should == []
-      p.notes[7].decorations[0].symbol.should == 'fff'
-      p.notes[8].chord_symbol.text.should == 'Gm'
-    end
-    it "skips dotted bar lines" do
-      p = parse_fragment("abc.|de|f\ns:!f!|!f!")
-      p.notes[0].decorations[0].symbol.should == "f"
-      p.notes[3].decorations[0].should == nil
-      p.notes[5].decorations[0].symbol.should == "f"
-    end
-    # TODO decorations can also be abbreviations
-
-  end
-
-
   ## 5. Lyrics
   ## The W field (uppercase W) can be used for lyrics to be printed separately below the tune.
   ## The w field (lowercase w) in the body, supplies a line of lyrics to be aligned syllable by syllable below the previous line of notes. Syllables are not aligned on grace notes and tied notes are treated as two separate notes; slurred or beamed notes are also treated as separate notes in this context. Note that lyrics are always aligned to the beginning of the preceding music line.

@@ -235,11 +235,11 @@ grammar ABC do
   end
 
   rule special_field do
-    instruction_field / key_field / unit_note_length_field / meter_field / macro_field / tempo_field / symbol_line / user_defined_field / lyrics_field / refnum_field
+    instruction_field / key_field / unit_note_length_field / meter_field / macro_field / tempo_field / symbol_line / user_defined_field / lyrics_line / refnum_field
   end
 
   rule string_field do
-    !special_field_identifier [A-Za-z] ':' content:string_field_content <Field>
+    !special_field_identifier [A-Za-z] ':' content:string_field_content <FieldNode>
   end
 
   rule string_field_content do
@@ -301,7 +301,7 @@ grammar ABC do
   end
 
   rule inline_string_field do
-    !special_field_identifier [A-Za-z] ':' content:inline_string_field_content <Field>
+    !special_field_identifier [A-Za-z] ':' content:inline_string_field_content <FieldNode>
   end
 
   rule inline_string_field_content do
@@ -320,7 +320,7 @@ grammar ABC do
   # Recommendation for developers: Software which writes abc files is recommended to offer users the possibility to manage X: field numbering automatically. GUI applications may even hide the X: field from users although they should always allow the user access to the raw abc file.
 
   rule refnum_field do
-    'X:' content:posint? <Field>
+    'X:' content:posint? <FieldNode>
   end
 
   rule refnum_field_line do
@@ -335,7 +335,7 @@ grammar ABC do
   # See typesetting information fields for details of how the title and alternatives are included in the printed score.
 
   rule title_field do
-    'T:' content:string_field_content <Field>
+    'T:' content:string_field_content <FieldNode>
   end
 
   rule title_field_line do
@@ -368,7 +368,7 @@ grammar ABC do
   # When there is no M: field defined, free meter is assumed (in free meter, bar lines can be placed anywhere you want).
 
   rule meter_field do
-    'M:' content:(named_meter / fractional_meter / complex_meter) <Field>
+    'M:' content:(named_meter / fractional_meter / complex_meter) <FieldNode>
   end
 
   rule fractional_meter do
@@ -422,11 +422,7 @@ grammar ABC do
   # A meter change within the body of the tune will not change the unit note length.
   
   rule unit_note_length_field do
-    'L:' content:(rational / posint) <Field> {
-      def value
-        @value ||= content.value
-      end    
-    }
+    'L:' content:(rational / posint) <FieldNode>
   end
 
 
@@ -442,7 +438,7 @@ grammar ABC do
   # Finally note that some previous Q: field syntax is now deprecated (see outdated information field syntax).
 
   rule tempo_field do
-    'Q:' content:tempo_field_content <Field>
+    'Q:' content:tempo_field_content <FieldNode>
   end
   
   rule tempo_field_content do
@@ -506,11 +502,15 @@ grammar ABC do
 
   # TODO: make this conform to content value paradigm
   rule parts_header_field do
-    'P:' value:parts <Field>
+    'P:' content:parts <FieldNode>
   end
 
   rule parts do
-    dots? ((parts_atom / parts_group) dots?)+ <PartSequence>
+    dots? ((parts_atom / parts_group) dots?)+ <PartSequence> {
+      def value
+        self
+      end
+    }
   end
 
   rule parts_atom do
@@ -522,9 +522,9 @@ grammar ABC do
   end
 
   rule parts_body_field do
-    'P:' id:[A-Za-z] <Field> {
-      def id
-        super.text_value
+    'P:' content:[A-Za-z] <FieldNode> {
+      def type
+        :part_marker
       end
     }
   end
@@ -601,9 +601,9 @@ grammar ABC do
   # Note that the first occurrence of the K: field, which must appear in every tune, finishes the tune header. All following lines are considered to be part of the tune body.
 
 rule key_field do
-    'K:' content:(key/"none") <Field> {
-      def value
-        @value ||= content.text_value == "none" ? Key::NONE : content.value
+    'K:' content:(key/"none") <FieldNode> {
+      def content_value
+        content.text_value == "none" ? Key::NONE : content.value
       end
     }
   end
@@ -687,12 +687,12 @@ rule key_field do
   # Comment: Remember that abc software which extracts separate tunes from a file must insert the fields of the original file header into the header of the extracted tune: this is also true for the fields defined in this section.
 
   rule instruction_field do
-    'I:' directive value:(field_space+ text:string_field_content) <InstructionField> {
-      def name
-        directive.text_value
-      end
+    'I:' directive content:instruction_content? <FieldNode> {
       def value
-        super.text.value if !super.empty?
+        @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
+      end
+      def inclusion # handles abc-include
+        value.inclusion
       end
     }
   end
@@ -701,13 +701,30 @@ rule key_field do
     [a-z\-]+
   end
 
-  rule inline_instruction_field do
-    !tune_body_instruction_field_excludes 'I:' directive value:(space+ text:inline_string_field_content) <InstructionField> {
-      def name
-        directive.text_value
-      end
+  rule instruction_content do
+    field_space+ text:string_field_content {
       def value
-        super.text.text_value if !super.empty?
+        text.value
+      end
+    }
+  end
+
+  rule inline_instruction_field do
+    !tune_body_instruction_field_excludes 
+    'I:' directive content:inline_instruction_content <FieldNode> {
+      def value
+        @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
+      end
+      def inclusion # handles abc-include
+        value.inclusion
+      end
+    }
+  end
+
+  rule inline_instruction_content do
+    space+ text:inline_string_field_content {
+      def value
+        text.text_value
       end
     }
   end
@@ -1073,7 +1090,7 @@ rule key_field do
           b = bare_bar_line.value(embellishments.value)
           # kludge to reinterpret a last . decoration as a dotted bar line marker
           # TODO should be last embellishment of any kind, not last decoration
-          if b.decorations[-1] && b.decorations[-1].original_text == "."
+          if b.decorations[-1] && b.decorations[-1].shortcut == "."
             b.decorations.pop
             b.dotted = true
           end
@@ -1418,18 +1435,43 @@ rule key_field do
   # Please see macros for an advanced macro mechanism.
 
   rule redefinable_symbol do
-    [.~H-Wh-w] {
-      attr_accessor :user_defined_symbols
-      def user_defined_symbols
-        @user_defined_symbols || ABC::DEFAULT_USER_DEFINED_SYMBOLS
-      end
-      def value
-        user_defined_symbols[text_value]
+    shortcut_char {
+      def value(symbols={})
+        symbols[text_value] || ABC::DEFAULT_USER_DEFINED_SYMBOLS[text_value] ||
+          Decoration.new(nil, text_value)
       end
     }
   end
 
+  rule shortcut_char do
+    [.~H-Wh-w]
+  end
+
+  rule user_defined_field do
+    'U:' shortcut_assignment content:embellishment <FieldNode> {
+      def content_value
+        if !@content_value
+          @content_value = content.value
+          @content_value.shortcut = shortcut_assignment.shortcut
+        end
+        @content_value
+      end
+    }
+  end
+
+  rule shortcut_assignment do
+    field_space* shortcut_char field_space* '=' field_space* {
+      def shortcut
+        shortcut_char.text_value
+      end
+    }
+  end
+
+  rule embellishment do
+    annotation / decoration / chord_symbol
+  end
   
+
   # 4.17 Chords and unisons
   # Chords (i.e. more than one note head on a single stem) can be coded with [] symbols around the notes, e.g.
   # [CEGc]
@@ -1569,16 +1611,50 @@ rule key_field do
   end
   
   
+
+
+
+
+  rule lyrics_line do
+    'w:' lyrics_sequence <ValueNode> {
+      def value
+        @value ||= LyricsLine.new(lyrics_sequence.value)
+      end
+    }
+  end
+
+  rule lyrics_sequence do
+    (field_space* text:(lyrics_unit / symbol_skip))+  {
+      def value
+        @value ||= elements.map { |e| e.text.value }.select { |v| v != nil }
+      end
+    }
+  end
+
+  rule lyrics_unit do
+    lyrics_word hyphen:(space? '-'+)? stretch:'_'* {
+      def value
+        LyricsUnit.new(lyrics_word.value, hyphen.text_value, stretch.text_value)
+      end
+    }
+  end
+
+  rule lyrics_word do
+    ("\\-" / [^ _\-\*\|\n])+ {
+      def value
+        text_value.gsub('\\-', '-').gsub('~', ' ')
+      end
+    }
+  end
+
+
+
   
   rule macro_field do
     'not implemented'
   end
   
-   rule user_defined_field do
-     'not implemented'
-   end
-   
-   
+  
    # TODO: deal with escaped " ?
    rule quoted_string do
     '"' value_node:(!'"' .)* '"' {
@@ -1714,48 +1790,6 @@ rule key_field do
 
 
 
-  # LYRICS
-
-  # TODO: make this conform to content value paradigm
-  rule lyrics_field do
-    'w:' (field_space* lyric_unit)+ <LyricsLine> {
-      def units
-        children(LyricUnit)
-      end
-      def value
-        lyrics.text_value
-      end
-    }
-  end
-
-  rule lyric_unit do
-    word:("\\-" / [^ _\-\*\|\n])+ hyphen:(space? '-'+)? stretch:'_'* <LyricUnit> {
-      attr_reader :skip
-      def text
-        word.text_value.gsub('\\-', '-').gsub('~', ' ')
-      end
-      def note_count
-        count = 1
-        count += stretch.text_value.length
-        count += hyphen.text_value.length - 1 if hyphen.text_value.length > 1
-        count
-      end
-      def hyphen?
-        !hyphen.empty?
-      end
-    } /
-      ('*' / '|') space* <LyricUnit> {
-      def skip
-        text_value[0] == '*' ? :note : :bar
-      end
-    }
-  end
-
-  rule lyric_divider do
-    space+ / line_ender
-  end
-
-
     # MULTIPLE VOICES
 
     rule voice_name do
@@ -1788,18 +1822,24 @@ rule key_field do
 
     # TODO make this conform to content value paradigm
     rule voice_header_field do
-      'V:' id:alphanum+ specifiers:(space+ specifier:voice_specifier)* <Field> {
+      'V:' content:voice_definition <FieldNode>
+    end
+
+    rule voice_definition do
+      id:alphanum+ specifiers:(space+ specifier:voice_specifier)* {
         def id
           super.text_value[0..19] # first 20 chars only
         end
-        def voice
-          opts = {}
-          specifiers.elements.each do |node|
-            node.specifier.set_voice_opts(opts) if node.specifier.respond_to?(:set_voice_opts)
+        def value
+          if !@value
+            opts = {}
+            specifiers.elements.each do |node|
+              node.specifier.set_voice_opts(opts) if node.specifier.respond_to?(:set_voice_opts)
+            end
+            @value = Voice.new(id, opts)
+            @value.clef = clef
           end
-          v = Voice.new(id, opts)
-          v.clef = clef
-          v
+          @value
         end
         def clef
           unless @clef
@@ -1815,9 +1855,12 @@ rule key_field do
     end
 
     rule voice_body_field do
-      'V:' id:alphanum+ <Field> {
-        def id
-          super.text_value[0..19] # first 20 chars only
+      'V:' id:alphanum+ <FieldNode> {
+        def content_value
+          id.text_value[0..19] # first 20 chars only
+        end
+        def type
+          :voice_marker
         end
       }
     end

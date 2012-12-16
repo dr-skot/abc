@@ -38,9 +38,10 @@ module ABC
       end
       @instructions
     end
-    
+
+    # TODO get rid of this, respond only to the explicit methods
     def method_missing(meth, *args, &block)
-      #puts "METHOD MISSING: #{meth}" unless STRING_FIELDS[meth]
+      # "METHOD MISSING: #{meth}" unless STRING_FIELDS[meth]
       field_value(STRING_FIELDS[meth])
     end
 

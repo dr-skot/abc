@@ -66,6 +66,9 @@ module ABC
     def apply_tuplets
       tunes.each { |tune| tune.apply_tuplets }
     end
-  end  
+    def apply_redefinable_symbols
+      tunes.each { |tune| tune.apply_redefinable_symbols }
+    end
+  end
 
 end

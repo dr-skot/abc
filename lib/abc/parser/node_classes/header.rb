@@ -1,11 +1,12 @@
 module ABC
   class Header < ABCNode
+    alias_method :node_values, :values
     # returns all header fields whose labels match regex
     def fields(regex=nil)
       if regex
-        children(Field).select { |f| f.text_value[0] =~ regex }
+        node_values(Field).select { |f| f.identifier =~ regex }
       else
-        children(Field)
+        node_values(Field)
       end
     end
     #returns the last header field whose label matches

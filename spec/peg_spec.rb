@@ -42,18 +42,6 @@ describe "abc-2.1 PEG" do
 
   describe "header basics" do
 
-    it "accepts a file header field" do
-      p = parse "C:Beethoven\n\nX:1\nT:T\nK:C"
-      p.header.fields.count.should == 1
-      p.header.fields[0].text_value.should == "C:Beethoven"
-    end
-    
-    it "separates fields" do
-      p = parse "X:1\nT:Love Me Do\nK:C"
-      p.tunes[0].header.fields[0].text_value.should == "X:1"
-      p.tunes[0].header.fields[1].text_value.should == "T:Love Me Do"
-    end
-    
     it "differentiates file header from tune header" do
       p = parse "H:File\n\nX:1\nT:Tune\nK:C"
       p.header.should_not == nil
@@ -645,16 +633,4 @@ describe "abc-2.1 PEG" do
     parse_fragment "ab y de"
   end
   
-  describe "lyrics support" do
-    it "parses whole word lyrics" do
-      p = parse_fragment "gcea\nw:my dog has fleas"
-      # items[4] is the lyrics field
-      p.items[4].units.count.should == 4
-      p.items[4].units[0].text.should == "my"
-      p.items[4].units[1].text.should == "dog"
-      p.items[4].units[2].text.should == "has"
-      p.items[4].units[3].text.should == "fleas"
-    end
-  end
-
 end
