@@ -6,26 +6,6 @@
 
 module ABC
 
-  # these fields have unprocessed string values
-  STRING_FIELDS = {
-    :area => /A/,
-    :book => /B/,
-    :composer => /C/,
-    :disc => /D/,
-    :discography => /D/,
-    :file_url => /F/,
-    :url => /F/, 
-    :group => /G/,
-    :history => /H/,
-    :notations => /N/,
-    :origin => /O/,
-    :rhythm => /R/,
-    :remark => /r/,
-    :source => /S/,
-    :title => /T/,
-    :transcription => /Z/,
-  }
-
   DEFAULT_USER_DEFINED_SYMBOLS = {
     '.' => Decoration.new('staccato', '.'),
     '~' => Decoration.new('roll', '~'),
@@ -50,9 +30,6 @@ module ABC
   end
 
   # FIELDS
-
-  class InfoField < Field
-  end
 
   class TuneLineBreak < ABCNode
   end

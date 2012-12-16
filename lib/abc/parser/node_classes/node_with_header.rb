@@ -74,27 +74,5 @@ module ABC
       end
     end
 
-
-
-=begin
-    def instructions
-      if !@instructions
-        @instructions = {}
-        if header
-          fields = header.fields(/I/)
-          fields.each { |f| @instructions[f.name] = f.value }
-        end
-      end
-      @instructions
-    end
-
-    # TODO get rid of this, respond only to the explicit methods
-    def method_missing(meth, *args, &block)
-      # "METHOD MISSING: #{meth}" unless STRING_FIELDS[meth]
-      field_value(STRING_FIELDS[meth])
-    end
-
-=end
-
-  end  
+  end
 end

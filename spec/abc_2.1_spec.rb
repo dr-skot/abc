@@ -2547,6 +2547,29 @@ describe "abc 2.1:" do
       p = parse("U:t=!halftrill!\n\nX:1\nT:T\nK:C\nta")
       p.tunes[0].notes[0].decorations[0].symbol.should == 'halftrill'
     end
+    it "can be redefined after being defined once" do
+      p = parse("U:t=!halftrill!\n\nX:1\nT:T\nK:C\n[U:t=!headbutt!]ta")
+      p.tunes[0].notes[0].decorations[0].symbol.should == 'headbutt'
+      p = parse("U:t=!halftrill!\n\nX:1\nT:T\nU:t=!headbutt!\nK:C\nta")
+      p.tunes[0].notes[0].decorations[0].symbol.should == 'headbutt'
+    end
+    it "can define annotations as well as decorations" do
+      p = parse("U:t=\"^look up here\"\n\nX:1\nT:T\nK:C\nta")
+      p.tunes[0].notes[0].annotations[0].text.should == 'look up here'
+      p.tunes[0].notes[0].annotations[0].placement.should == :above
+    end
+    it "can have the same value as another" do
+      p = parse("U:T=!thrill!  X:1 T:T U:U=!thrill! K:C TaUb".gsub(' ', "\n"))
+      p.tunes[0].notes[0].decorations[0].symbol.should == 'thrill'
+      p.tunes[0].notes[1].decorations[0].symbol.should == 'thrill'
+    end
+    it "can be de-assigned with !nil! or !none!" do
+      p = parse_fragment(".a[U:.=!nil!].b ua[U:u=!none!]ub")
+      p.notes[0].decorations[0].symbol.should == 'staccato'
+      p.notes[1].decorations[0].symbol.should == nil
+      p.notes[2].decorations[0].symbol.should == 'upbow'
+      p.notes[3].decorations[0].symbol.should == nil
+    end
   end
 
 end

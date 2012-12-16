@@ -1450,7 +1450,7 @@ rule key_field do
   end
 
   rule user_defined_field do
-    'U:' shortcut_assignment content:embellishment <FieldNode> {
+    'U:' shortcut_assignment content:embellishment_definition <FieldNode> {
       def content_value
         if !@content_value
           @content_value = content.value
@@ -1469,8 +1469,20 @@ rule key_field do
     }
   end
 
+  rule embellishment_definition do
+    nil_embellishment / embellishment
+  end
+
+  rule nil_embellishment do
+    ('!nil!' / '!none!') {
+      def value
+        Decoration.new(nil)
+      end
+    }
+  end
+
   rule embellishment do
-    annotation / decoration / chord_symbol
+    annotation / decoration
   end
   
 
