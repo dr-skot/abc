@@ -1,17 +1,42 @@
 module ABC
   class Tune < NodeWithHeader
+
     attr_accessor :free_text
+
     def refnum
-      if header && (value = header.value(/X/))
-        if value == ""
-          nil # TODO should this default to 1?
-        else
-          value.to_i
-        end
-      else
-        1
+      num = header.value(:refnum) || 1
+      num == "" ? nil : num
+    end
+
+    def key
+      @key ||= header.last_value(:key) || Key::NONE
+    end
+
+    def part_sequence
+      header.last_value(:part_sequence) 
+    end
+
+    def tempo
+      header.last_value(:tempo)
+    end
+
+    def unit_note_length
+      @unit_note_length ||= header.last_value(:unit_note_length) || meter.default_unit_note_length
+    end
+
+    def voices
+      @voices ||= header.values(:voice).inject({}) do |voices, voice|
+        @first_voice = voice if !@first_voice
+        voices.merge!(voice.id => voice)
       end
     end
+    
+    def redefinable_symbols
+      @redefinable_symbols ||= header.values(:user_defined).inject({}) do |result, embellishment| 
+        result.merge!(embellishment.shortcut => embellishment)
+      end
+    end
+
     def lines
       if !@lines
         line = TuneLine.new
@@ -34,6 +59,7 @@ module ABC
       end
       @lines
     end
+
     def items
       if @first_voice
         @first_voice.items
@@ -41,9 +67,11 @@ module ABC
         all_items
       end
     end
+
     def all_items
       @all_items ||= values(MusicNode, Field, MusicElement)
     end
+
     def notes
       if @first_voice
         @first_voice.notes
@@ -51,21 +79,18 @@ module ABC
         all_notes
       end
     end
+
     def all_notes
       values(MusicUnit)
     end
-    def unit_note_length
-      if !@unit_note_length && header && (field = header.field(/L/))
-        @unit_note_length = field.value
-      end
-      @unit_note_length ||= meter.default_unit_note_length
-    end
+
     def apply_note_lengths
       if tempo
         tempo.unit_length = unit_note_length
       end
       voices.each_value { |v| v.apply_note_lengths(unit_note_length) }
     end
+
     def apply_broken_rhythms(notes=all_notes, p=false)
       last_note = nil
       notes.each do |it|
@@ -78,35 +103,20 @@ module ABC
         last_note = it
       end
     end
-    def apply_meter(tunebook_meter=nil)
-      @meter = tunebook_meter if tunebook_meter && !(header && header.field(/M/))
+
+    def apply_meter
       voices.each_value { |v| v.apply_meter(meter) }
     end
-    def tempo
-      if !@tempo
-        if header && (field = header.field(/Q/))
-          @tempo = field.value
-        else
-          @tempo = nil # TODO NO_TEMPO
-        end
-      end
-      @tempo
-    end
-    def key
-      @key ||= header && (field = header.field(/K/)) ? field.value : Key::NONE
-    end
-    def part_sequence
-      if header && (field = header.field(/P/))
-        field.value
-      end
-    end
+
     def parts
       @parts ||= {}
     end
+
     def next_part
       p = part_sequence.next_part
       parts[p]
     end
+
     def divvy_parts
       if part_sequence
         part_sequence.reset
@@ -133,9 +143,11 @@ module ABC
         end
       end
     end
+
     def apply_key_signatures()
-        voices.each_value { |v| v.apply_key_signatures(key) }
+      voices.each_value { |v| v.apply_key_signatures(key) }
     end
+
     def apply_beams
       beam = :start
       last_note = nil
@@ -221,19 +233,6 @@ module ABC
       end
     end
 
-    def voices
-      if !@voices
-        @voices = {}
-        if header
-          header.fields(/V/).each do |f|
-            voice = f.value
-            @first_voice = voice if !@first_voice
-            @voices[voice.id] = voice
-          end
-        end
-      end
-      @voices
-    end
     def many_voices?
       return voices.count > 1
     end
@@ -330,16 +329,6 @@ module ABC
         elsif it.is_a?(Field, :type => :user_defined)
           symbols[it.value.shortcut] = it.value
         end
-      end
-    end
-
-    def redefinable_symbols
-      if header
-        header.values(/U/).inject({}) do |result, embellishment| 
-          result.merge!(embellishment.shortcut => embellishment)
-        end
-      else
-        {}
       end
     end
 

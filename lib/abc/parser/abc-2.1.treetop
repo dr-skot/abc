@@ -50,8 +50,10 @@ grammar ABC do
     comment_line* tune_header tune_body? <Tune>
   end
 
+  # TODO reconsider this extended info field
   rule tune_header do
-    refnum_field_line title_field_line (extended_info_field / tune_header_line)* key_field_line <TuneHeader>
+    refnum_field_line title_field_line 
+    (extended_info_field / tune_header_line)* key_field_line <HeaderNode>
   end
 
 
@@ -63,7 +65,7 @@ grammar ABC do
 
   # TODO allow stylesheet directives
   rule file_header do
-    comment_line* (file_header_field line_ender)+ <FileHeader>
+    comment_line* (file_header_field line_ender)+ <HeaderNode>
   end
 
 
@@ -205,7 +207,7 @@ grammar ABC do
   end
 
   rule partial_tune_header do
-    '' (refnum_field_line? (tune_header_line* key_field_line / tune_header_line+) / refnum_field_line) <TuneHeader>
+    '' (refnum_field_line? (tune_header_line* key_field_line / tune_header_line+) / refnum_field_line) <HeaderNode>
   end
 
 

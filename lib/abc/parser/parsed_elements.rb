@@ -18,6 +18,7 @@ require "abc/parser/parsed_elements/symbol_line"
 require "abc/parser/parsed_elements/lyrics_unit"
 require "abc/parser/parsed_elements/lyrics_line"
 
+require "abc/parser/parsed_elements/header"
 require "abc/parser/parsed_elements/field"
 require "abc/parser/parsed_elements/instruction_field"
 require "abc/parser/parsed_elements/tempo"

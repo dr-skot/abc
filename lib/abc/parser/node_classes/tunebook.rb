@@ -23,7 +23,7 @@ module ABC
       tunes.each { |tune| tune.apply_chord_lengths }
     end
     def apply_meter
-      tunes.each { |tune| tune.apply_meter(meter) }
+      tunes.each { |tune| tune.apply_meter }
     end
     def apply_key_signatures
       tunes.each { |tune| tune.apply_key_signatures }

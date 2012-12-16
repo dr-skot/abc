@@ -3,31 +3,80 @@ module ABC
   class NodeWithHeader < ABCNode
     attr_accessor :master_node
     def header
-      child(Header)
+      @header ||= Header.new((n = child(HeaderNode)) ? n.values(Field) : [])
     end
-    def info(label)
-      fields = header.children(InfoField).select { |f| f.label == label } if header
-      if fields && fields.count > 0
-        fields.last.value
-      else
-        master_node.info(label) if master_node
+
+    def master_node=(node)
+      header.master_header = node.header
+    end
+    
+    def area
+      header.value_replace_master(:area)
+    end
+
+    def book
+      header.value_replace_master(:book)
+    end
+
+    def composer
+      header.value_replace_master(:composer)
+    end
+
+    def discography
+      header.value_replace_master(:discography)
+    end
+    alias_method :disc, :discography
+
+    def file_url
+      header.value_replace_master(:file_url)
+    end
+    alias_method :url, :file_url
+
+    def group
+      header.value_replace_master(:group)
+    end
+
+    def history
+      header.value_replace_master(:history)
+    end
+
+    def meter
+      @meter ||= header.last_value(:meter) || Meter.new(:free)
+    end
+
+    def notations
+      header.value_replace_master(:notations)
+    end
+
+    def origin
+      header.value_replace_master(:origin)
+    end
+
+    def rhythm
+      header.value_replace_master(:rhythm)
+    end
+
+    def source
+      header.value_replace_master(:source)
+    end
+
+    def title
+      header.value_replace_master(:title)
+    end
+
+    def transcription
+      header.value_replace_master(:transcription)
+    end
+
+    def instructions
+      @instructions ||= header.fields(:instruction).inject({}) do |result, field|
+        result.merge(field.name => field.value)
       end
     end
 
-    def field_value(label)
-      return nil unless header
-      if label
-        values = header.values(label)
-        if values.count == 0 
-          master_node.field_value(label) if master_node
-        elsif values.count == 1
-          values[0]
-        else
-          values
-        end
-      end
-    end
 
+
+=begin
     def instructions
       if !@instructions
         @instructions = {}
@@ -45,12 +94,7 @@ module ABC
       field_value(STRING_FIELDS[meth])
     end
 
-    def meter
-      if !@meter && header && (field = header.field(/M/))
-        @meter = field.value
-      end
-      @meter ||= Meter.new :free
-    end
-  end
-  
+=end
+
+  end  
 end

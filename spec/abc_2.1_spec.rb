@@ -369,11 +369,11 @@ describe "abc 2.1:" do
     it "can have an unrecognized identifier in the file header" do
       p = parse "J:unknown field\n\nX:1\nT:T\nK:C"
       # TODO use a string for this instead of regex
-      p.field_value(/J/).should == 'unknown field'
+      p.header.value('J').should == 'unknown field'
     end
     it "can have an unrecognized identifier in the tune header" do
       p = parse "X:1\nT:T\nJ:unknown field\nK:C"
-      p.tunes[0].field_value(/J/).should == 'unknown field'
+      p.tunes[0].header.value('J').should == 'unknown field'
     end
     it "can have an unrecognized identifier in the tune body" do
       p = parse "X:1\nT:T\nK:C\nabc\nJ:unknown field\ndef"

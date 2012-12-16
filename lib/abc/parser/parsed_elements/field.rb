@@ -15,13 +15,14 @@ module ABC
     'M' => :meter,
     'N' => :notations,
     'O' => :origin,
-    'P' => :part,
+    'P' => :part_sequence,
     'Q' => :tempo,
     'R' => :rhythm,
     'S' => :source,
     'T' => :title,
     'U' => :user_defined,
     'V' => :voice,
+    'X' => :refnum,
     'Z' => :transcription,
   }
 

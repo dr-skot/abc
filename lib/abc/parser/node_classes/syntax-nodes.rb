@@ -1,4 +1,3 @@
-# TODO ties and slurs should disappear as music items, should be information on individual notes
 # TODO tune.overlays? might also be useful if there are overlays in any measures
 # TODO maybe also a list of these measures as measures_with_overlays
 # TODO dotted bar should not make a new measure
@@ -50,15 +49,9 @@ module ABC
   class FreeText < ABCSection
   end
 
-  class FileHeader < Header
-  end
-
   # FIELDS
 
   class InfoField < Field
-  end
-
-  class TuneHeader < Header
   end
 
   class TuneLineBreak < ABCNode

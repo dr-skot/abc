@@ -1,5 +1,5 @@
 module ABC
-  class Header < ABCNode
+  class HeaderOld < ABCNode
     alias_method :node_values, :values
     # returns all header fields whose labels match regex
     def fields(regex=nil)
