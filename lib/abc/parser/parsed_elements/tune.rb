@@ -53,6 +53,10 @@ module ABC
       end
     end
 
+    def many_voices?
+      return voices.count > 1
+    end
+
     def all_elements
       @all_elements ||= children.select { |child| !child.is_a?(Header) }
     end
@@ -276,44 +280,7 @@ module ABC
     end
 
     def apply_lyrics
-      lines.each do |line|
-        if line && line.lyrics_lines != []
-          items = line.items
-          line.lyrics_lines.each do |lyrics|
-            i = 0
-            lyrics.units.each do |unit|
-              break if i >= items.count
-              if unit.is_a?(SymbolSkip, :type => :note)
-                # advance to next note, then skip it
-                i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
-                i += 1
-              elsif unit.is_a?(SymbolSkip, :type => :bar)
-                # advance to next (undotted) bar, then skip it
-                i += 1 until items.count <= i || (items[i].is_a?(BarLine) && !items[i].dotted?)
-                i += 1
-              else
-                # find next note and set this lyric on it
-                i += 1 until items.count <= i || items[i].is_a?(MusicUnit);
-                items[i].lyric = unit if i < items.count
-                # how many notes does it apply to?
-                note_count = unit.note_count
-                # advance that many notes
-                while i < items.count && note_count > 1
-                  note_count -= 1 if items[i].is_a?(MusicUnit)
-                  i += 1
-                end
-                # then advance to next item
-                i += 1
-              end
-              # TODO propagate extra lyrics to next line?
-            end
-          end
-        end
-      end
-    end
-
-    def many_voices?
-      return voices.count > 1
+      voices.each_value { |v| v.apply_lyrics }
     end
 
     def collect_measures

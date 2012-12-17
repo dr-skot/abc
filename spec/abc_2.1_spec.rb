@@ -268,6 +268,7 @@ describe "abc 2.1:" do
     end
   end
 
+
   # 2.2.6 Continuation of input lines
   # It is sometimes necessary to tell abc software that an input line is continued on the next physical line(s) in the abc file, so that the two (or more) lines are treated as one. In abc 2.0 there was a universal continuation character (see outdated continuations) for this purpose, but it was decided that this was both unnecessary and confusing.
   # In abc 2.1, there are ways of continuing each of the 4 different input line types: music code, information fields, comments and stylesheet directives.
@@ -2830,7 +2831,130 @@ describe "abc 2.1:" do
   # w: Sa-ys my au-l' wan to your aul' wan,
   # +: Will~ye come to the Wa-x-ies dar-gle?
   # See field continuation for the meaning of the +: field continuation.
+  
+  describe "lyric alignment" do
+    it "matches words to notes" do
+      p = parse_fragment "GCEA\nw:My dog has fleas"
+      p.notes[0].lyric.text.should == "My"
+      p.notes[1].lyric.text.should == "dog"
+      p.notes[2].lyric.text.should == "has"
+      p.notes[3].lyric.text.should == "fleas"
+    end
 
+    it "starts at the first note of the voice if there is no previous w: field" do
+      p = parse_fragment "[V:1]G,G,G,A,[V:2]GCEA\nw:My dog has fleas"
+      p.notes[0].lyric.should == nil
+      p.notes[1].lyric.should == nil
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.should == nil
+      p.all_notes[4].lyric.text.should == "My"
+      p.all_notes[5].lyric.text.should == "dog"
+      p.all_notes[6].lyric.text.should == "has"
+      p.all_notes[7].lyric.text.should == "fleas"
+    end
+
+    it "can set one syllable to 2 notes" do
+      p = parse_fragment "FDB\nw:O_ say can you see"
+      p.notes[0].lyric.text.should == "O"
+      p.notes[0].lyric.note_count.should == 2
+      p.notes[1].lyric.should == nil
+      p.notes[2].lyric.text.should == "say"
+      p.notes[2].lyric.note_count.should == 1
+    end
+
+    it "can set one syllable to 3 notes" do
+      p = parse_fragment "FDdB\nw:O__ say can you see"
+      p.notes[0].lyric.text.should == "O"
+      p.notes[0].lyric.note_count.should == 3
+      p.notes[1].lyric.should == nil
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.text.should == "say"
+      p.notes[3].lyric.note_count.should == 1
+    end
+
+    it "splits words with hyphen" do
+      p = parse_fragment "ccGEB\nw:gal-lant-ly stream-ing"
+      p.notes[0].lyric.text.should == "gal"
+      p.notes[0].lyric.hyphen?.should == true
+      p.notes[1].lyric.text.should == "lant"
+      p.notes[1].lyric.hyphen?.should == true
+      p.notes[2].lyric.text.should == "ly"
+      p.notes[2].lyric.hyphen?.should == false
+    end
+
+    it "suppports hyphen with underscore" do
+      p = parse_fragment "d2fedcb4\nw:ban-_ner yet_ wave"
+      p.notes[0].lyric.text.should == "ban"
+      p.notes[0].lyric.hyphen?.should == true
+      p.notes[0].lyric.note_count.should == 2
+      p.notes[2].lyric.text.should == "ner"
+      p.notes[2].lyric.hyphen?.should == false
+    end
+
+    it "stretches with two hyphens" do
+      p = parse_fragment "d2fedcb4\nw:ban--ner yet_ wave"
+      p.notes[0].lyric.text.should == "ban"
+      p.notes[0].lyric.hyphen?.should == true
+      p.notes[0].lyric.note_count.should == 2
+      p.notes[2].lyric.text.should == "ner"
+      p.notes[2].lyric.hyphen?.should == false
+    end
+
+    it "stretches with space hyphen" do
+      p = parse_fragment "d2fedcb4\nw:ban -ner yet_ wave"
+      p.notes[0].lyric.text.should == "ban"
+      p.notes[0].lyric.hyphen?.should == true
+      p.notes[0].lyric.note_count.should == 2
+      p.notes[2].lyric.text.should == "ner"
+      p.notes[2].lyric.hyphen?.should == false
+    end
+
+    it "skips notes with *" do
+      p = parse_fragment "acddc\nw:*see ** see"
+      p.notes[0].lyric.should == nil
+      p.notes[1].lyric.text.should == "see"
+      p.notes[1].lyric.note_count.should == 1
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.should == nil
+      p.notes[4].lyric.text.should == "see"
+      p.notes[4].lyric.note_count.should == 1
+    end
+
+    it "preserves spaces with ~" do
+      p = parse_fragment "abc\nw:go~on get jiggy with it"
+      p.notes[0].lyric.text.should == "go on"
+      p.notes[1].lyric.text.should == "get"
+    end
+
+    it "escapes hyphens with backslash" do
+      p = parse_fragment "abc\nw:x\\-ray"
+      p.notes[0].lyric.text.should == "x-ray"
+    end
+
+    it "advances to the next bar with |" do
+      p = parse_fragment "abc|def\nw:yeah|yeah"
+      p.notes[0].lyric.text.should == "yeah"
+      p.notes[0].lyric.note_count.should == 1
+      p.notes[1].lyric.should == nil
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.text.should == "yeah"
+    end
+
+    # TODO special handling of stanza numbers?
+
+    # TODO handle continuation across lyric lines eg
+    #   GCEA\
+    #   w:my dog has fleas\
+    #   gad
+    #   w:yes he does!
+    # !! this is apparently expected to work but so is
+    #   GCEA C
+    #   w:my dog has fleas\
+    #   gad
+    # where gad is the next lyric!!
+
+
+  end
   
 
 end

@@ -118,7 +118,42 @@ module ABC
       end
     end
 
+    def apply_lyrics
+      verse_start = 0 # index to reset to for new verse if any
+      i = 0 #index of where to set current lyric
+      j = 0 #index of lyric line (when i >= j stop setting lyrics)
+      elements.each_with_index do |element, index|
+        if element.is_a?(LyricsLine)
+          i = j
+          j = index
+          element.units.each do |unit|
+            break if i >= j # stop setting lyrics at lyric line
+            if unit.is_a?(SymbolSkip, :type => :note)
+              # advance to next note, then skip it
+              i += 1 until i >= j || elements[i].is_a?(MusicUnit)
+              i += 1
+            elsif unit.is_a?(SymbolSkip, :type => :bar)
+              # advance to next (undotted) bar, then skip it
+              i += 1 until i >= j || (elements[i].is_a?(BarLine) && !elements[i].dotted?)
+              i += 1
+            else
+              # find next note and set this lyric on it
+              i += 1 until i >= j || elements[i].is_a?(MusicUnit);
+              elements[i].lyric = unit if i < j
+              # how many notes does it apply to?
+              note_count = unit.note_count
+              # advance that many notes
+              while i < j && note_count > 1
+                note_count -= 1 if elements[i].is_a?(MusicUnit)
+                i += 1
+              end
+              # then advance to next element
+              i += 1
+            end
+          end
+        end
+      end
+    end
 
   end
-  
 end
