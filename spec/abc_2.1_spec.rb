@@ -228,7 +228,7 @@ describe "abc 2.1:" do
   # Abc code which contains comments and remarks should be processed in exactly the same way as it would be if all the comments and remarks were removed (although, if the code is preprocessed, and comments are actually removed, the stylesheet directives should be left in place).
   # Important clarification: lines which just contain a comment are processed as if the entire line were removed, even if the comment is preceded by white-space (i.e. the % symbol is the not first character). In other words, removing the comment effectively removes the entire line and so no empty line is introduced.
   
-  describe "comment" do
+  describe "a comment" do
     it "can appear at the end of an abc line" do
       p = parse_fragment "abc % comment\ndef"
       p.lines.count.should == 2
@@ -244,12 +244,27 @@ describe "abc 2.1:" do
     end
   end
 
-  # TODO instead of creating a field remark should be ignored
-  describe "remark" do
-    it "can appear in the middle of a music line" do
-      p = parse_fragment "def [r: remarks] abc"
-      p.items[2].pitch.height.should == 17 # f
-      p.items[3].pitch.height.should == 21 # a
+  describe "a remark" do
+    it "is ignored in the file header" do
+      p = parse "C:Bach\nr:remarks\n\nX:1\nT:T\nK:C\nabc"
+      p.header.value('C').should == "Bach"
+      p.header.value('r').should == nil
+    end
+    it "is ignored in the tune header" do
+      p = parse "C:Bach\n\nX:1\nT:T\nr:remarks\nK:C\nabc"
+      p.tunes[0].header.value('X').should == 1
+      p.tunes[0].header.value('r').should == nil
+    end
+    it "is ignored as a field line in the tune body" do
+      p = parse_fragment "def\nr: remarks\nabc"
+      p.elements[2].pitch.height.should == 17 # f
+      p.elements[3].type.should == :soft_linebreak
+      p.elements[4].pitch.height.should == 21 # a
+    end
+    it "is ignored as an inline field" do
+      p = parse_fragment "def[r: remarks]abc"
+      p.elements[2].pitch.height.should == 17 # f
+      p.elements[3].pitch.height.should == 21 # a
     end
   end
 

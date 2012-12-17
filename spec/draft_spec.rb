@@ -131,11 +131,10 @@ describe "abc 2.0 draft 4" do
       p = parse "H:Jingle Bells % jingle all the way y'all!\n\nX:1\nT:JB\nK:C"
       p.history.should == "Jingle Bells"
     end
-    it "allows [r: remarks] in music" do
+    it "ignores [r: remarks] in music" do
       p = parse_fragment "def [r: remarks] abc"
       p.items[2].pitch.height.should == 17 # f
-      p.items[3].is_a?(Field).should == true
-      p.items[4].pitch.height.should == 21 # a
+      p.items[3].pitch.height.should == 21 # a
     end
   end
 

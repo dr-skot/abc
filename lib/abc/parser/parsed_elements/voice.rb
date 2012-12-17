@@ -46,7 +46,6 @@ module ABC
 
     def collect_measures
       measures << (measure = Measure.new)
-      overlay = nil
       elements.each do |element|
         if element.is_a? BarLine
           if measure == measures[0] && measure.empty?
@@ -57,12 +56,11 @@ module ABC
             measure.right_bar = element
             (measure = Measure.new).left_bar = element
             measures << measure
-            overlay = nil
           end
         elsif element.type == :overlay_delimiter
-          measure.overlays << (overlay = Overlay.new)
+          measure.overlays << Overlay.new
         else
-          (overlay ? overlay.elements : measure.elements) << element
+          (measure.overlays? ? measure.overlays.last : measure).elements << element
         end
       end
     end
@@ -73,13 +71,10 @@ module ABC
         if item.respond_to?(:pitch) && item.pitch
           item.pitch.clef = current_clef
         elsif item.respond_to?(:notes) # a chord
-          item.notes.each do |note|
-            note.pitch.clef = current_clef
-          end
+          item.notes.each { |note| note.pitch.clef = current_clef }
         elsif item.is_a?(Field, :type => :key)
           # only change clefs if a clef was specified
-          key_clef = item.value.clef
-          current_clef = key_clef if key_clef != Clef::DEFAULT 
+          current_clef = item.value.clef if item.value.clef != Clef::DEFAULT 
         end
       end
     end

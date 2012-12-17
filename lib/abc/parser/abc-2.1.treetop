@@ -156,7 +156,7 @@ grammar ABC do
   end
 
   rule comment_line do
-    space* comment end_of_line
+    space* comment end_of_line / remarks_field_line
   end
 
   rule line_ender do
@@ -166,6 +166,18 @@ grammar ABC do
   # TODO support '\%' escape sequence
   # TODO differentiate comments from directives
   # TODO should we have special rules for the r: field here?
+
+  rule remarks_field do
+    'r:' string_field_content
+  end
+
+  rule remarks_field_line do
+    remarks_field line_ender
+  end
+
+  rule inline_remarks_field do
+    'r:' inline_string_field_content
+  end
 
 
   # 2.2.6 Continuation of input lines
@@ -253,7 +265,7 @@ grammar ABC do
   end
 
   rule special_field do
-    instruction_field / key_field / unit_note_length_field / meter_field / macro_field / tempo_field / symbol_line / user_defined_field / lyrics_line / refnum_field
+    remarks_field / instruction_field / key_field / unit_note_length_field / meter_field / macro_field / tempo_field / symbol_line / user_defined_field / lyrics_line / refnum_field
   end
 
   rule string_field do
@@ -269,7 +281,7 @@ grammar ABC do
   end
 
   rule special_field_identifier do
-    [IKLMmPQsUwX]
+    [IKLMmPQrsUwX]
   end
 
   rule file_header_field_excludes do
@@ -315,7 +327,7 @@ grammar ABC do
   end
   
   rule inline_special_field do
-    inline_instruction_field / !('I'/'%%') special_field
+    inline_instruction_field / inline_remarks_field / !('I'/'%%'/'r') special_field
   end
 
   rule inline_string_field do

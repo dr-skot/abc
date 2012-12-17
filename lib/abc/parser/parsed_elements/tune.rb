@@ -14,6 +14,10 @@ module ABC
       num == "" ? nil : num
     end
 
+    def clef
+      key.clef
+    end
+
     def key
       @key ||= header.last_value(:key) || Key::NONE
     end
@@ -35,17 +39,17 @@ module ABC
     end
     alias_method :words, :unaligned_lyrics
 
-    def voices
-      @voices ||= header.values(:voice).inject({}) do |voices, voice|
-        @first_voice = voice if !@first_voice
-        voices.merge!(voice.id => voice)
-      end
-    end
-
     def redefinable_symbols
       @redefinable_symbols ||= 
         header.values(:user_defined).inject(REDEFINABLE_SYMBOLS.dup) do |result, embellishment| 
         result.merge!(embellishment.shortcut => embellishment)
+      end
+    end
+
+    def voices
+      @voices ||= header.values(:voice).inject({}) do |voices, voice|
+        @first_voice = voice if !@first_voice
+        voices.merge!(voice.id => voice)
       end
     end
 
@@ -73,6 +77,11 @@ module ABC
       first_voice ? first_voice.notes : all_notes
     end
     
+    def measures
+      first_voice.measures if first_voice
+    end
+    alias_method :bars, :measures
+
     def postprocess
       divvy_voices
       divvy_parts
@@ -231,7 +240,6 @@ module ABC
       @parts ||= {}
     end
 
-
     def next_part
       p = part_sequence.next_part
       parts[p]
@@ -311,16 +319,6 @@ module ABC
     def collect_measures
       voices.each_value { |v| v.collect_measures }
     end
-
-    def measures
-      @first_voice.measures
-    end
-    alias_method :bars, :measures
-
-    def clef
-      key.clef
-    end
-
 
     def lines
       if !@lines
