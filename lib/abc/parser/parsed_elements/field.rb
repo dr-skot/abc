@@ -27,12 +27,13 @@ module ABC
     'Z' => :transcription,
   }
 
-  class Field
+  class Field < MusicElement
 
     attr_reader :identifier
     attr_reader :value
 
     def initialize(identifier, content_value, type=nil)
+      super()
       @identifier = identifier
       @value = content_value
       @type = type

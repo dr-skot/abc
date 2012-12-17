@@ -1,22 +1,21 @@
 module ABC
 
-  class Measure
+  class Measure < Part
     attr_accessor :left_bar
     attr_accessor :right_bar
-    attr_accessor :items
     attr_accessor :overlays
 
     def initialize
-      @items = []
+      super(nil)
       @overlays = []
-    end
-
-    def notes
-      items.select { |item| item.is_a? MusicUnit }
     end
 
     def overlays?
       overlays.count > 0
+    end
+    
+    def empty?
+      elements.empty? && left_bar == nil
     end
 
   end

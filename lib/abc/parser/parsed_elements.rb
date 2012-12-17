@@ -2,7 +2,6 @@ require "abc/parser/parsed_elements/abc_element"
 require "abc/parser/parsed_elements/music_element"
 require "abc/parser/parsed_elements/music_unit"
 
-
 require "abc/parser/parsed_elements/section"
 require "abc/parser/parsed_elements/headered_section"
 require "abc/parser/parsed_elements/tunebook"
@@ -10,6 +9,9 @@ require "abc/parser/parsed_elements/tune"
 require "abc/parser/parsed_elements/free_text"
 require "abc/parser/parsed_elements/typeset_text"
 
+require "abc/parser/parsed_elements/part"
+require "abc/parser/parsed_elements/voice"
+require "abc/parser/parsed_elements/measure"
 require "abc/parser/parsed_elements/tune_line"
 
 require "abc/parser/parsed_elements/pitch"
@@ -38,10 +40,6 @@ require "abc/parser/parsed_elements/tempo"
 require "abc/parser/parsed_elements/clef"
 require "abc/parser/parsed_elements/key"
 require "abc/parser/parsed_elements/meter"
-
-require "abc/parser/parsed_elements/measure"
-require "abc/parser/parsed_elements/voice"
-require "abc/parser/parsed_elements/part"
 
 require "abc/parser/parsed_elements/music_line_break"
 require "abc/parser/parsed_elements/spacer"

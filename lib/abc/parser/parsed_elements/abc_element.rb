@@ -2,6 +2,8 @@ module ABC
   class ABCElement
     
     attr_reader :type
+    attr_accessor :part
+    attr_accessor :voice
 
     def initialize(type)
       @type = type

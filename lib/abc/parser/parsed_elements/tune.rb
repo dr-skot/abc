@@ -7,7 +7,7 @@
 module ABC
   class Tune < HeaderedSection
 
-    attr_accessor :free_text
+    attr_reader :first_voice
 
     def refnum
       num = header.value(:refnum) || 1
@@ -48,7 +48,31 @@ module ABC
         result.merge!(embellishment.shortcut => embellishment)
       end
     end
- 
+
+    def all_elements
+      @all_elements ||= children.select { |child| !child.is_a?(Header) }
+    end
+    
+    def all_items
+      @all_items ||= children(MusicElement)
+    end
+    
+    def all_notes
+      @all_notes ||= children(MusicUnit)
+    end
+    
+    def elements
+      first_voice ? first_voice.elements : all_elements
+    end
+    
+    def items
+      first_voice ? first_voice.items : all_items
+    end
+    
+    def notes
+      first_voice ? first_voice.notes : all_notes
+    end
+    
     def postprocess
       divvy_voices
       divvy_parts
@@ -66,88 +90,24 @@ module ABC
       collect_measures
       self
     end
-    
-    def lines
-      if !@lines
-        line = TuneLine.new
-        @lines = [line]
-        all_items = children(Field, MusicLineBreak, SymbolLine, LyricsLine, MusicElement, ABCElement)
-        all_items.each do |it|
-          if it.type == :soft_linebreak || it.type == :hard_linebreak
-            line = TuneLine.new
-            line.hard_break = it.type == :hard_linebreak
-            @lines << line
-          elsif it.is_a?(SymbolLine)
-            @lines[-2].symbol_lines << it if @lines.count > 1
-          elsif it.is_a?(LyricsLine)
-            @lines[-2].lyrics_lines << it if @lines.count > 1
-          else
-            line.items << it
-          end
+
+    def divvy_voices
+      voice = nil
+      all_elements.each do |element|
+        if element.is_a?(Field, :type => :voice_marker)
+          id = element.value
+          voice = (voices[id] ||= Voice.new(id))
+          @first_voice ||= voice
         end
-        @lines.pop if @lines[-1].items.count == 0
+        # create default voice if necessary
+        voice ||= (@first_voice ||= voices[""] = Voice.new(""))
+        voice.elements << element
+        element.voice = voice
       end
-      @lines
-    end
-
-    def items
-      if @first_voice
-        @first_voice.items
-      else
-        all_items
-      end
-    end
-
-    def all_items
-      @all_items ||= children(Field, MusicElement).concat(children(ABCElement).select { |e| e.type == :overlay_delimiter })
-    end
-
-    def notes
-      if @first_voice
-        @first_voice.notes
-      else
-        all_notes
-      end
-    end
-
-    def all_notes
-      children(MusicUnit)
-    end
-
-    def apply_note_lengths
-      if tempo
-        tempo.unit_length = unit_note_length
-      end
-      voices.each_value { |v| v.apply_note_lengths(unit_note_length) }
-    end
-
-    def apply_broken_rhythms(notes=all_notes, p=false)
-      last_note = nil
-      notes.each do |it|
-        if (br = it.broken_rhythm_marker)
-          # TODO throw an error if no last note?
-          last_note.broken_rhythm *= br.change('<') if last_note
-          it.broken_rhythm *= br.change('>')
-        end
-        apply_broken_rhythms(it.grace_notes.notes, true) if it.is_a?(NoteOrChord) && it.grace_notes
-        last_note = it
-      end
-    end
-
-    def apply_meter
-      voices.each_value { |v| v.apply_meter(meter) }
-    end
-
-    def parts
-      @parts ||= {}
-    end
-
-    def next_part
-      p = part_sequence.next_part
-      parts[p]
     end
 
     def divvy_parts
+      # use first part in part sequence as first_part
       if part_sequence
         part_sequence.reset
         part_id = part_sequence.next_part
@@ -155,45 +115,126 @@ module ABC
         part_sequence.reset
       end
       part = nil
-      items.each do |item|
-        # TODO lose text_value here, label should already be a string
-        if item.is_a?(Field, :type => :part_marker)
-          id = item.value
-          parts[id] = Part.new(id) if !parts[id]
-          part = parts[id]
-          @first_part = part if !@first_part
+      elements.each do |element|
+        if element.is_a?(Field, :type => :part_marker)
+          id = element.value
+          part = (parts[id] ||= Part.new(id))
+          @first_part ||= part
         else
-          if !part
-            if !@first_part
-              @first_part = parts[""] = Part.new("")  # create default part if necessary
-            end
-            part = @first_part
-          end
-          part.items << item
+          # create default part if necessary
+          part ||= (@first_part ||= parts[""] = Part.new(""))
+          part.elements << element
+          element.part = part
+        end
+      end
+    end
+    
+    def apply_note_lengths
+      tempo.unit_length = unit_note_length if tempo
+      voices.each_value { |v| v.apply_note_lengths(unit_note_length) }
+    end
+
+    def apply_broken_rhythms
+      voices.each_value { |v| v.apply_broken_rhythms }
+    end
+    
+    # TODO slurs and ties should not cross P: or V: boundaries
+    def apply_ties_and_slurs
+      tied_left, start_slur, start_dotted_slur = false, 0, 0
+      last_note = nil
+      all_elements.each do |item|
+        if item.is_a?(NoteOrChord)
+          item.start_slur = start_slur
+          item.start_dotted_slur = start_dotted_slur
+          item.tied_left = tied_left
+          last_note = item
+          tied_left, start_slur, start_dotted_slur = false, 0, 0
+        elsif item.is_a?(ABCElement, :type => :start_slur)
+          start_slur += 1
+        elsif item.is_a?(ABCElement, :type => :start_dotted_slur)
+          start_dotted_slur += 1
+        elsif item.is_a?(ABCElement, :type => :end_slur)
+          last_note.end_slur += 1
+        elsif item.is_a?(ABCElement, :type => :tie)
+          last_note.tied_right = true
+          tied_left = true
+        elsif item.is_a?(ABCElement, :type => :dotted_tie)
+          last_note.tied_right_dotted = true
+          tied_left = true
         end
       end
     end
 
-    def apply_key_signatures()
-      voices.each_value { |v| v.apply_key_signatures(key) }
-    end
-
+    # TODO beams should not cross P: or V: boundaries
+    # must be done after notes know their lengths
     def apply_beams
       beam = :start
       last_note = nil
-      children.each do |item|
+      all_elements.each do |item|
         if item.is_a?(NoteOrChord) && item.length <= Rational(1, 8)
           item.beam = beam
           beam = :middle
           last_note = item
         else
+          last_note.beam = (last_note.beam == :middle ? :end : nil) if last_note
           beam = :start
-          if last_note
-            last_note.beam = nil if last_note.beam == :start
-            last_note.beam = :end if last_note.beam == :middle
+        end
+      end
+    end
+
+    def apply_meter
+      voices.each_value { |v| v.apply_meter(meter) }
+    end
+
+    def apply_tuplets
+      tuplet_ratio = 1
+      tuplet_notes = 0
+      tuplet_marker = nil
+      items.each do |item|
+        if item.is_a?(TupletMarker)
+          tuplet_notes = item.num_notes
+          tuplet_ratio = item.ratio
+          tuplet_marker = item
+        elsif item.is_a?(MusicUnit) && tuplet_notes > 0
+          item.tuplet_ratio = tuplet_ratio
+          tuplet_notes -= 1
+          if tuplet_marker
+            # place marker on the first note
+            item.tuplet_marker = tuplet_marker
+            tuplet_marker = nil
           end
         end
       end
+    end
+
+    def apply_key_signatures
+      voices.each_value { |v| v.apply_key_signatures(key) }
+    end
+
+    def apply_clefs
+      voices.each_value { |v| v.apply_clefs(clef) }
+    end
+
+    def apply_redefinable_symbols
+      symbols = redefinable_symbols
+      items.each do |it|
+        if it.is_a?(Field, :type => :user_defined)
+          symbols[it.value.shortcut] = it.value
+        else
+          it.apply_redefinable_symbols(symbols)
+        end
+      end
+    end
+
+
+    def parts
+      @parts ||= {}
+    end
+
+
+    def next_part
+      p = part_sequence.next_part
+      parts[p]
     end
 
     def apply_symbol_lines
@@ -266,26 +307,7 @@ module ABC
     def many_voices?
       return voices.count > 1
     end
-    def divvy_voices
-      voice = nil
-      items.each do |item|
-        # TODO lose text_value here, label should already be a string
-        if item.is_a?(Field, :type => :voice_marker)
-          id = item.value
-          voices[id] = Voice.new(id) if !voices[id]
-          voice = voices[id]
-          @first_voice = voice if !@first_voice
-        else
-          if !voice
-            if !@first_voice
-              @first_voice = voices[""] = Voice.new("")  # create default voice if necessary
-            end
-            voice = @first_voice
-          end
-          voice.items << item
-        end
-      end
-    end
+
     def collect_measures
       voices.each_value { |v| v.collect_measures }
     end
@@ -295,71 +317,32 @@ module ABC
     end
     alias_method :bars, :measures
 
-    def apply_clefs
-      voices.each_value { |v| v.apply_clefs(clef) }
-    end
-
     def clef
       key.clef
     end
 
-    # TODO can't slur across voices (or voice overlays or parts?)
-    def apply_ties_and_slurs
-      tied_left, start_slur, start_dotted_slur = false, 0, 0
-      last_note = nil
-      children.each do |item|
-        if item.is_a?(NoteOrChord)
-          item.start_slur = start_slur
-          item.start_dotted_slur = start_dotted_slur
-          item.tied_left = tied_left
-          last_note = item
-          tied_left, start_slur, start_dotted_slur = false, 0, 0
-        elsif item.is_a?(ABCElement, :type => :start_slur)
-          start_slur += 1
-        elsif item.is_a?(ABCElement, :type => :start_dotted_slur)
-          start_dotted_slur += 1
-        elsif item.is_a?(ABCElement, :type => :end_slur)
-          last_note.end_slur += 1
-        elsif item.is_a?(ABCElement, :type => :tie)
-          last_note.tied_right = true
-          tied_left = true
-        elsif item.is_a?(ABCElement, :type => :dotted_tie)
-          last_note.tied_right_dotted = true
-          tied_left = true
-        end
-      end
-    end
 
-    def apply_tuplets
-      tuplet_ratio = 1
-      tuplet_notes = 0
-      tuplet_marker = nil
-      items.each do |item|
-        if item.is_a?(TupletMarker)
-          tuplet_notes = item.num_notes
-          tuplet_ratio = item.ratio
-          tuplet_marker = item
-        elsif item.is_a?(MusicUnit) && tuplet_notes > 0
-          item.tuplet_ratio = tuplet_ratio
-          tuplet_notes -= 1
-          if tuplet_marker
-            # place marker on the first note
-            item.tuplet_marker = tuplet_marker
-            tuplet_marker = nil
+    def lines
+      if !@lines
+        line = TuneLine.new
+        @lines = [line]
+        all_items = children(Field, MusicLineBreak, SymbolLine, LyricsLine, MusicElement, ABCElement)
+        all_items.each do |it|
+          if it.type == :soft_linebreak || it.type == :hard_linebreak
+            line = TuneLine.new
+            line.hard_break = it.type == :hard_linebreak
+            @lines << line
+          elsif it.is_a?(SymbolLine)
+            @lines[-2].symbol_lines << it if @lines.count > 1
+          elsif it.is_a?(LyricsLine)
+            @lines[-2].lyrics_lines << it if @lines.count > 1
+          else
+            line.items << it
           end
         end
+        @lines.pop if @lines[-1].items.count == 0
       end
-    end
-
-    def apply_redefinable_symbols
-      symbols = redefinable_symbols
-      items.each do |it|
-        if it.is_a?(MusicElement)
-          it.apply_redefinable_symbols(symbols)
-        elsif it.is_a?(Field, :type => :user_defined)
-          symbols[it.value.shortcut] = it.value
-        end
-      end
+      @lines
     end
 
   end

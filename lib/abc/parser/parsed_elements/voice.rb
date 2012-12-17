@@ -1,62 +1,68 @@
 module ABC
 
-  class Overlay
-    attr_accessor :notes
-    def initialize
-      @notes = []
-    end
+  class Overlay < Part
   end
 
-  class Voice
-    attr_accessor :id
+  class Voice < Part
     attr_accessor :name
     attr_accessor :subname
     attr_accessor :stem
     attr_accessor :clef
-    attr_accessor :items
     attr_accessor :measures
 
     alias_method :bars, :measures
 
-    def initialize(id, opts={})
-      @id = id
+    def initialize(id=nil, opts={})
+      super(id)
       @name = opts[:name]
       @subname = opts[:subname]
       @stem = opts[:stem] if opts[:stem]
-      @items = []
       @measures = []
     end
 
-    def notes
-      items.select { |item| item.is_a?(MusicUnit) }
+    def apply_note_lengths(start_note_length)
+      len = start_note_length
+      items.each do |item|
+        if item.is_a?(MusicUnit)
+          item.unit_note_length = len
+        elsif item.is_a?(Field, :type => :unit_note_length)
+          len = item.value
+        end
+      end
+    end
+
+    def apply_broken_rhythms(note_set=notes)
+      last_note = nil
+      note_set.each do |it|
+        if (br = it.broken_rhythm_marker)
+          # TODO throw an error if no last note?
+          last_note.broken_rhythm *= br.change('<') if last_note
+          it.broken_rhythm *= br.change('>')
+        end
+        apply_broken_rhythms(it.grace_notes.notes) if it.is_a?(NoteOrChord) && it.grace_notes
+        last_note = it
+      end
     end
 
     def collect_measures
-      measure = Measure.new
-      measures << measure
+      measures << (measure = Measure.new)
       overlay = nil
-      items.each do |item|
-        if item.is_a? BarLine
-          # special case: left bar on first measure is optional, don't make a new measure if it's there
-          if measure == measures[0] && measure.items.count == 0 && measure.left_bar == nil
-            measure.left_bar = item
+      elements.each do |element|
+        if element.is_a? BarLine
+          if measure == measures[0] && measure.empty?
+            # left bar on first measure shouldn't make a new measure
+            measure.left_bar = element
           else
-            measure.right_bar = item
-            measure = Measure.new
-            measure.left_bar = item
+            # new measure
+            measure.right_bar = element
+            (measure = Measure.new).left_bar = element
             measures << measure
             overlay = nil
           end
-        elsif item.type == :overlay_delimiter
-          puts "overlay!"
-          overlay = Overlay.new
-          measure.overlays << overlay
-          puts "overlays? #{measure.overlays?.inspect}"
-        elsif overlay
-          overlay.notes << item if item.is_a?(MusicUnit)
-          # TODO add assertion? no other type of item should be possible here
+        elsif element.type == :overlay_delimiter
+          measure.overlays << (overlay = Overlay.new)
         else
-          measure.items << item
+          (overlay ? overlay.elements : measure.elements) << element
         end
       end
     end
@@ -117,16 +123,6 @@ module ABC
       end
     end
 
-    def apply_note_lengths(start_note_length)
-      len = start_note_length
-      items.each do |item|
-        if item.is_a?(MusicUnit)
-          item.unit_note_length = len
-        elsif item.is_a?(Field, :type => :unit_note_length)
-          len = item.value
-        end
-      end
-    end
 
   end
   
