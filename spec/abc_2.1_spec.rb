@@ -2833,6 +2833,7 @@ describe "abc 2.1:" do
   # See field continuation for the meaning of the +: field continuation.
   
   describe "lyric alignment" do
+
     it "matches words to notes" do
       p = parse_fragment "GCEA\nw:My dog has fleas"
       p.notes[0].lyric.text.should == "My"
@@ -2913,6 +2914,24 @@ describe "abc 2.1:" do
       p.notes[3].pitch.note.should == "A"
       p.notes[3].lyric.text.should == "fleas"
       p.notes[4].lyric.should == nil
+    end
+    
+    it "sets different verses with consecutive w: lines" do
+      p = parse_fragment "GCEA\nw:My dog\nw:has fleas"
+      p.notes[0].lyric.text.should == "My"
+      p.notes[1].lyric.text.should == "dog"
+      p.notes[0].lyrics[1].text.should == "has"
+      p.notes[1].lyrics[1].text.should == "fleas"
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.should == nil
+    end
+
+    it "does not change voices when continuing the w: line with +:" do
+      p = parse_fragment "GCEA\nw:My dog\n+:has fleas"
+      p.notes[0].lyric.text.should == "My"
+      p.notes[1].lyric.text.should == "dog"
+      p.notes[2].lyric.text.should == "has"
+      p.notes[3].lyric.text.should == "fleas"
     end
 
     it "can set one syllable to 2 notes" do

@@ -124,7 +124,8 @@ module ABC
       j = 0 #index of lyric line (when i >= j stop setting lyrics)
       elements.each_with_index do |element, index|
         if element.is_a?(LyricsLine)
-          i = j
+          new_verse = (index > 0 && elements[index-1].is_a?(LyricsLine))
+          i = new_verse ? verse_start : j  
           j = index
           element.units.each do |unit|
             break if i >= j # stop setting lyrics at lyric line
@@ -139,7 +140,7 @@ module ABC
             else
               # find next note and set this lyric on it
               i += 1 until i >= j || elements[i].is_a?(NoteOrChord);
-              elements[i].lyric = unit if i < j
+              elements[i].lyrics << unit if i < j
               # how many notes does it apply to?
               note_count = unit.note_count
               # advance that many notes

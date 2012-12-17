@@ -10,11 +10,17 @@ module ABC
     attr_accessor :tuplet_ratio
     attr_accessor :tuplet_marker
     attr_accessor :beam
+    attr_accessor :lyrics
     attr_accessor :lyric
 
     def initialize(length, embellishments=nil)
       super(embellishments)
       @specified_length = length
+      @lyrics = []
+    end
+
+    def lyric
+      @lyrics.first
     end
 
     def specified_length
