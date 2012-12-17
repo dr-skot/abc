@@ -2,7 +2,9 @@ require "abc/parser/parsed_elements/abc_element"
 require "abc/parser/parsed_elements/music_element"
 require "abc/parser/parsed_elements/music_unit"
 
-require "abc/parser/parsed_elements/headered_element"
+
+require "abc/parser/parsed_elements/section"
+require "abc/parser/parsed_elements/headered_section"
 require "abc/parser/parsed_elements/tunebook"
 require "abc/parser/parsed_elements/tune"
 require "abc/parser/parsed_elements/free_text"

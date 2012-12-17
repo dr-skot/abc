@@ -5,7 +5,7 @@
 # TODO data structure: tunes[t].measures[m].items[i] item is any of the above plus spacer, dotted bar and fields
 
 module ABC
-  class Tune < HeaderedElement
+  class Tune < HeaderedSection
 
     attr_accessor :free_text
 
@@ -30,17 +30,17 @@ module ABC
       @unit_note_length ||= header.last_value(:unit_note_length) || meter.default_unit_note_length
     end
 
+    def unaligned_lyrics
+      header.value(:unaligned_lyrics)
+    end
+    alias_method :words, :unaligned_lyrics
+
     def voices
       @voices ||= header.values(:voice).inject({}) do |voices, voice|
         @first_voice = voice if !@first_voice
         voices.merge!(voice.id => voice)
       end
     end
-
-    def unaligned_lyrics
-      header.value(:unaligned_lyrics)
-    end
-    alias_method :words, :unaligned_lyrics
 
     def redefinable_symbols
       @redefinable_symbols ||= 
@@ -53,7 +53,7 @@ module ABC
       if !@lines
         line = TuneLine.new
         @lines = [line]
-        all_items = values(Field, MusicLineBreak, SymbolLine, LyricsLine, MusicElement, ABCElement)
+        all_items = children(Field, MusicLineBreak, SymbolLine, LyricsLine, MusicElement, ABCElement)
         all_items.each do |it|
           if it.type == :soft_linebreak || it.type == :hard_linebreak
             line = TuneLine.new
@@ -81,7 +81,7 @@ module ABC
     end
 
     def all_items
-      @all_items ||= values(Field, MusicElement).concat(values(ABCElement).select { |e| e.type == :overlay_delimiter })
+      @all_items ||= children(Field, MusicElement).concat(children(ABCElement).select { |e| e.type == :overlay_delimiter })
     end
 
     def notes
@@ -93,7 +93,7 @@ module ABC
     end
 
     def all_notes
-      values(MusicUnit)
+      children(MusicUnit)
     end
 
     def apply_note_lengths
@@ -163,7 +163,7 @@ module ABC
     def apply_beams
       beam = :start
       last_note = nil
-      values.each do |item|
+      children.each do |item|
         if item.is_a?(NoteOrChord) && item.length <= Rational(1, 8)
           item.beam = beam
           beam = :middle
@@ -289,7 +289,7 @@ module ABC
     def apply_ties_and_slurs
       tied_left, start_slur, start_dotted_slur = false, 0, 0
       last_note = nil
-      values.each do |item|
+      children.each do |item|
         if item.is_a?(NoteOrChord)
           item.start_slur = start_slur
           item.start_dotted_slur = start_dotted_slur

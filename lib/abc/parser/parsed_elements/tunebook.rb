@@ -1,14 +1,14 @@
 module ABC
 
-  class Tunebook < HeaderedElement
+  class Tunebook < HeaderedSection
     attr_reader :sections
 
     def sections
-      values.select { |v| !v.is_a?(Header) }
+      @sections ||= children.select { |v| !v.is_a?(Header) }
     end
 
     def tunes
-      @tunes ||= values(Tune)
+      @tunes ||= children(Tune)
     end
 
     def tune(refnum)
