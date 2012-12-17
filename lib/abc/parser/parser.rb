@@ -26,25 +26,7 @@ module ABC
         if input != input_with_inclusions
           parse(input_with_inclusions, options)
         else
-          p = p.value
-          if p.is_a? Tunebook
-            p.propagate_tunebook_header
-          end
-          p.divvy_voices
-          p.divvy_parts
-          p.apply_note_lengths
-          p.apply_broken_rhythms
-          p.apply_ties_and_slurs
-          p.apply_beams
-          p.apply_meter
-          p.apply_tuplets
-          p.apply_key_signatures
-          p.apply_clefs
-          p.apply_symbol_lines
-          p.apply_redefinable_symbols
-          p.apply_lyrics
-          p.collect_measures
-          p
+          p.value.postprocess
         end
       end
     end

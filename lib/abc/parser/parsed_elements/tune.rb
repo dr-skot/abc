@@ -48,7 +48,25 @@ module ABC
         result.merge!(embellishment.shortcut => embellishment)
       end
     end
-
+ 
+    def postprocess
+      divvy_voices
+      divvy_parts
+      apply_note_lengths
+      apply_broken_rhythms
+      apply_ties_and_slurs
+      apply_beams
+      apply_meter
+      apply_tuplets
+      apply_key_signatures
+      apply_clefs
+      apply_symbol_lines
+      apply_redefinable_symbols
+      apply_lyrics
+      collect_measures
+      self
+    end
+    
     def lines
       if !@lines
         line = TuneLine.new

@@ -101,7 +101,7 @@ describe "abc-2.1 PEG" do
         label = field[0]
         name = field[1..-1]
         p = parse "#{label}:File Header\n\nX:1\nT:T1\nK:C\n\nX:2\nT:T2\n#{label}:Tune Header\n#{label}:again\nK:D"
-        p.propagate_tunebook_header
+        p.postprocess
         p.send(name).should == "File Header"
         p.tunes[0].send(name).should == "File Header"
         p.tunes[1].send(name).should == ["Tune Header", "again"]
@@ -397,15 +397,13 @@ describe "abc-2.1 PEG" do
     it "can apply the tune's key signature to a tune" do
       p = parse_fragment "K:F\nB"
       p.items[0].pitch.height.should == 11
-      p.divvy_voices
-      p.apply_key_signatures
+      p.postprocess
       p.items[0].pitch.height.should == 10
     end
 
     it "retains accidentals within a measure when applying key signature" do
       p = parse_fragment "K:F\nB=BB"
-      p.divvy_voices
-      p.apply_key_signatures
+      p.postprocess
       p.items[0].pitch.height.should == 10
       p.items[1].pitch.height.should == 11
       p.items[2].pitch.height.should == 11
@@ -413,8 +411,7 @@ describe "abc-2.1 PEG" do
 
     it "resets accidentals at end of measure" do
       p = parse_fragment "K:F\nB=B|B"
-      p.divvy_voices
-      p.apply_key_signatures
+      p.postprocess
       p.items[0].pitch.height.should == 10
       p.items[1].pitch.height.should == 11
       p.items[3].pitch.height.should == 10
@@ -422,8 +419,7 @@ describe "abc-2.1 PEG" do
 
     it "does not reset accidentals at dotted bar line" do
       p = parse_fragment "K:F\nB=B.|B"
-      p.divvy_voices
-      p.apply_key_signatures
+      p.postprocess
       p.items[0].pitch.height.should == 10
       p.items[1].pitch.height.should == 11
       p.items[3].pitch.height.should == 11
@@ -431,8 +427,7 @@ describe "abc-2.1 PEG" do
 
     it "can apply key signatures to all tunes in tunebook" do
       p = parse "X:1\nT:T\nK:Eb\nA=A^AA\n\nX:2\nT:T2\nK:F\nB"
-      p.divvy_voices
-      p.apply_key_signatures
+      p.postprocess
       p.tunes[0].items[0].pitch.height.should == 8
       p.tunes[0].items[1].pitch.height.should == 9
       p.tunes[0].items[2].pitch.height.should == 10
@@ -442,16 +437,14 @@ describe "abc-2.1 PEG" do
 
     it "does not apply key signature from previous tune" do
       p = parse "X:1\nT:T\nK:Eb\nA\n\n\nX:2\nT:T2\nK:C\nA"
-      p.divvy_voices
-      p.apply_key_signatures
+      p.postprocess
       p.tunes[0].items[0].pitch.height.should == 8
       p.tunes[1].items[0].pitch.height.should == 9
     end
 
     it "changes key signature when inline K: field found in tune body" do
       p = parse_fragment "X:1\nK:C\nC[K:A]C"
-      p.divvy_voices
-      p.apply_key_signatures
+      p.postprocess
       p.items[0].pitch.height.should == 0
       p.items[2].pitch.height.should == 1
     end
