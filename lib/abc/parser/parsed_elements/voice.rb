@@ -47,9 +47,11 @@ module ABC
             measures << measure
             overlay = nil
           end
-        elsif item.is_a? OverlayDelimiter
+        elsif item.type == :overlay_delimiter
+          puts "overlay!"
           overlay = Overlay.new
           measure.overlays << overlay
+          puts "overlays? #{measure.overlays?.inspect}"
         elsif overlay
           overlay.notes << item if item.is_a?(MusicUnit)
           # TODO add assertion? no other type of item should be possible here

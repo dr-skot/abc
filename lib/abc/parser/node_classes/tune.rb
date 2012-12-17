@@ -47,11 +47,11 @@ module ABC
       if !@lines
         line = TuneLine.new
         @lines = [line]
-        all_items = values(MusicNode, Field, MusicLineBreak, SymbolLine, LyricsLine, MusicElement)
+        all_items = values(Field, MusicLineBreak, SymbolLine, LyricsLine, MusicElement, ABCElement)
         all_items.each do |it|
-          if it.is_a?(MusicLineBreak)
+          if it.type == :soft_linebreak || it.type == :hard_linebreak
             line = TuneLine.new
-            line.hard_break = it.type == :hard
+            line.hard_break = it.type == :hard_linebreak
             @lines << line
           elsif it.is_a?(SymbolLine)
             @lines[-2].symbol_lines << it if @lines.count > 1
@@ -75,7 +75,7 @@ module ABC
     end
 
     def all_items
-      @all_items ||= values(MusicNode, Field, MusicElement)
+      @all_items ||= values(Field, MusicElement).concat(values(ABCElement).select { |e| e.type == :overlay_delimiter })
     end
 
     def notes

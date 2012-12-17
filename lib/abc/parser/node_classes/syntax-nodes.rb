@@ -15,10 +15,6 @@ module ABC
   class FreeText < ABCSection
   end
 
-  # OVERLAY DELIMITER
-  class OverlayDelimiter < MusicNode
-  end
-
   # BASICS
 
   class ABCString < ABCNode

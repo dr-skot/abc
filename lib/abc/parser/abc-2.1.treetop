@@ -170,13 +170,13 @@ grammar ABC do
   # Recommendation: Despite there being no limit on line length in abc files, it is recommended that users avoid writing abc code with very long lines. In particular, judiciously applied line-breaks can aid the (human) readability of abc code. More importantly, users who send abc tunes with long lines should be aware that email software sometimes introduces additional line-breaks into lines with more than 72 characters and these may even cause errors when the resulting tune is processed.
 
   rule music_line_ender do
-    music_space? (music_line_break / music_line_continuation)
+    music_space? (music_linebreak / music_line_continuation)
   end
 
-  rule music_line_break do
+  rule music_linebreak do
     '' line_ender <ValueNode> {
       def value
-        MusicLineBreak::SOFT
+        ABCElement::SOFT_LINEBREAK
       end
     }
   end
@@ -1835,7 +1835,7 @@ rule key_field do
   rule tune_hard_linebreak do
     '!' <ValueNode> {
       def value
-        MusicLineBreak::HARD
+        ABCElement::HARD_LINEBREAK
       end
      }
    end
@@ -1934,7 +1934,11 @@ rule key_field do
     # VOICE OVERLAYS
 
     rule overlay_delimiter do
-      '&' <OverlayDelimiter> 
+      '&' <ValueNode> {
+        def value
+          ABCElement::OVERLAY_DELIMITER
+        end
+      }
     end
 
 
