@@ -1,6 +1,6 @@
 module ABC
 
-  # TODO: not complete
+  # note: symbol lines (s:) and lyric lines (w:) not treated as regular fields
   FIELD_TYPES = {
     'A' => :area,
     'B' => :book,
@@ -22,6 +22,7 @@ module ABC
     'T' => :title,
     'U' => :user_defined,
     'V' => :voice,
+    'W' => :unaligned_lyrics,
     'X' => :refnum,
     'Z' => :transcription,
   }

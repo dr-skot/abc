@@ -2706,5 +2706,118 @@ describe "abc 2.1:" do
   end
 
 
+  # 4.20 Order of abc constructs
+  # The order of abc constructs for a note is: <grace notes>, <chord symbols>, <annotations>/<decorations> (e.g. Irish roll, staccato marker or up/downbow), <accidentals>, <note>, <octave>, <note length>, i.e. ~^c'3 or even "Gm7"v.=G,2.
+  # Each tie symbol, -, should come immediately after a note group but may be followed by a space, i.e. =G,2- . Open and close chord delimiters, [ and ], should enclose entire note sequences (except for chord symbols), e.g.
+  # "C"[CEGc]|
+  # |"Gm7"[.=G,^c']
+  # and open and close slur symbols, (), should do likewise, i.e.
+  # "Gm7"(v.=G,2~^c'2)
+
+  describe "order of abc constructs" do
+    it "expects gracenotes before chord symbols" do
+      parse_fragment '{gege}"Cmaj"C'
+      fail_to_parse_fragment '"Cmaj"{gege}C'
+    end
+    it "expects gracenotes before decorations" do
+      parse_fragment '{gege}!trill!C'
+      fail_to_parse_fragment '!trill!{gege}C'
+    end
+    it "expects gracenotes before annotations" do
+      parse_fragment '{gege}"^p"C'
+      fail_to_parse_fragment '"^p"{gege}C'
+    end
+    it "expects chord symbols before decorations" do
+      parse_fragment '"Cm"!trill!C'
+      fail_to_parse_fragment '!trill!"Cm"C'
+    end
+    it "expects chord symbols before annotations" do
+      parse_fragment '"Cm""^p"C'
+      fail_to_parse_fragment '"^p""Cm"C'
+    end
+    it "is correct in the example fragments from the draft" do
+      parse_fragment '"C"[CEGc]|'
+      parse_fragment '|"Gm7"[.=G,^c\']'
+    end
+    # TODO support this? really?
+    it "does not accept this example" do
+      fail_to_parse_fragment '"Gm7"(v.=G,2~^c\'2)'
+    end
+  end
+
+
+  # 5. Lyrics
+  # The W: information field (uppercase W) can be used for lyrics to be printed separately below the tune.
+  # The w: information field (lowercase w) in the tune body, supplies lyrics to be aligned syllable by syllable with previous notes of the current voice.
+
+  describe "W: (words, unaligned) field" do
+    it "can appear in the tune header" do
+      p = parse_fragment "W: Da doo run run run"
+      p.unaligned_lyrics.should == "Da doo run run run"
+      p.words.should == "Da doo run run run"
+    end
+    it "can't appear in the file header" do
+      fail_to_parse "W:doo wop she bop\n\nX:1\nT:\nK:C"
+    end
+    it "can appear in the tune body" do
+      p = parse_fragment "abc\nW:doo wop she bop\ndef"
+      p.items[3].value.should == "doo wop she bop"
+    end
+    it "can't appear as an inline field" do
+      fail_to_parse_fragment "abc[W:doo wop she bop]def"
+    end
+  end
+
+
+  # 5.1 Alignment
+  # When adjacent, w: fields indicate different verses (see below), but for non-adjacent w: fields, the alignment of the lyrics:
+  # starts at the first note of the voice if there is no previous w: field; or
+  # starts at the first note after the notes aligned to the previous w: field; and
+  # associates syllables to notes up to the end of the w: line.
+  # Example: The following two examples are equivalent.
+  # C D E F|
+  # w: doh re mi fa
+  # G A B c|
+  # w: sol la ti doh
+  # C D E F|
+  # G A B c|
+  # w: doh re mi fa sol la ti doh
+  # Comment: The second example, made possible by an extension (introduced in abc 2.1) of the alignment rules, means that lyrics no longer have to follow immediately after the line of notes to which they are attached. Indeed, the placement of the lyrics can be postponed to the end of the tune body. However, the extension of the alignment rules is not fully backwards compatible with abc 2.0 - see outdated lyrics alignment for an explanation.
+  # If there are fewer syllables than available notes, the remaining notes have no lyric (blank syllables); thus the appearance of a w: field associates all the notes that have appeared previously with a syllable (either real or blank).
+  # Example: In the following example the empty w: field means that the 4 G notes have no lyric associated with them.
+  # C D E F|
+  # w: doh re mi fa
+  # G G G G|
+  # w:
+  # F E F C|
+  # w: fa mi re doh
+  # If there are more syllables than available notes, any excess syllables will be ignored.
+  # Recommendation for developers: If a w: line does not contain the correct number of syllables for the corresponding notes, the program should warn the user. However, having insufficient syllables is legitimate usage (as above) and so the program may allow these warnings to be switched off.
+  # Note that syllables are not aligned on grace notes, rests or spacers and that tied, slurred or beamed notes are treated as separate notes in this context.
+  # The lyrics lines are treated as text strings. Within the lyrics, the words should be separated by one or more spaces and to correctly align them the following symbols may be used:
+  # Symbol	Meaning
+  # -	 (hyphen) break between syllables within a word
+  # _	 (underscore) previous syllable is to be held for an extra note
+  # *	 one note is skipped (i.e. * is equivalent to a blank syllable)
+  # ~	 appears as a space; aligns multiple words under one note
+  # \-	 appears as hyphen; aligns multiple syllables under one note
+  # |	 advances to the next bar
+  # Note that if - is preceded by a space or another hyphen, the - is regarded as a separate syllable.
+  # When an underscore is used next to a hyphen, the hyphen must always come first.
+  # If there are not as many syllables as notes in a measure, typing a | automatically advances to the next bar; if there are enough syllables the | is just ignored.
+  # Examples:
+  # w: syll-a-ble    is aligned with three notes
+  # w: syll-a--ble   is aligned with four notes
+  # w: syll-a -ble   (equivalent to the previous line)
+  # w: time__        is aligned with three notes
+  # w: of~the~day    is treated as one syllable (i.e. aligned with one note)
+  #                  but appears as three separate words
+  #  gf|e2dc B2A2|B2G2 E2D2|.G2.G2 GABc|d4 B2
+  # w: Sa-ys my au-l' wan to your aul' wan,
+  # +: Will~ye come to the Wa-x-ies dar-gle?
+  # See field continuation for the meaning of the +: field continuation.
+
+  
+
 end
 

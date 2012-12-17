@@ -8,6 +8,7 @@ require "abc/parser/parsed_elements/pitch"
 require "abc/parser/parsed_elements/rest"
 require "abc/parser/parsed_elements/note"
 require "abc/parser/parsed_elements/grace_notes"
+require "abc/parser/parsed_elements/broken_rhythm"
 
 require "abc/parser/parsed_elements/symbol_unit"
 require "abc/parser/parsed_elements/decoration"

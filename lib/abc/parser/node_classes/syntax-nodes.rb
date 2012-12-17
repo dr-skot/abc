@@ -20,10 +20,6 @@ module ABC
   class TuneLineBreak < ABCNode
   end
 
-  # NOTES AND RESTS
-
-  class BrokenRhythm < MusicNode
-  end
 
   # OVERLAY DELIMITER
   class OverlayDelimiter < MusicNode

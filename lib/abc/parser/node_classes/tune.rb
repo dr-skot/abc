@@ -30,7 +30,12 @@ module ABC
         voices.merge!(voice.id => voice)
       end
     end
-    
+
+    def unaligned_lyrics
+      header.value(:unaligned_lyrics)
+    end
+    alias_method :words, :unaligned_lyrics
+
     def redefinable_symbols
       @redefinable_symbols ||= 
         header.values(:user_defined).inject(REDEFINABLE_SYMBOLS.dup) do |result, embellishment| 
