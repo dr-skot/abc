@@ -65,19 +65,19 @@ describe 'SyntaxNode' do
   end
 
   it "finds children of a given type" do
-    c1 = Tune.new
+    c1 = FieldNode.new
     c2 = ABCNode.new
-    c3 = Tune.new
+    c3 = FieldNode.new
     n = SyntaxNode.node [c1, c2, c3]
-    n.children(Tune).should match_array [c1, c3]
+    n.children(FieldNode).should match_array [c1, c3]
   end
 
   it "finds one child of a given type" do
-    c1 = Tune.new
+    c1 = FieldNode.new
     c2 = ABCNode.new
-    c3 = Tune.new
+    c3 = FieldNode.new
     n = SyntaxNode.node [c1, c2, c3]
-    n.child(Tune).should == c1
+    n.child(FieldNode).should == c1
   end
 
   it "returns nil if childless and asked for a child" do

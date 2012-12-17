@@ -1,4 +1,7 @@
 module ABC
-  class HeaderNode < ABCNode
+  class HeaderNode < ValueNode
+    def value
+      @value ||= Header.new(values(Field))
+    end
   end
 end

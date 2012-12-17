@@ -113,25 +113,6 @@ describe "abc 2.0 draft 4" do
     end
         
     ## It is legal to write free text before or between the tunes of a tunebook. The free text should be separated from the surrounding tunes by blank lines. Programs that are able to print tunebooks, may print the free text sections. The free text is treated as an ABC string. The free text may be interspersed with directives (see section ABC Stylesheet specification) or with Extended information fields; however, the scope of these settings is limited to the text that appears up to the beginning of the next tune. At that point, the defaults set by the file header are restored.
-    describe "free text" do
-      it "can be written between tunes" do
-        p = parse "X:1\nT:T1\nK:C\nabc\n\nFree text!\n\nX:2\nT:T2\nK:D\ndef"
-        p.tunes[0].free_text.should == nil
-        p.tunes[1].free_text.should == "Free text!"
-      end
-      it "can be written before the first tune" do
-        p = parse "Free text!\n\nX:1\nT:T\nK:D\nabc"
-        p.tunes[0].free_text.should == "Free text!"
-      end
-      it "can be written between the file header and the first tune" do
-        p = parse "C:Author\n\nFree text!\n\nX:2\nT:T\nK:C\nabc"
-        p.composer.should == "Author"
-        p.tunes[0].refnum.should == 2
-        p.tunes[0].free_text.should == "Free text!"
-      end
-      # TODO interspersed with stylesheet directives
-      # TODO interspersed with extended info fields
-    end
 
   end
 

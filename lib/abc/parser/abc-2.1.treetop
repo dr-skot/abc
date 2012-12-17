@@ -23,7 +23,11 @@ grammar ABC do
 
   rule abc_file do
     # guarantee at least one tune section, and allow text sections anywhere
-    file_header_section? text_section* tune_section (tune_section / text_section)* <Tunebook>
+    file_header_section? text_section* tune_section (tune_section / text_section)* <ValueNode> {
+      def value
+        @value ||= Tunebook.new(values)
+      end
+    }
   end
 
   rule file_header_section do
@@ -47,7 +51,11 @@ grammar ABC do
   # Abc music code lines are those lines in the tune body which give notes, bar lines and other musical symbols - see the tune body for details. In effect, music code is the contents of any line which is not an information field, stylesheet directive or comment line.
 
   rule tune do
-    comment_line* tune_header tune_body? <Tune>
+    comment_line* tune_header tune_body? <ValueNode> {
+      def value
+        @value ||= Tune.new(values)
+      end
+    }
   end
 
   # TODO reconsider this extended info field
@@ -79,15 +87,19 @@ grammar ABC do
   # Typeset text that is included in an abc tune (i.e. within the tune header or tune body), must be retained by any programs, such as databasing software, that splits an abc file into separate abc tunes.
 
   rule typeset_text do
-    '%%' (!end_of_line .)+ <TypesetText>
+    '%%' (!end_of_line .)+ <ValueNode> {
+      def value
+        @value ||= TypesetText.new(text_value)
+      end
+    }
   end
 
   # TODO make this stricter? technically free text should not contain *any* info fields; this just insures it doesn't start with one
   # TODO ignore comments in free text
   rule free_text do
-    !header_start text:(!end_of_section .)+ end_of_line <FreeText> {
-      def text
-        super.text_value
+    !header_start text:(!end_of_section .)+ end_of_line <ValueNode> {
+      def value
+        @value ||= FreeText.new(text.text_value)
       end
     }
   end
@@ -203,7 +215,11 @@ grammar ABC do
   # Note for developers: For processing as an abc tune, the parsing code is notionally assumed to add empty X:, T: and K: fields, if these are missing. However, since the processing generally takes place internally within a software package, these need not be added in actuality.
 
   rule abc_fragment do
-    '' (partial_tune_header tune_body? / tune_body) <Tune>
+    '' (partial_tune_header tune_body? / tune_body) <ValueNode> {
+      def value
+        @value ||= Tune.new(values)
+      end
+    }
   end
 
   rule partial_tune_header do
@@ -1956,10 +1972,6 @@ rule key_field do
 
     rule alphanum do
       [A-Za-z0-9_\-]
-    end
-
-    rule abc_string do
-      (!line_ender .)* <ABCString>
     end
 
     rule digit do

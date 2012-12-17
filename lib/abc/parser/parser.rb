@@ -26,8 +26,8 @@ module ABC
         if input != input_with_inclusions
           parse(input_with_inclusions, options)
         else
+          p = p.value
           if p.is_a? Tunebook
-            p.assign_free_text
             p.propagate_tunebook_header
           end
           p.divvy_voices

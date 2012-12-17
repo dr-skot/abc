@@ -1,9 +1,18 @@
 module ABC
 
-  class NodeWithHeader < ABCNode
+  class HeaderedElement
+
+    def initialize(raw_items)
+      @raw_items = raw_items
+    end
+
+    def values(*args)
+      args.count == 0 ? @raw_items : @raw_items.select { |it| it.is_one_of?(*args) }
+    end
+
     attr_accessor :master_node
     def header
-      @header ||= Header.new((n = child(HeaderNode)) ? n.values(Field) : [])
+      @header ||= values(Header).last || Header.new
     end
 
     def master_node=(node)

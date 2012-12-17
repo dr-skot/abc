@@ -13,7 +13,7 @@ describe "abc-2.1 PEG" do
   def parse(abc, options = {:root => :abc_file})
     p = @parser.parse abc, options
     p.should_not be(nil), @parser.failure_reason
-    p
+    p.value
   end
   
   def fail_to_parse(abc, options={:root => :abc_file})

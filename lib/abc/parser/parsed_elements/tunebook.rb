@@ -1,21 +1,28 @@
 module ABC
 
-  class Tunebook < NodeWithHeader
+  class Tunebook < HeaderedElement
+    attr_reader :sections
+
     def sections
-      children.select { |c| c.is_a?(Tune) || c.is_a?(ABCSection) }
+      values.select { |v| !v.is_a?(Header) }
     end
+
     def tunes
-      children(Tune)
+      @tunes ||= values(Tune)
     end
+
     def tune(refnum)
       tunes.select { |f| f.refnum == refnum }.last
     end
+
     def propagate_tunebook_header
       tunes.each { |tune| tune.master_node = self } if header
     end
+
     def apply_note_lengths
       tunes.each { |tune| tune.apply_note_lengths }
     end
+
     def apply_broken_rhythms
       tunes.each { |tune| tune.apply_broken_rhythms }
     end
@@ -45,17 +52,6 @@ module ABC
     end
     def collect_measures
       tunes.each { |tune| tune.collect_measures }
-    end
-    def assign_free_text
-      free_text = nil
-      children.each do |child|
-        if child.is_a? FreeText
-          free_text = child.text
-        elsif child.is_a? Tune
-          child.free_text = free_text
-          free_text = nil
-        end
-      end
     end
     def apply_clefs
       tunes.each { |tune| tune.apply_clefs }
