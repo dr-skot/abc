@@ -174,9 +174,9 @@ grammar ABC do
   end
 
   rule music_line_break do
-    '' line_ender <TuneLineBreak> {
-      def hard?
-        false
+    '' line_ender <ValueNode> {
+      def value
+        MusicLineBreak::SOFT
       end
     }
   end
@@ -1825,7 +1825,6 @@ rule key_field do
     (music_space? tune_element)+ music_line_ender
   end
 
-
   rule tune_element do
     inline_field /
     tuplet_symbol / slur / variant_ending / 
@@ -1834,10 +1833,10 @@ rule key_field do
   end
 
   rule tune_hard_linebreak do
-    '!' <TuneLineBreak> {
-       def hard?
-         true
-       end
+    '!' <ValueNode> {
+      def value
+        MusicLineBreak::HARD
+      end
      }
    end
    

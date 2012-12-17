@@ -15,12 +15,6 @@ module ABC
   class FreeText < ABCSection
   end
 
-  # FIELDS
-
-  class TuneLineBreak < ABCNode
-  end
-
-
   # OVERLAY DELIMITER
   class OverlayDelimiter < MusicNode
   end

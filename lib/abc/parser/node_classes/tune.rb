@@ -47,11 +47,11 @@ module ABC
       if !@lines
         line = TuneLine.new
         @lines = [line]
-        all_items = values(MusicNode, Field, TuneLineBreak, SymbolLine, LyricsLine, MusicElement)
+        all_items = values(MusicNode, Field, MusicLineBreak, SymbolLine, LyricsLine, MusicElement)
         all_items.each do |it|
-          if it.is_a?(TuneLineBreak)
+          if it.is_a?(MusicLineBreak)
             line = TuneLine.new
-            line.hard_break = it.hard?
+            line.hard_break = it.type == :hard
             @lines << line
           elsif it.is_a?(SymbolLine)
             @lines[-2].symbol_lines << it if @lines.count > 1
