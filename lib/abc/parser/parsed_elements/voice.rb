@@ -130,7 +130,7 @@ module ABC
             break if i >= j # stop setting lyrics at lyric line
             if unit.is_a?(SymbolSkip, :type => :note)
               # advance to next note, then skip it
-              i += 1 until i >= j || elements[i].is_a?(MusicUnit)
+              i += 1 until i >= j || elements[i].is_a?(NoteOrChord)
               i += 1
             elsif unit.is_a?(SymbolSkip, :type => :bar)
               # advance to next (undotted) bar, then skip it
@@ -138,13 +138,13 @@ module ABC
               i += 1
             else
               # find next note and set this lyric on it
-              i += 1 until i >= j || elements[i].is_a?(MusicUnit);
+              i += 1 until i >= j || elements[i].is_a?(NoteOrChord);
               elements[i].lyric = unit if i < j
               # how many notes does it apply to?
               note_count = unit.note_count
               # advance that many notes
               while i < j && note_count > 1
-                note_count -= 1 if elements[i].is_a?(MusicUnit)
+                note_count -= 1 if elements[i].is_a?(NoteOrChord)
                 i += 1
               end
               # then advance to next element

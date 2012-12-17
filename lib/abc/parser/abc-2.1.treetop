@@ -1719,7 +1719,7 @@ rule key_field do
   end
 
   rule lyrics_sequence do
-    (field_space* text:(lyrics_unit / symbol_skip))+  {
+    (field_space* text:(lyrics_unit / symbol_skip))*  {
       def value
         @value ||= elements.map { |e| e.text.value }.select { |v| v != nil }
       end

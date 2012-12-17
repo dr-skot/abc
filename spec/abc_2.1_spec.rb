@@ -2695,7 +2695,7 @@ describe "abc 2.1:" do
   # Example: The following annotations place the note between parentheses.
   # "<(" ">)" C
 
-  describe "a annotationion" do
+  describe "an annotation" do
     it "can be placed above a note" do
       p = parse_fragment '"^above"c'
       p.items[0].annotations[0].placement.should == :above
@@ -2729,7 +2729,7 @@ describe "abc 2.1:" do
   # and open and close slur symbols, (), should do likewise, i.e.
   # "Gm7"(v.=G,2~^c'2)
 
-  describe "order of abc constructs" do
+  describe "the order of abc constructs" do
     it "expects gracenotes before chord symbols" do
       parse_fragment '{gege}"Cmaj"C'
       fail_to_parse_fragment '"Cmaj"{gege}C'
@@ -2853,6 +2853,68 @@ describe "abc 2.1:" do
       p.all_notes[7].lyric.text.should == "fleas"
     end
 
+    it "starts at the first note after the notes aligned to the previous w: field" do
+      p = parse_fragment "G \nw:My dog has \nA\nw: fleas"
+      p.notes[1].lyric.text.should == "fleas"
+    end
+
+    it "reaches back across linebreaks" do
+      p = parse_fragment "C D E F|\nG A B c|\nw: doh re mi fa sol la ti doh"
+      p.notes[0].lyric.text.should == "doh"
+      p.notes[6].lyric.text.should == "ti"
+      p.notes[7].lyric.text.should == "doh"
+    end
+
+    it "ignores excess syllables" do
+      p = parse_fragment "GC\nw:My dog has fleas\nEA2"
+      p.notes[0].lyric.text.should == "My"
+      p.notes[1].lyric.text.should == "dog"
+      p.notes[2].lyric.should == nil
+      p.notes[3].lyric.should == nil
+    end
+    
+    it "can explicitly blank lyrics from notes" do
+      p = parse_fragment "C D E F|\nw: doh re mi fa\nG G G G|\nw:\nF E F C|\nw: fa mi re doh"
+      p.notes[3].lyric.text.should == "fa"
+      p.notes[4].lyric.should == nil
+      p.notes[7].lyric.should == nil
+      p.notes[8].lyric.text.should == "fa"
+    end
+    
+    it "does not match syllables to grace notes" do
+      p = parse_fragment "{gege}GCAE\nw:My dog has fleas"
+      p.notes[0].grace_notes.notes[0].lyric.should == nil
+      p.notes[0].lyric.text.should == "My"
+    end
+
+    it "does not match syllables to rests" do
+      p = parse_fragment "GCEz4A4\nw:My dog has fleas"
+      p.notes[3].lyric.should == nil
+      p.notes[4].lyric.text.should == "fleas"
+    end
+
+    it "does not match syllables to spacers" do
+      p = parse_fragment "GCEyA4\nw:My dog has fleas"
+      p.items[3].respond_to?(:lyric).should be_false
+      p.items[4].lyric.text.should == "fleas"
+    end
+
+    it "aligns syllables separately to tied notes" do
+      p = parse_fragment "GCE-EA\nw:My dog has fleas"
+      p.notes[3].tied_left.should == true
+      p.notes[3].pitch.note.should == "E"
+      p.notes[3].lyric.text.should == "fleas"
+      p.notes[4].lyric.should == nil
+    end
+
+    it "aligns syllables separately to slurred notes" do
+      p = parse_fragment "GC(EA)g\nw:My dog has fleas"
+      p.notes[3].end_slur.should > 0
+      p.notes[3].pitch.note.should == "A"
+      p.notes[3].lyric.text.should == "fleas"
+      p.notes[4].lyric.should == nil
+    end
+
     it "can set one syllable to 2 notes" do
       p = parse_fragment "FDB\nw:O_ say can you see"
       p.notes[0].lyric.text.should == "O"
@@ -2872,7 +2934,7 @@ describe "abc 2.1:" do
       p.notes[3].lyric.note_count.should == 1
     end
 
-    it "splits words with hyphen" do
+    it "splits syllables with a hyphen" do
       p = parse_fragment "ccGEB\nw:gal-lant-ly stream-ing"
       p.notes[0].lyric.text.should == "gal"
       p.notes[0].lyric.hyphen?.should == true
@@ -2882,7 +2944,7 @@ describe "abc 2.1:" do
       p.notes[2].lyric.hyphen?.should == false
     end
 
-    it "suppports hyphen with underscore" do
+    it "suppports hyphen and underscore together" do
       p = parse_fragment "d2fedcb4\nw:ban-_ner yet_ wave"
       p.notes[0].lyric.text.should == "ban"
       p.notes[0].lyric.hyphen?.should == true
@@ -2891,7 +2953,7 @@ describe "abc 2.1:" do
       p.notes[2].lyric.hyphen?.should == false
     end
 
-    it "stretches with two hyphens" do
+    it "stretches syllables with double hyphen" do
       p = parse_fragment "d2fedcb4\nw:ban--ner yet_ wave"
       p.notes[0].lyric.text.should == "ban"
       p.notes[0].lyric.hyphen?.should == true
@@ -2900,7 +2962,7 @@ describe "abc 2.1:" do
       p.notes[2].lyric.hyphen?.should == false
     end
 
-    it "stretches with space hyphen" do
+    it "stretches syllables with space+hyphen" do
       p = parse_fragment "d2fedcb4\nw:ban -ner yet_ wave"
       p.notes[0].lyric.text.should == "ban"
       p.notes[0].lyric.hyphen?.should == true
@@ -2941,18 +3003,6 @@ describe "abc 2.1:" do
     end
 
     # TODO special handling of stanza numbers?
-
-    # TODO handle continuation across lyric lines eg
-    #   GCEA\
-    #   w:my dog has fleas\
-    #   gad
-    #   w:yes he does!
-    # !! this is apparently expected to work but so is
-    #   GCEA C
-    #   w:my dog has fleas\
-    #   gad
-    # where gad is the next lyric!!
-
 
   end
   
