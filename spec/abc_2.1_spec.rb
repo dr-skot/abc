@@ -2642,5 +2642,38 @@ describe "abc 2.1:" do
   end
 
 
+  # 4.18 Chord symbols
+  # VOLATILE: The list of chords and how they are handled will be extended at some point. Until then programs should treat chord symbols quite liberally.
+  # Chord symbols (e.g. chords/bass notes) can be put in under the melody line (or above, depending on the package) using double-quotation marks placed to the left of the note it is sounded with, e.g. "Am7"A2D2.
+  # The chord has the format <note><accidental><type></bass>, where <note> can be A-G, the optional <accidental> can be b, #, the optional <type> is one or more of
+  # m or min        minor
+  # maj             major
+  # dim             diminished
+  # aug or +        augmented
+  # sus             suspended
+  # 7, 9 ...        7th, 9th, etc.
+  # and </bass> is an optional bass note.
+  # A slash after the chord type is used only if the optional bass note is also used, e.g., "C/E". If the bass note is a regular part of the chord, it indicates the inversion, i.e., which note of the chord is lowest in pitch. If the bass note is not a regular part of the chord, it indicates an additional note that should be sounded with the chord, below it in pitch. The bass note can be any letter (A-G or a-g), with or without a trailing accidental sign (b or #). The case of the letter used for the bass note does not affect the pitch.
+  # Alternate chords can be indicated for printing purposes (but not for playback) by enclosing them in parentheses inside the double-quotation marks after the regular chord, e.g., "G(Em)".
+  # Note to developers: Software should also be able to recognise and handle appropriately the unicode versions of flat, natural and sharp symbols (♭, ♮, ♯) - see special symbols.
+
+  describe "a chord symbol" do
+    it "can be attached to a note" do
+      p = parse_fragment '"Am7"A2D2'
+      p.items[0].chord_symbol.text.should == "Am7"
+    end
+    it "can include a bass note" do
+      p = parse_fragment '"C/E"G'
+      p.items[0].chord_symbol.text.should == "C/E"
+    end
+    it "can include an alternate chord" do
+      p = parse_fragment '"G(Em/G)"G'
+      p.items[0].chord_symbol.text.should == "G(Em/G)"
+    end
+    # TODO parse the chord symbols for note, type, bassnote etc
+  end
+
+
+
 end
 
