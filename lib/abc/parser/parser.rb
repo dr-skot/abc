@@ -1,6 +1,21 @@
 
 module ABC
 
+  REDEFINABLE_SYMBOLS = {
+    '.' => Decoration.new('staccato', '.'),
+    '~' => Decoration.new('roll', '~'),
+    'T' => Decoration.new('trill', 'T'),
+    'H' => Decoration.new('fermata', 'H'),
+    'L' => Decoration.new('emphasis', 'L'),
+    'M' => Decoration.new('lowermordent', 'M'),
+    'P' => Decoration.new('uppermordent', 'P'),
+    'S' => Decoration.new('segno', 'S'),
+    'O' => Decoration.new('coda', 'O'),
+    'u' => Decoration.new('upbow', 'u'),
+    'v' => Decoration.new('downbow', 'v'),
+  }
+
+
   class Parser
 
     def parse(input, options = {})

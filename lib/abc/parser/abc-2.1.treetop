@@ -1438,9 +1438,8 @@ rule key_field do
 
   rule redefinable_symbol do
     shortcut_char {
-      def value(symbols={})
-        symbols[text_value] || ABC::DEFAULT_USER_DEFINED_SYMBOLS[text_value] ||
-          Decoration.new(nil, text_value)
+      def value
+        @value ||= Decoration.new(nil, text_value)
       end
     }
   end
@@ -1504,7 +1503,7 @@ rule key_field do
   # [DD]
 
   rule chord do
-    '[' notes_node:note+ ']' note_length {
+    '[' notes_node:decorated_note+ ']' note_length {
       def value(embellishments, options)
         Chord.new(notes, note_length.value, embellishments, options)
       end
@@ -1513,6 +1512,16 @@ rule key_field do
       end
     }
   end
+
+  rule decorated_note do
+    embellishments note {
+      def value(options={})
+        note.value(embellishments.value, options)
+      end
+    }
+  end
+
+
 
 
   # 4.18 Chord symbols
@@ -1624,8 +1633,6 @@ rule key_field do
     }
   end
   
-  
-
 
 
 

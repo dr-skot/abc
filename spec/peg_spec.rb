@@ -543,51 +543,6 @@ describe "abc-2.1 PEG" do
 
 
 
-  describe "chords" do
-    it "recognizes chords" do
-      p = parse_fragment "[CEG]"
-      p.items[0].is_a?(Chord).should == true
-      p.items[0].notes.count.should == 3
-      p.items[0].notes[0].is_a?(Note).should == true
-      p.items[0].notes[0].pitch.height.should == 0
-    end
-    it "allows length modifier on chords" do
-      p = parse_fragment "[CEG]3/2"
-      p.items[0].note_length.should == Rational(3, 2)
-    end
-    it "allows length modifiers inside chords" do
-      p = parse_fragment "[C2E2G2]"
-      p.items[0].notes[0].note_length.should == 2
-    end
-    it "multiplies inner length modifiers by outer" do
-      p = parse_fragment "[C2E2G2]3/"
-      p.items[0].notes[0].note_length.should == 3
-    end
-    it "applies key signatures to chord pitches" do
-      p = parse_fragment "K:D\n[DFA]"
-      p.items[0].notes[1].pitch.height.should == 5
-      p.divvy_voices
-      p.apply_key_signatures
-      p.items[0].notes[1].pitch.height.should == 6      
-    end
-    it "applies measure accidentals to chord pitches" do
-      p = parse_fragment "^F[DFA]|[DFA]"
-      p.items[1].notes[1].pitch.height.should == 5
-      p.divvy_voices
-      p.apply_key_signatures
-      p.items[1].notes[1].pitch.height.should == 6      
-      p.items[3].notes[1].pitch.height.should == 5      
-    end
-    it "creates measure accidentals from chord pitches" do
-      p = parse_fragment "[D^FA]F|F"
-      p.items[1].pitch.height.should == 5
-      p.divvy_voices
-      p.apply_key_signatures
-      p.items[1].pitch.height.should == 6      
-      p.items[3].pitch.height.should == 5
-    end
-  end
-
   describe "chord symbols" do
     it "can attach a chord symbol to a note" do
       p = parse_fragment '"Am7"A2D2'

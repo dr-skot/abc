@@ -32,7 +32,8 @@ module ABC
     end
     
     def redefinable_symbols
-      @redefinable_symbols ||= header.values(:user_defined).inject({}) do |result, embellishment| 
+      @redefinable_symbols ||= 
+        header.values(:user_defined).inject(REDEFINABLE_SYMBOLS.dup) do |result, embellishment| 
         result.merge!(embellishment.shortcut => embellishment)
       end
     end

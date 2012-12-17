@@ -34,7 +34,7 @@ module ABC
     end
 
     def chord_length
-      chord ? chord.length : 1
+      chord ? chord.length_modifier : 1
     end
 
   end
@@ -48,6 +48,12 @@ module ABC
       @notes = notes
       notes.each { |note| note.chord = self }
     end
+
+    alias_method :length_modifier, :length    
+    def length
+      notes[0] ? notes[0].length : length_modifier
+    end
+
   end
 
 end

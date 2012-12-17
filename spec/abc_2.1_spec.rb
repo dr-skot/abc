@@ -2572,5 +2572,75 @@ describe "abc 2.1:" do
     end
   end
 
+
+  # 4.17 Chords and unisons
+  # Chords (i.e. more than one note head on a single stem) can be coded with [] symbols around the notes, e.g.
+  # [CEGc]
+  # indicates the chord of C major. They can be grouped in beams, e.g.
+  # [d2f2][ce][df]
+  # but there should be no spaces within the notation for a chord. See the tune 'Kitchen Girl' in the sample file Reels.abc for a simple example.
+  # All the notes within a chord should normally have the same length, but if not, the chord duration is that of the first note.
+  # Recommendation: Although playback programs should not have any difficulty with notes of different lengths, typesetting programs may not always be able to render the resulting chord to staff notation (for example, an eighth and a quarter note cannot be represented on the same stem) and the result is undefined. Consequently, this is not recommended.
+  # More complicated chords can be transcribed with the & operator (see voice overlay).
+  # The chord forms a syntactic grouping, to which the same prefixes and postfixes can be attached as to an ordinary note (except for accidentals which should be attached to individual notes within the chord and decorations which may be attached to individual notes within the chord or may be attached to the chord as a whole).
+  # Example:
+  # ( "^I" !f! [CEG]- > [CEG] "^IV" [F=AC]3/2"^V"[GBD]/  H[CEG]2 )
+  # When both inside and outside the chord length modifiers are used, they should be multiplied. Example: [C2E2G2]3 has the same meaning as [CEG]6.
+  # If the chord contains two notes of the same pitch, then it is a unison (e.g. a note played on two strings of a violin simultaneously) and is shown with one stem and two note-heads.
+  # Example:
+  # [DD]
+
+  describe "a chord" do
+    it "is grouped together with square brackets" do
+      p = parse_fragment "[CEG]"
+      p.notes[0].is_a?(Chord).should == true
+      p.notes[0].notes.count.should == 3
+      p.notes[0].notes[0].pitch.height.should == 0
+      p.notes[0].notes[1].pitch.height.should == 4
+      p.notes[0].notes[2].pitch.height.should == 7
+    end
+    it "can be beamed" do
+      p = parse_fragment "[d2f2][ce][df] [ce]"
+      p.notes[0].beam.should == nil
+      p.notes[1].beam.should == :start
+      p.notes[2].beam.should == :end
+      p.notes[3].beam.should == nil
+    end
+    it "has its duration determined by the first note if notes have inconsistent lengths" do
+      p = parse_fragment "[d2ag/]"
+      p.notes[0].length.should == Rational(1, 4)
+    end
+    it "cannot take an accidental" do
+      fail_to_parse_fragment "^[CEG]"
+      fail_to_parse_fragment "_[CEG]"
+      parse_fragment "[C_EG]"
+    end
+    it "can have decorations on the inside notes" do
+      p = parse_fragment "[.CuE!hoohah!G]"
+      p.items[0].notes[0].annotations[0] == 'staccato'
+      p.items[0].notes[1].annotations[0] == 'upbow'
+      p.items[0].notes[2].annotations[0] == 'hoohah'
+    end
+    it "multiplies inner length modifiers by outer" do
+      p = parse_fragment "L:1\n[C2E2G2]3/"
+      p.items[0].notes[0].length.should == 3
+    end
+    it "obeys key signatures" do
+      p = parse_fragment "K:D\n[DFA]"
+      p.items[0].notes[1].pitch.height.should == 6      
+    end
+    it "obeys measure accidentals" do
+      p = parse_fragment "^F[DFA]|[DFA]"
+      p.items[1].notes[1].pitch.height.should == 6      
+      p.items[3].notes[1].pitch.height.should == 5      
+    end
+    it "creates measure accidentals" do
+      p = parse_fragment "[D^FA]F|F"
+      p.items[1].pitch.height.should == 6      
+      p.items[3].pitch.height.should == 5
+    end
+  end
+
+
 end
 
