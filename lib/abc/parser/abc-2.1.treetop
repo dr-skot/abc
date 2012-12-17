@@ -1522,8 +1522,6 @@ rule key_field do
   end
 
 
-
-
   # 4.18 Chord symbols
   # VOLATILE: The list of chords and how they are handled will be extended at some point. Until then programs should treat chord symbols quite liberally.
   # Chord symbols (e.g. chords/bass notes) can be put in under the melody line (or above, depending on the package) using double-quotation marks placed to the left of the note it is sounded with, e.g. "Am7"A2D2.

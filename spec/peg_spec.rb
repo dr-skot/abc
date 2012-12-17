@@ -543,47 +543,6 @@ describe "abc-2.1 PEG" do
 
 
 
-  describe "chord symbols" do
-    it "can attach a chord symbol to a note" do
-      p = parse_fragment '"Am7"A2D2'
-      p.items[0].chord_symbol.text.should == "Am7"
-    end
-    it "can handle bass notes" do
-      p = parse_fragment '"C/E"G'
-      p.items[0].chord_symbol.text.should == "C/E"
-    end
-    it "can handle alternate chords" do
-      p = parse_fragment '"G(Em/G)"G'
-      p.items[0].chord_symbol.text.should == "G(Em/G)"
-    end
-    # TODO parse the chord symbols for note, type, bassnote etc
-  end
-
-  describe "annotations" do
-    it "can place text above a note" do
-      p = parse_fragment '"^above"c'
-      p.items[0].annotations[0].placement.should == :above
-      p.items[0].annotations[0].text.should == "above"
-    end
-    it "can place text below a note" do
-      p = parse_fragment '"_below"c'
-      p.items[0].annotations[0].placement.should == :below
-      p.items[0].annotations[0].text.should == "below"
-    end
-    it "can place text to the left and right of a note" do
-      p = parse_fragment '"<(" ">)" c'
-      p.items[0].annotations[0].placement.should == :left
-      p.items[0].annotations[0].text.should == "("
-      p.items[0].annotations[1].placement.should == :right
-      p.items[0].annotations[1].text.should == ")"
-    end
-    it "can handle annotations with unspecified placement" do
-      p = parse_fragment '"@wherever" c'
-      p.items[0].annotations[0].placement.should == :unspecified
-      p.items[0].annotations[0].text.should == "wherever"
-    end
-  end
-
   it "accepts spacers" do
     parse_fragment "ab y de"
   end

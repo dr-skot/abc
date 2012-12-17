@@ -2674,6 +2674,37 @@ describe "abc 2.1:" do
   end
 
 
+  # 4.19 Annotations
+  # General text annotations can be added above, below or on the staff in a similar way to chord symbols. In this case, the string within double quotes is preceded by one of five symbols ^, _, <, > or @ which controls where the annotation is to be placed; above, below, to the left or right respectively of the following note, rest or bar line. Using the @ symbol leaves the exact placing of the string to the discretion of the interpreting program. These placement specifiers distinguish annotations from chord symbols, and should prevent programs from attempting to play or transpose them. All text that follows the placement specifier is treated as a text string.
+  # Where two or more annotations with the same placement specifier are placed consecutively, e.g. for fingerings, the notation program should draw them on separate lines, with the first listed at the top.
+  # Example: The following annotations place the note between parentheses.
+  # "<(" ">)" C
+
+  describe "a annotationion" do
+    it "can be placed above a note" do
+      p = parse_fragment '"^above"c'
+      p.items[0].annotations[0].placement.should == :above
+      p.items[0].annotations[0].text.should == "above"
+    end
+    it "can be placed below a note" do
+      p = parse_fragment '"_below"c'
+      p.items[0].annotations[0].placement.should == :below
+      p.items[0].annotations[0].text.should == "below"
+    end
+    it "can be placed to the left and right of a note" do
+      p = parse_fragment '"<(" ">)" c'
+      p.items[0].annotations[0].placement.should == :left
+      p.items[0].annotations[0].text.should == "("
+      p.items[0].annotations[1].placement.should == :right
+      p.items[0].annotations[1].text.should == ")"
+    end
+    it "can have unspecified placement" do
+      p = parse_fragment '"@wherever" c'
+      p.items[0].annotations[0].placement.should == :unspecified
+      p.items[0].annotations[0].text.should == "wherever"
+    end
+  end
+
 
 end
 
