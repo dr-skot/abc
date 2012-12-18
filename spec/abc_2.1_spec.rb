@@ -2488,9 +2488,10 @@ describe "abc 2.1:" do
   # "C" C2 C2 "Am" !>! Ez A2|
 
   describe "a symbol line" do
-    it "applies symbol line symbols to notes" do
-      p = parse_fragment([     "CDEF    | G```AB`c     c",
-                          "s: \"^slow\" | u ** !fff! \"Gm\""].join("\n"))
+
+    it "aligns symbols to notes" do
+      p = parse_fragment(['   CDEF    | G```AB`c     c',
+                          's: "^slow" | u   ** !fff! "Gm"'].join("\n"))
       p.lines[0].symbol_lines.count.should == 1
       p.notes[0].annotations[0].placement.should == :above
       p.notes[0].annotations[0].text.should == "slow"
@@ -2504,18 +2505,123 @@ describe "abc 2.1:" do
       p.notes[7].decorations[0].symbol.should == 'fff'
       p.notes[8].chord_symbol.text.should == 'Gm'
     end
-    it "ignores dotted bar lines when skipping to next bar" do
-      p = parse_fragment("abc.|de|f\ns:!f!|!f!")
-      p.notes[0].decorations[0].symbol.should == "f"
-      p.notes[3].decorations[0].should == nil
-      p.notes[5].decorations[0].symbol.should == "f"
+
+    it "aligns from the first note of the voice if there is no previous s: field" do
+      p = parse_fragment "[V:1]G,G,G,A,[V:2]GCEA\ns:.Tuv"
+      p.notes[0].decorations.should == []
+      p.notes[1].decorations.should == []
+      p.notes[2].decorations.should == []
+      p.notes[3].decorations.should == []
+      p.all_notes[4].decorations[0].symbol.should == "staccato"
+      p.all_notes[5].decorations[0].symbol.should == "trill"
+      p.all_notes[6].decorations[0].symbol.should == "upbow"
+      p.all_notes[7].decorations[0].symbol.should == "downbow"
     end
-    it "can stack symbols with consecutive symbol lines" do
-      p = parse_fragment ['C2 C2 Ez A2 |', 's: "C" * "Am" * |', 's: * * !>! * |'] * "\n"
-      p.notes[0].chord_symbol.text.should == "C"
-      p.notes[2].chord_symbol.text.should == "Am"
-      p.notes[2].decorations[0].symbol.should == ">"
+
+    it "aligns from the first note after the notes aligned to the previous w: field" do
+      p = parse_fragment "G \ns:. u v \nA\ns: T"
+      p.notes[1].decorations[0].symbol.should == "trill"
     end
+
+    it "reaches back across linebreaks" do
+      p = parse_fragment "C D E F|\nG A B c|\ns: u . . . . . . v"
+      p.notes[0].decorations[0].symbol.should == "upbow"
+      p.notes[7].decorations[0].symbol.should == "downbow"
+    end
+
+    it "ignores excess syllables" do
+      p = parse_fragment "GC\ns:T u v .\nEA2"
+      p.notes[0].decorations[0].symbol.should == "trill"
+      p.notes[1].decorations[0].symbol.should == "upbow"
+      p.notes[2].decorations.should == []
+      p.notes[3].decorations.should == []
+    end
+    
+    it "can explicitly blank symbols from notes" do
+      p = parse_fragment "C D E F|\ns: . . . u\nG G G G|\ns:\nF E F C|\ns: v . . ."
+      p.notes[3].decorations[0].symbol.should == "upbow"
+      p.notes[4].decorations.should == []
+      p.notes[7].decorations.should == []
+      p.notes[8].decorations[0].symbol.should == "downbow"
+    end
+    
+    it "does not match symbols to grace notes" do
+      p = parse_fragment "{gege}GCAE\ns:T u v ."
+      p.notes[0].grace_notes.notes[0].decorations.should == []
+      p.notes[0].decorations[0].symbol.should == "trill"
+    end
+
+    it "does not match symbols to rests" do
+      p = parse_fragment "GCEz4A4\ns: Tuv."
+      p.notes[3].decorations.should == []
+      p.notes[4].decorations[0].symbol.should == "staccato"
+    end
+
+    it "does not match symbols to spacers" do
+      p = parse_fragment "GCEyA4\ns: Tuv."
+      p.items[3].decorations.should == []
+      p.items[4].decorations[0].symbol.should == "staccato"
+    end
+
+    it "aligns symbols separately to tied notes" do
+      p = parse_fragment "GCE-EA\ns: Tuv."
+      p.notes[3].tied_left.should == true
+      p.notes[3].pitch.note.should == "E"
+      p.notes[3].decorations[0].symbol.should == "staccato"
+      p.notes[4].decorations.should == []
+    end
+
+    it "aligns symbols separately to slurred notes" do
+      p = parse_fragment "GC(EA)g\ns: Tuv."
+      p.notes[3].end_slur.should > 0
+      p.notes[3].pitch.note.should == "A"
+      p.notes[3].decorations[0].symbol.should == "staccato"
+      p.notes[4].decorations.should == []
+    end
+    
+    it "stacks symbols with consecutive s: lines" do
+      p = parse_fragment "GCEA\ns: Tu \ns: v."
+      p.notes[0].decorations[0].symbol.should == "trill"
+      p.notes[1].decorations[0].symbol.should == "upbow"
+      p.notes[0].decorations[1].symbol.should == "downbow"
+      p.notes[1].decorations[1].symbol.should == "staccato"
+      p.notes[2].decorations.should == []
+      p.notes[3].decorations.should == []
+    end
+
+    it "stacks symbols starting just after the previous s: line" do
+      p = parse_fragment "ABC\ns:...\nGCEA\ns: Tu \ns: v."
+      p.notes[0].decorations[0].symbol.should == "staccato"
+      p.notes[0].decorations.count.should == 1
+      p.notes[3].decorations[0].symbol.should == "trill"
+      p.notes[3].decorations[1].symbol.should == "downbow"
+    end
+
+    it "does not stack symbols when continuing the s: line with +:" do
+      p = parse_fragment "GCEA\ns: Tu \n+: v."
+      p.notes[0].decorations[0].symbol.should == "trill"
+      p.notes[1].decorations[0].symbol.should == "upbow"
+      p.notes[2].decorations[0].symbol.should == "downbow"
+      p.notes[3].decorations[0].symbol.should == "staccato"
+    end
+
+    it "skips notes with *" do
+      p = parse_fragment "acddc\ns:*u ** v"
+      p.notes[0].decorations.should == []
+      p.notes[1].decorations[0].symbol.should == "upbow"
+      p.notes[2].decorations.should == []
+      p.notes[3].decorations.should == []
+      p.notes[4].decorations[0].symbol.should == "downbow"
+    end
+
+    it "advances to the next bar with |" do
+      p = parse_fragment "abc|def\ns:u|v"
+      p.notes[0].decorations[0].symbol.should == "upbow"
+      p.notes[1].decorations.should == []
+      p.notes[2].decorations.should == []
+      p.notes[3].decorations[0].symbol.should == "downbow"
+    end
+
   end
 
 
@@ -2834,7 +2940,7 @@ describe "abc 2.1:" do
   
   describe "lyric alignment" do
 
-    it "matches words to notes" do
+    it "matches syllables to notes" do
       p = parse_fragment "GCEA\nw:My dog has fleas"
       p.notes[0].lyric.text.should == "My"
       p.notes[1].lyric.text.should == "dog"
@@ -2924,6 +3030,14 @@ describe "abc 2.1:" do
       p.notes[1].lyrics[1].text.should == "fleas"
       p.notes[2].lyric.should == nil
       p.notes[3].lyric.should == nil
+    end
+
+    it "verses reset to just after last w: line" do
+      p = parse_fragment "ABC\nw:A B C\nGCEA\nw:My dog\nw:has fleas"
+      p.notes[0].lyric.text.should == "A"
+      p.notes[0].lyrics.count.should == 1
+      p.notes[3].lyric.text.should == "My"
+      p.notes[3].lyrics[1].text.should == "has"
     end
 
     it "does not change voices when continuing the w: line with +:" do
@@ -3021,10 +3135,20 @@ describe "abc 2.1:" do
       p.notes[3].lyric.text.should == "yeah"
     end
 
+    it "ignores dotted bar lines when skipping to next bar" do
+      p = parse_fragment("abc.|de|f\nw:hey|jude")
+      p.notes[0].lyric.text.should == "hey"
+      p.notes[3].lyric.should == nil
+      p.notes[5].lyric.text.should == "jude"
+    end
+
+
     # TODO special handling of stanza numbers?
 
+    # TODO provide Voice::lyrics and Tune::lyrics to recover all aligned lyrics
+    # as an array of verses, where each verse is a string like "My dog ha-as fleas"
+
   end
-  
 
 end
 

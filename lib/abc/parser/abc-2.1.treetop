@@ -1418,7 +1418,7 @@ rule key_field do
   end
 
   rule symbol_sequence do
-    (field_space+ / symbol_skip / chord_annotation / annotation / decoration)+ {
+    (field_space+ / symbol_skip / chord_annotation / annotation / decoration)* {
       def value
         @value ||= elements.map { |e| e.value }.select { |v| v != nil }
       end

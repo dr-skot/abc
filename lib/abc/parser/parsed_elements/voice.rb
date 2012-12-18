@@ -118,6 +118,36 @@ module ABC
       end
     end
 
+    def apply_symbol_lines
+      symbol_reset = 0 # index to reset to for new symbol line if any
+      i = 0 #index of where to set current symbol
+      j = 0 #index of symbol line (when i >= j stop setting symbols)
+      elements.each_with_index do |element, index|
+        if element.is_a?(SymbolLine)
+          restart = (index > 0 && elements[index-1].is_a?(SymbolLine))
+          symbol_reset = i = restart ? symbol_reset : j  
+          j = index
+          element.symbols.each do |symbol|
+            break if i >= j # stop setting lyrics at lyric line
+            if symbol.is_a?(SymbolSkip, :type => :note)
+              # advance to next note, then skip it
+              i += 1 until i >= j || elements[i].is_a?(NoteOrChord)
+              i += 1
+            elsif symbol.is_a?(SymbolSkip, :type => :bar)
+              # advance to next (undotted) bar, then skip it
+              i += 1 until i >= j || (elements[i].is_a?(BarLine) && !elements[i].dotted?)
+              i += 1
+            else
+              # find next note and set this lyric on it
+              i += 1 until i >= j || elements[i].is_a?(NoteOrChord)
+              elements[i].embellishments << symbol if i < j
+              i += 1
+            end
+          end
+        end
+      end
+    end    
+
     def apply_lyrics
       verse_start = 0 # index to reset to for new verse if any
       i = 0 #index of where to set current lyric
@@ -125,7 +155,7 @@ module ABC
       elements.each_with_index do |element, index|
         if element.is_a?(LyricsLine)
           new_verse = (index > 0 && elements[index-1].is_a?(LyricsLine))
-          i = new_verse ? verse_start : j  
+          verse_start = i = new_verse ? verse_start : j  
           j = index
           element.units.each do |unit|
             break if i >= j # stop setting lyrics at lyric line

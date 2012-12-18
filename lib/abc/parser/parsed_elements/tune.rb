@@ -230,7 +230,7 @@ module ABC
 
     def apply_redefinable_symbols
       symbols = redefinable_symbols
-      items.each do |it|
+      all_items.each do |it|
         if it.is_a?(Field, :type => :user_defined)
           symbols[it.value.shortcut] = it.value
         else
@@ -250,33 +250,7 @@ module ABC
     end
 
     def apply_symbol_lines
-      lines.each do |line|
-        if line && line.symbol_lines != []
-          items = line.items
-          line.symbol_lines.each do |symbol_line|
-            i = 0
-            symbol_line.symbols.each do |symbol|
-              break if i >= items.count
-              if symbol.is_a?(SymbolSkip, :type => :note)
-                # advance to next note, then skip it
-                i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
-                i += 1
-              elsif symbol.is_a?(SymbolSkip, :type => :bar)
-                # advance to next (undotted) bar, then skip it
-                i += 1 until items.count <= i || (items[i].is_a?(BarLine) && !items[i].dotted?)
-                i += 1
-              else
-                # find next note and set this symbol on it
-                i += 1 until items.count <= i || items[i].is_a?(MusicUnit)
-                if i < items.count
-                  items[i].embellishments << symbol
-                  i += 1
-                end
-              end
-            end
-          end
-        end
-      end
+      voices.each_value { |v| v.apply_symbol_lines }
     end
 
     def apply_lyrics
