@@ -4,7 +4,8 @@ module ABC
     attr_reader :embellishments
     attr_accessor :chord_symbol
 
-    def initialize(embellishments=nil)
+    def initialize(embellishments=nil, type=nil)
+      super(type)
       @embellishments = embellishments || []
     end
     

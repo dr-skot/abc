@@ -3379,5 +3379,29 @@ describe "abc 2.1:" do
     end
   end
 
+
+  # 6.1.2 Typesetting extra space
+  # y can be used to add extra space between the surrounding notes; moreover, chord symbols and decorations can be attached to it, to separate them from notes.
+  # Example:
+  # "Am" !pp! y
+  # Note that the y symbol does not create rests in the music.
+
+  describe "a spacer" do
+    it "can be inserted between notes" do
+      p = parse_fragment "ayb"
+      p.items[1].type.should == :spacer
+    end
+    it "can have decorations attached to it" do
+      p = parse_fragment 'a "Am" !pp! y b'
+      p.items[1].chord_symbol.text.should == "Am"
+      p.items[1].decorations[0].symbol.should == "pp"
+    end
+    it "does not create rests in the music" do
+      p = parse_fragment "ayb"
+      p.items[1].is_a?(MusicUnit).should == false
+      p.items[1].respond_to?(:length).should == false
+    end
+  end
+
 end
 

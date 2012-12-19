@@ -1753,6 +1753,135 @@ rule key_field do
   end
 
 
+  # 6. Typesetting and playback
+  # 6.1 Typesetting
+  # 6.1.1 Typesetting line-breaks
+  # Terminology: Line-breaks in a document (also known in computing as new lines, line-feeds, carriage-returns, end-of-lines, etc.) determine how the document is set out on the page. Throughout this section, and elsewhere in the standard, a distinction should be noted between
+  # a code line-break, meaning a line-break in the abc tune body, and, in particular, at the end of a line of music code;
+  # a score line-break, meaning a line-break in the printed score.
+  # The fundamental mechanism for typesetting score line-breaks is by using code line-breaks - one line of music code in the tune body normally corresponds to one line of printed music.
+  # Of course the printed representation of a line of music code may be too long for the staff, so if necessary, typesetting programs should introduce additional score line-breaks. As a consequence, if you would prefer score line-breaks to be handled completely automatically (as is common in non-abc scoring software), then just type the tune body on a single line of music code.
+  # Even though most abc GUI software should wrap over-long lines, typing the tune body on a single line may not always be convenient, particularly for users who wish to include code line-breaks to aid readability or if the abc code is to be emailed (see continuation of input lines).
+  # Furthermore, in the past some typesetting programs used ! characters in the abc code to force score line-breaks.
+  # As a result, abc 2.1 introduces a new line-breaking instruction.
+  # I:linebreak
+  # To allow for all line-breaking preferences, the I:linebreak instruction may be used, together with four possible values, to control score line-breaking.
+  # "I:linebreak $" indicates that the $ symbol is used in the tune body to typeset a score line-break. Any code line-breaks are ignored for typesetting purposes.
+  # Example: The following abc code should be typeset on two lines.
+
+  # I:linebreak $
+  # K:G
+  # |:abc def|$fed cba:|
+
+  # "I:linebreak !" indicates that the ! symbol is used to typeset a score line-break. Any code line-breaks are ignored for typesetting purposes.
+  # Comment: The "I:linebreak !" instruction works in the same way as I:linebreak $ and is primarily provided for backwards compatibility - see line-breaking dialects, so that "I:linebreak $" is the preferred usage. "I:linebreak !" also automatically invokes the "I:decoration +" instruction - see decoration dialects. Finally, "I:linebreak !" is equivalent to the deprecated directive %%continueall true - see outdated directives.
+  # "I:linebreak <EOL>" indicates that the End Of Line character (CR, LF or CRLF) is used to typeset a score line-break. In other words, code line-breaks are used for typesetting score line-breaks.
+  # "I:linebreak <none>" indicates that all line-breaking is to be carried out automatically and any code line-breaks are ignored for typesetting purposes.
+  # The values <EOL>, $ and ! may also be combined so that more that one symbol can indicate a score line-break.
+  # The default line-break setting is:
+  # I:linebreak <EOL> $
+  # meaning that both code line-breaks, and $ symbols, generate a score line-break.
+  # Comment: Although "I:linebreak $ !" is legal it is not recommended as it uses two different symbols to mean the same thing.
+  # An I:linebreak instruction can be used either in the file header (in which case it is applied to every tune in the abc file), or in a tune header (in which case it is applied to that tune only and overrides a line-breaking instruction in the file header). Similarly, if two I:linebreak instructions appear in a file header or a tune header, the second cancels the first.
+  # Comment: It can be sometimes be useful to include two instructions together - for example, "I:linebreak <EOL> $" and "I:linebreak <none>" can be used to toggle between default and automatic line-breaking simply by swapping the position of the two lines.
+  # I:linebreak instructions are not allowed in the tune body (principally because it conflicts with the human readability of the music code).
+
+  # Suppressing score line-breaks
+  # When the <EOL> character is being used in the tune body to indicate score line-breaks, it sometimes useful to be able to tell typesetting software to ignore a particular code line-breaks. This is achieved using a backslash (\) at the end of a line of music code. The backslash may be followed by trailing whitespace and/or comments, since they are removed before the line is processed.
+  # Example: The following two excerpts are considered equivalent and should be typeset as a single staff in the printed score.
+
+  # abc cba|\ % end of line comment
+  # abc cba|
+
+  # abc cba|abc cba|
+
+  # The backslash effectively joins two lines together for processing so if space is required between the two half lines (for example, to prevent the notes from being beamed together), it can be placed before the backslash, or at the beginning of the next half line.
+  # Example: The following three excerpts are considered equivalent.
+
+  # abc \
+  # cba|
+
+  # abc\
+  #  cba|
+
+  # abc cba|  
+
+  # There is no limit to the number of lines that may be joined together in this way. However, a backslash must not be used before an empty line.
+  # Example: The following is legal.
+
+  # cdef|\
+  # \
+  # cedf:|
+  # Example: The following is not legal.
+
+  # cdef|\
+  #
+  # cdef:|
+
+  # In the examples above, where a line of music code follows immediately after a line ending in backslash, the backslash acts as a continuation for two lines of music code and can therefore be used to split up long music code lines.
+  # More importantly, however, any information fields and stylesheet directives are processed (and comments are removed) at the point where the physical line-break occurs. Hence the backslash is commonly used to include meter or key changes halfway through a line of music.
+  # Example: The following should be typeset as a single staff in the printed score.
+
+  # abc cab|\
+  # %%setbarnb 10
+  # M:9/8
+  # %comment
+  # abc cba abc|
+
+  # Alternative usage example: The above could also be achieved using inline fields, the I:<directive> form instead of %%<directive> and a r:remark in place of the comment, i.e.
+
+  # abc cab|[I:setbarnb 10][M:9/8][r:comment]abc cba abc|
+
+  # Finally, note that if the the <EOL> character is not being used to indicate score line-breaks, then the backslash is effectively redundant.
+  # Recommendation to users: If you find that you are using backslash symbols on most lines of music code, then consider instead using "I:linebreak <none>" or "I:linebreak $" which will mean that all the code line-breaks will be ignored for the purposes of generating score line-breaks (and, in the latter case, you can encode a score line-breaks with the $ character).
+
+  rule score_linebreak_dollar do
+    '$' <ValueNode> {
+      def value
+        ABCElement::SCORE_LINEBREAK
+      end
+    }
+  end
+  
+  rule score_linebreak_bang do
+    '!' <ValueNode> {
+      def value
+        ABCElement::SCORE_LINEBREAK
+      end
+    }
+  end
+  
+  rule score_linebreak_none do
+    '[r: unlikely to be matched, and if matched will be ignored]'
+  end
+  
+  rule score_linebreak_both do
+    score_linebreak_dollar / score_linebreak_bang
+  end
+
+  rule score_linebreak_default do
+    score_linebreak_dollar
+  end
+
+  rule score_linebreak do
+    score_linebreak_dollar
+  end
+
+
+  # 6.1.2 Typesetting extra space
+  # y can be used to add extra space between the surrounding notes; moreover, chord symbols and decorations can be attached to it, to separate them from notes.
+  # Example:
+  # "Am" !pp! y
+  # Note that the y symbol does not create rests in the music.
+
+  rule spacer do
+    embellishments 'y' <ValueNode> {
+      def value
+        @value ||= Spacer.new(embellishments.value)
+      end
+    }
+  end
+
 
   
   rule macro_field do
@@ -1870,38 +1999,6 @@ rule key_field do
     beam / ignored_char
   end
 
-  rule score_linebreak_dollar do
-    '$' <ValueNode> {
-      def value
-        ABCElement::SCORE_LINEBREAK
-      end
-    }
-  end
-  
-  rule score_linebreak_bang do
-    '!' <ValueNode> {
-      def value
-        ABCElement::SCORE_LINEBREAK
-      end
-    }
-  end
-  
-  rule score_linebreak_none do
-    '[r: unlikely to be matched, and if matched will be ignored]'
-  end
-  
-  rule score_linebreak_both do
-    score_linebreak_dollar / score_linebreak_bang
-  end
-
-  rule score_linebreak_default do
-    score_linebreak_dollar
-  end
-
-  rule score_linebreak do
-    score_linebreak_dollar
-  end
-
 
   rule decoration_delimiter_bang do
     '!'
@@ -2015,16 +2112,6 @@ rule key_field do
       }
     end
 
-
-    # TODO find a better place for this
-
-    rule spacer do
-      embellishments 'y' <ValueNode> {
-        def value
-          @value ||= Spacer.new(embellishments.value || {})
-        end
-      }
-    end
 
     # BASICS
 
