@@ -22,7 +22,7 @@ module Treetop
         christen if !@christened and respond_to? :christen
         @christened = true
       end
-
+      
       def text_value_with_inclusions
         if inclusion
           inclusion

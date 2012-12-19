@@ -724,6 +724,9 @@ rule key_field do
       def inclusion # handles abc-include
         value.inclusion
       end
+      def christen
+        value.christen(self)
+      end
     }
   end
 
@@ -1860,26 +1863,49 @@ rule key_field do
     beam / ignored_char
   end
 
-  rule tune_hard_linebreak do
+  rule tune_linebreak_dollar do
+    '$' <ValueNode> {
+      def value
+        ABCElement::HARD_LINEBREAK
+      end
+    }
+  end
+  
+  rule tune_linebreak_bang do
     '!' <ValueNode> {
       def value
         ABCElement::HARD_LINEBREAK
       end
-     }
-   end
+      def christen
+        puts '!'
+      end
+    }
+  end
+  
+  rule tune_linebreak_none do
+    '[r: just something that won\'t be found, or if found will be rightly ignored]'
+  end
+  
+  rule tune_linebreak_both do
+    tune_linebreak_dollar / tune_linebreak_bang
+  end
+    
+  rule tune_hard_linebreak do
+    tune_linebreak_dollar
+  end
+
+
+
    
-   # "# $ * ; ? @
-   #  To ensure forward compatibility, current software should ignore these characters
-   #  when they appear inside or between note groups, possibly giving a warning."
-   #
-   # "Back quotes ` may be used freely between beamed notes to increase legibility. 
-   #  They are ignored by computer programs."
-   rule ignored_char do
-     "#" / "$" / "*" / "?" / "@" # TODO: issue warning?
-   end
-
-   # NOTES AND RESTS
-
+  # "# $ * ; ? @
+  #  To ensure forward compatibility, current software should ignore these characters
+  #  when they appear inside or between note groups, possibly giving a warning."
+  #
+  # "Back quotes ` may be used freely between beamed notes to increase legibility. 
+  #  They are ignored by computer programs."
+  rule ignored_char do
+    "#" / "$" / "*" / "?" / "@" # TODO: issue warning?
+  end
 
 
 

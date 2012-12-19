@@ -28,6 +28,11 @@ module Treetop
         prepare_to_parse_original(input)
         @node_cache = Hash.new { |hash, key| hash[key] = ChristeningHash.new }
       end
+
+      def alias_rule(new_rule, orig_rule)
+        metaclass = class << self; self; end;
+        metaclass.send(:alias_method, "_nt_#{new_rule}", "_nt_#{orig_rule}")
+      end
       
     end
 

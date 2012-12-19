@@ -263,23 +263,14 @@ module ABC
 
     def lines
       if !@lines
-        line = TuneLine.new
-        @lines = [line]
-        all_items = children(Field, MusicLineBreak, SymbolLine, LyricsLine, MusicElement, ABCElement)
-        all_items.each do |it|
+        @lines = [line = TuneLine.new]
+        elements.each do |it|
+          line.elements << it
           if it.type == :soft_linebreak || it.type == :hard_linebreak
-            line = TuneLine.new
-            line.hard_break = it.type == :hard_linebreak
-            @lines << line
-          elsif it.is_a?(SymbolLine)
-            @lines[-2].symbol_lines << it if @lines.count > 1
-          elsif it.is_a?(LyricsLine)
-            @lines[-2].lyrics_lines << it if @lines.count > 1
-          else
-            line.items << it
+            @lines << (line = TuneLine.new(it.type == :hard_linebreak))
           end
         end
-        @lines.pop if @lines[-1].items.count == 0
+        @lines.pop if @lines[-1].elements.count == 0
       end
       @lines
     end

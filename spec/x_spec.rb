@@ -46,12 +46,17 @@ describe "abc 2.1:" do
     tune
   end
 
-    it "connects adjacent notes" do
-      p = parse_fragment "abc"
-      p.items[0].beam.should == :start
-      p.items[1].beam.should == :middle
-      p.items[2].beam.should == :end
-    end
-
+  it "testing christen" do
+    p = parse_fragment "abc$def"
+    puts p.elements[3]
+    p.elements[3].type.should == :hard_linebreak
+    p.lines.count.should == 2
+    p = parse_fragment "I:linebreak !\nabc$def"
+    p.lines.count.should == 1
+    p = parse_fragment "I:linebreak !$\nabc$def"
+    p.lines.count.should == 2
+    p = parse_fragment "I:linebreak <none>\nabc$def"
+    p.lines.count.should == 1
+  end
 
 end

@@ -10,6 +10,7 @@ module ABC
     def type
       nil
     end
+
   end
 
 end
