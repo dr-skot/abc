@@ -14,17 +14,21 @@ module ABC
     
     def christen(node)
       if name == 'linebreak'
-        if value.include?('$') && value.include?('!')
-          rule = :tune_linebreak_both
-        elsif value.include? '$'
-          rule = :tune_linebreak_dollar
-        elsif value.include? '!'
-          rule = :tune_linebreak_bang
+        dollar, bang = value.include?('$'), value.include?('!')        
+        if dollar && bang
+          rule = :score_linebreak_both
+        elsif dollar
+          rule = :score_linebreak_dollar
+        elsif bang
+          rule = :score_linebreak_bang
         else
-          rule = :tune_linebreak_none
+          rule = :score_linebreak_none
+        end
+        node.parser.alias_rule(:score_linebreak, rule)
+        if bang
+          node.parser.alias_rule(:decoration_delimiter, :decoration_delimiter_plus)
         end
       end
-      node.parser.alias_rule(:tune_hard_linebreak, rule)
     end
     
   end

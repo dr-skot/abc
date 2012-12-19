@@ -55,6 +55,9 @@ grammar ABC do
       def value
         @value ||= Tune.new(values)
       end
+      def christen
+        value.christen(self)
+      end
     }
   end
 
@@ -73,7 +76,11 @@ grammar ABC do
 
   # TODO allow stylesheet directives
   rule file_header do
-    comment_line* (file_header_field line_ender)+ <HeaderNode>
+    comment_line* (file_header_field line_ender)+ <HeaderNode> {
+      def christen
+        value.christen(self, :file_header)
+      end
+    }
   end
 
 
@@ -194,13 +201,13 @@ grammar ABC do
   # Recommendation: Despite there being no limit on line length in abc files, it is recommended that users avoid writing abc code with very long lines. In particular, judiciously applied line-breaks can aid the (human) readability of abc code. More importantly, users who send abc tunes with long lines should be aware that email software sometimes introduces additional line-breaks into lines with more than 72 characters and these may even cause errors when the resulting tune is processed.
 
   rule music_line_ender do
-    music_space? (music_linebreak / music_line_continuation)
+    music_space? (code_linebreak / music_line_continuation)
   end
 
-  rule music_linebreak do
+  rule code_linebreak do
     '' line_ender <ValueNode> {
       def value
-        ABCElement::SOFT_LINEBREAK
+        ABCElement::CODE_LINEBREAK
       end
     }
   end
@@ -767,7 +774,7 @@ rule key_field do
   end
 
   rule tune_body_instruction_field_excludes do
-    'I:' ('abc-charset' / 'abc-include' / 'abc-version') !directive
+    'I:' ('abc-charset' / 'abc-include' / 'abc-version' / 'linebreak') !directive
   end
 
 
@@ -1389,7 +1396,7 @@ rule key_field do
       end
     }
   end
-  
+
   rule decoration_delimiter do
     '!'
   end
@@ -1859,41 +1866,54 @@ rule key_field do
   rule tune_element do
     inline_field /
     tuplet_symbol / slur / variant_ending / 
-    note_or_chord / rest / tie / spacer / bar_line / overlay_delimiter / tune_hard_linebreak /
+    note_or_chord / rest / tie / spacer / bar_line / overlay_delimiter / score_linebreak /
     beam / ignored_char
   end
 
-  rule tune_linebreak_dollar do
+  rule score_linebreak_dollar do
     '$' <ValueNode> {
       def value
-        ABCElement::HARD_LINEBREAK
+        ABCElement::SCORE_LINEBREAK
       end
     }
   end
   
-  rule tune_linebreak_bang do
+  rule score_linebreak_bang do
     '!' <ValueNode> {
       def value
-        ABCElement::HARD_LINEBREAK
-      end
-      def christen
-        puts '!'
+        ABCElement::SCORE_LINEBREAK
       end
     }
   end
   
-  rule tune_linebreak_none do
-    '[r: just something that won\'t be found, or if found will be rightly ignored]'
+  rule score_linebreak_none do
+    '[r: unlikely to be matched, and if matched will be ignored]'
   end
   
-  rule tune_linebreak_both do
-    tune_linebreak_dollar / tune_linebreak_bang
-  end
-    
-  rule tune_hard_linebreak do
-    tune_linebreak_dollar
+  rule score_linebreak_both do
+    score_linebreak_dollar / score_linebreak_bang
   end
 
+  rule score_linebreak_default do
+    score_linebreak_dollar
+  end
+
+  rule score_linebreak do
+    score_linebreak_dollar
+  end
+
+
+  rule decoration_delimiter_bang do
+    '!'
+  end
+
+  rule decoration_delimiter_plus do
+    '+'
+  end
+
+  rule decoration_delimiter_default do
+    '!'
+  end
 
 
    

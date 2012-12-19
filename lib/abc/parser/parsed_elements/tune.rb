@@ -266,13 +266,28 @@ module ABC
         @lines = [line = TuneLine.new]
         elements.each do |it|
           line.elements << it
-          if it.type == :soft_linebreak || it.type == :hard_linebreak
-            @lines << (line = TuneLine.new(it.type == :hard_linebreak))
+          if it.type == :score_linebreak || (it.type == :code_linebreak && code_linebreaks?)
+            @lines << (line = TuneLine.new(it.type == :score_linebreak))
           end
         end
         @lines.pop if @lines[-1].elements.count == 0
       end
       @lines
+    end
+
+    def code_linebreaks?
+      if @code_linebreaks
+        @code_linebreaks
+      else
+        linebreak_field = header.fields(:instruction).select { |f| f.name == "linebreak" }.last
+        @code_linebreaks = linebreak_field ? linebreak_field.value.include?('<EOL>') : true
+      end
+    end
+
+    def christen(node)
+      # these parser methods must reset after each tune is parsed
+      node.parser.alias_rule(:score_linebreak, :score_linebreak_default)
+      node.parser.alias_rule(:decoration_delimiter, :decoration_delimiter_default)
     end
 
   end

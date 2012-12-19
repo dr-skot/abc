@@ -74,5 +74,13 @@ module ABC
       list.count == 0 ? nil : list.count == 1 ? list[0] : list
     end
 
+    def christen(node, type)
+      if type == :file_header
+        # these parser methods must reset after each tune is parsed
+        node.parser.alias_rule(:score_linebreak_default, :score_linebreak)
+        node.parser.alias_rule(:decoration_delimiter_default, :decoration_delimiter)
+      end
+    end
+
   end
 end

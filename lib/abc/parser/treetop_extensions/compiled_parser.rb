@@ -9,8 +9,10 @@ module Treetop
   module Runtime
 
     class CompiledParser
-      attr_accessor :input_changed
-      alias_method :input_changed?, :input_changed
+
+      def globals
+        @globals ||= {}
+      end
 
       alias_method :instantiate_node_original, :instantiate_node
       def instantiate_node(node_type, *args)

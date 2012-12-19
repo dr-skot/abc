@@ -184,7 +184,7 @@ describe "abc 2.0 draft 4" do
 
   describe "line breaking support" do
     it "recognizes hard linebreaks" do
-      p = parse_fragment "abc\ndef!ABC"
+      p = parse_fragment "abc\ndef$ABC"
       p.lines.count.should == 3
       p.lines[1].hard_break?.should == false
       p.lines[2].hard_break?.should == true
@@ -275,7 +275,7 @@ describe "abc 2.0 draft 4" do
   #   [V:B2]       x8      | z2B2 c2d2 | e3e (d2c2)  | H d6    ||
   #   This layout closely resembles printed music, and permits the corresponding notes on different voices to be vertically aligned so that the chords can be read directly from the abc. The addition of single remark lines '%' between the grouped staves, indicating the bar nummers, also makes the source more legible.
 
-  # V: can appear both in the body and the header. In the latter case, V: is used exclusively to set voice properties. For example, the name property in the example above, specifies which label should be printed on the first staff of the voice in question. Note that these properties may be also set or changed in the tune body. The V: properties will be fully explained in the next section.
+  # V: can appear both in the body and the header. In the latter case, V: is used exclusively to set voice properties. For example, the name property in the example above, specifies which label should be printed on the first staff of the voice in question. Note that these properties may be also sget or changed in the tune body. The V: properties will be fully explained in the next section.
 
   # Please note that the exact grouping of voices on the staff or staves is not specified by V: itself. This may be specified with the %%score stylesheet directive. See section Voice grouping for details. Please see section Instrumentation directives to learn how to assign a General MIDI instrument to a voice, using a %%MIDI stylesheet directive.
 

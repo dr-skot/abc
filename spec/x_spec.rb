@@ -46,17 +46,9 @@ describe "abc 2.1:" do
     tune
   end
 
-  it "testing christen" do
-    p = parse_fragment "abc$def"
-    puts p.elements[3]
-    p.elements[3].type.should == :hard_linebreak
-    p.lines.count.should == 2
-    p = parse_fragment "I:linebreak !\nabc$def"
-    p.lines.count.should == 1
-    p = parse_fragment "I:linebreak !$\nabc$def"
-    p.lines.count.should == 2
-    p = parse_fragment "I:linebreak <none>\nabc$def"
-    p.lines.count.should == 1
-  end
-
+    it "can appear in the file header" do
+      p = parse "I:linebreak !\n\nX:1\nT:T\nK:C\nabc!def!g\n\nX:2\nT:T2\nK:D\nabc!d!ef\ng"
+      p.tunes[0].lines.count.should == 3
+      p.tunes[1].lines.count.should == 3
+    end
 end

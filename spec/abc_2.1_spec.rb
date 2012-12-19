@@ -258,7 +258,7 @@ describe "abc 2.1:" do
     it "is ignored as a field line in the tune body" do
       p = parse_fragment "def\nr: remarks\nabc"
       p.elements[2].pitch.height.should == 17 # f
-      p.elements[3].type.should == :soft_linebreak
+      p.elements[3].type.should == :code_linebreak
       p.elements[4].pitch.height.should == 21 # a
     end
     it "is ignored as an inline field" do
@@ -2492,7 +2492,6 @@ describe "abc 2.1:" do
     it "aligns symbols to notes" do
       p = parse_fragment(['   CDEF    | G```AB`c     c',
                           's: "^slow" | u   ** !fff! "Gm"'].join("\n"))
-      p.lines[0].symbol_lines.count.should == 1
       p.notes[0].annotations[0].placement.should == :above
       p.notes[0].annotations[0].text.should == "slow"
       p.notes[1].annotations.should == []
@@ -3254,6 +3253,131 @@ describe "abc 2.1:" do
 
   # Finally, note that if the the <EOL> character is not being used to indicate score line-breaks, then the backslash is effectively redundant.
   # Recommendation to users: If you find that you are using backslash symbols on most lines of music code, then consider instead using "I:linebreak <none>" or "I:linebreak $" which will mean that all the code line-breaks will be ignored for the purposes of generating score line-breaks (and, in the latter case, you can encode a score line-breaks with the $ character).
+
+  describe "a linebreak" do
+    it "is caused by a linebreak in the music code" do
+      p = parse_fragment "abc\ndef\ngab"
+      p.lines.count.should == 3
+    end
+    it "can be explicitly indicated with $" do
+      p = parse_fragment "abc$def$g$ab"
+      p.lines.count.should == 4
+    end
+    it "cannot by default be indicated with !" do
+      p = parse_fragment "abc!def!gab"
+      p.lines.count.should == 1
+      p.notes[3].decorations[0].symbol.should == "def"
+    end
+  end
+
+  describe "the I:linebreak instruction" do
+    it "can set the linebreak character to ! only" do
+      p = parse_fragment "I:linebreak !\nabc!def!gab"
+      p.lines.count.should == 3
+      p = parse_fragment "I:linebreak !\nabc$def$gab"
+      p.lines.count.should == 1
+      p = parse_fragment "I:linebreak !\nabc\ndef\ngab"
+      p.lines.count.should == 1
+    end
+    it "can set the linebreak character to $ only" do
+      p = parse_fragment "I:linebreak $\nabc$def$gab"
+      p.lines.count.should == 3
+      p = parse_fragment "I:linebreak $\nabc!def!gab"
+      p.lines.count.should == 1
+      p = parse_fragment "I:linebreak $\nabc\ndef\ngab"
+      p.lines.count.should == 1
+    end
+    it "can set the linebreak character to <EOL> only" do
+      p = parse_fragment "I:linebreak <EOL>\nabc\ndef\ngab"
+      p.lines.count.should == 3
+      p = parse_fragment "I:linebreak <EOL>\nabc$def$gab"
+      p.lines.count.should == 1
+      p = parse_fragment "I:linebreak <EOL>\nabc!def!gab"
+      p.lines.count.should == 1
+    end
+    it "can set the linebreak characters to $ <EOL>" do
+      p = parse_fragment "I:linebreak $ <EOL>\nabc\ndef\ngab"
+      p.lines.count.should == 3
+      p = parse_fragment "I:linebreak $ <EOL>\nabc$def$gab"
+      p.lines.count.should == 3
+      p = parse_fragment "I:linebreak $ <EOL>\nabc!def!gab"
+      p.lines.count.should == 1
+    end
+    it "can set the linebreak characters to ! <EOL>" do
+      p = parse_fragment "I:linebreak ! <EOL>\nabc\ndef\ngab"
+      p.lines.count.should == 3
+      p = parse_fragment "I:linebreak ! <EOL>\nabc$def$gab"
+      p.lines.count.should == 1
+      p = parse_fragment "I:linebreak ! <EOL>\nabc!def!gab"
+      p.lines.count.should == 3
+    end
+    it "can set the linebreak characters to $ !" do
+      p = parse_fragment "I:linebreak $ ! \nabc\ndef\ngab"
+      p.lines.count.should == 1
+      p = parse_fragment "I:linebreak $ ! \nabc$def$gab"
+      p.lines.count.should == 3
+      p = parse_fragment "I:linebreak $ ! \nabc!def!gab"
+      p.lines.count.should == 3
+    end
+    it "can set the linebreak character to <none>" do
+      p = parse_fragment "I:linebreak <none>\nabc\ndef\ngab"
+      p.lines.count.should == 1
+      p = parse_fragment "I:linebreak <none>\nabc$def$gab"
+      p.lines.count.should == 1
+      p = parse_fragment "I:linebreak <none>\nabc!def!gab"
+      p.lines.count.should == 1
+    end
+    it "sets the decoration delimiter to + if any linebreak character is !" do
+      p = parse_fragment "I:linebreak !\n+trill+abc"
+      p.notes[0].decorations[0].symbol.should == 'trill'
+      p = parse_fragment "I:linebreak ! <EOL>\n+trill+abc"
+      p.notes[0].decorations[0].symbol.should == 'trill'
+      p = parse_fragment "I:linebreak $ !\n+trill+abc"
+      p.notes[0].decorations[0].symbol.should == 'trill'
+    end
+    it "should reset for each tune" do
+      p = parse "X:1\nT:T\nI:linebreak !\nK:C\nabc!def!g\n\nX:2\nT:T2\nK:D\nabc!d!ef\ng"
+      p.tunes[0].lines.count.should == 3
+      p.tunes[1].lines.count.should == 2
+    end
+    it "can appear in the file header" do
+      p = parse "I:linebreak !\n\nX:1\nT:T\nK:C\nabc!def!g\n\nX:2\nT:T2\nK:D\nabc!d!ef\ng"
+      p.tunes[0].lines.count.should == 3
+      p.tunes[1].lines.count.should == 3
+    end
+    it "cannot appear in the tune body" do
+      p = fail_to_parse_fragment "K:C\nI:linebreak !\nabc!def"
+    end
+    it "can override values in the file header" do
+      p = parse ["I:linebreak $",
+                 "X:1\nT:T1\nI:linebreak $ <EOL>\nK:D\nabc\nef$g",
+                 "X:2\nT:T2\nK:C\nabc\ndef$g"].join("\n\n")
+      p.tunes[0].lines.count.should == 3
+      p.tunes[1].lines.count.should == 2
+    end
+    it "overrides previous values in the same header" do
+      p = parse_fragment "I:linebreak <EOL>\nI:linebreak $\nabc\ndef\nabc$def"
+      p.lines.count.should == 2
+    end
+    it "has the I:decoration + side effect for only 1 tune if it appears in the tune header" do
+      p = parse ["X:1\nT:T1\nI:linebreak !\nK:D\nabc!+p+def!g",
+                 "X:2\nT:T2\nK:C\nabc!p!def$g"].join("\n\n")
+      p.tunes[0].lines.count.should == 3
+      p.tunes[0].notes[3].decorations[0].symbol.should == 'p'
+      p.tunes[1].lines.count.should == 2
+      p.tunes[1].notes[3].decorations[0].symbol.should == 'p'
+    end
+  end
+
+  describe "a backslash" do
+    it "does not break beaming" do
+      p = parse_fragment "a\\\nb"
+      p.notes[0].beam.should == :start
+    end
+    it "cannot be followed by a blank line" do
+      p = fail_to_parse_fragment "a\\\n   \nb"
+    end
+  end
 
 end
 
