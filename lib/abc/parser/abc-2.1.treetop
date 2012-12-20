@@ -543,19 +543,28 @@ grammar ABC do
   end
 
   rule parts do
-    dots? ((parts_atom / parts_group) dots?)+ <PartSequence> {
+    dots? items:(item:(parts_atom / parts_group) dots?)+ {
       def value
-        self
+        @value ||= 
+          PartSequence.new(items.elements.inject([]) { |list, el| list << el.item.value; list })
       end
     }
   end
 
   rule parts_atom do
-    part:[A-Z] dots? repeat_node:posint? <PartsAtom>
+    part:[A-Z] dots? repeat_node:posint? {
+      def value
+        @value ||= PartsAtom.new(part.text_value, repeat_node.value || 1)
+      end
+    }
   end
 
   rule parts_group do
-    '(' parts ')' dots? repeat_node:posint? <PartsGroup>
+    '(' parts ')' dots? repeat_node:posint? {
+      def value
+        @value ||= PartsGroup.new(parts.value, repeat_node.value || 1)
+      end
+    }
   end
 
   rule parts_body_field do
@@ -1012,7 +1021,7 @@ rule key_field do
   rule clef_transpose do
     ('transpose'/'t') '=' transpose:integer {
       def set_clef_opts(opts)
-        opts[:transpose] = transpose.value 
+        opts.merge!(:transpose => transpose.value)
       end
     }
   end
@@ -1020,7 +1029,7 @@ rule key_field do
   rule clef_octave do
     'octave' '=' octave:integer {
       def set_clef_opts(opts)
-        opts[:octave] = opts[:octave].to_i + octave.value 
+        opts.merge!(:octave => opts[:octave].to_i + octave.value)
       end
     }
   end
@@ -1028,7 +1037,7 @@ rule key_field do
   rule clef_stafflines do
     'stafflines' '=' stafflines:wholenum {
       def set_clef_opts(opts)
-        opts[:stafflines] = stafflines.value 
+        opts.merge!(:stafflines => stafflines.value)
       end
     }
   end
@@ -1037,9 +1046,10 @@ rule key_field do
     'clef='? name:[a-zA-Z]+ line_number:posint? octave:('+8'/'-8')? {
       def set_clef_opts(opts)
         opts[:name] = name.text_value
-        opts[:line_number] = line_number.value unless line_number.empty? 
+        opts[:line_number] = line_number.value 
         opts[:octave] = opts[:octave].to_i
         opts[:octave] += { '+8' => 1, '-8' => -1 }[octave.text_value] unless octave.empty?
+        opts
       end
     }
   end
@@ -1047,7 +1057,7 @@ rule key_field do
   rule clef_middle do
     ('middle'/'m') '=' middle:pitch {
       def set_clef_opts(opts)
-        opts[:middle] = middle.value
+        opts.merge!(:middle => middle.value)
       end
     }
   end
@@ -1067,13 +1077,12 @@ rule key_field do
   rule clef do
     first:clef_specifier extras:(space+ specifier:clef_specifier)* {
       def value
-        if @clef
-          @clef
-        else
-          opts = {}
-          first.set_clef_opts(opts)
-          extras.elements.each { |node| node.specifier.set_clef_opts(opts) }
-          @clef = Clef.new(opts)
+        @value ||= Clef.new(opts)
+      end
+      def opts
+        @opts ||= extras.elements.inject(first.set_clef_opts({})) do |opts, node|
+          node.specifier.set_clef_opts(opts)
+          opts
         end
       end
     }
@@ -1883,6 +1892,133 @@ rule key_field do
   end
 
 
+  # 7. Multiple voices
+  # VOLATILE: Multi-voice music is under active review, with discussion about control voices and interaction between P:, V: and T: fields. It is intended that the syntax will be finalised in abc 2.2.
+  # The V: field allows the writing of multi-voice music. In multi-voice abc tunes, the tune body is divided into several voices, each beginning with a V: field. All the notes following such a V: field, up to the next V: field or the end of the tune body, belong to the voice.
+  # The basic syntax of the field is:
+  # V:ID
+  # where ID can be either a number or a string, that uniquely identifies the voice in question. When using a string, only the first 20 characters of it will be distinguished. The ID will not be printed on the staff; it's only function is to indicate, throughout the abc tune, which music line belongs to which voice.
+  # Example:
+  # X:1
+  # T:Zocharti Loch
+  # C:Louis Lewandowski (1821-1894)
+  # M:C
+  # Q:1/4=76
+  # %%score (T1 T2) (B1 B2)
+  # V:T1           clef=treble-8  name="Tenore I"   snm="T.I"
+  # V:T2           clef=treble-8  name="Tenore II"  snm="T.II"
+  # V:B1  middle=d clef=bass      name="Basso I"    snm="B.I"
+  # V:B2  middle=d clef=bass      name="Basso II"   snm="B.II"
+  # K:Gm
+  # %            End of header, start of tune body:
+  # % 1
+  # [V:T1]  (B2c2 d2g2)  | f6e2      | (d2c2 d2)e2 | d4 c2z2 |
+  # [V:T2]  (G2A2 B2e2)  | d6c2      | (B2A2 B2)c2 | B4 A2z2 |
+  # [V:B1]       z8      | z2f2 g2a2 | b2z2 z2 e2  | f4 f2z2 |
+  # [V:B2]       x8      |     x8    |      x8     |    x8   |
+  # % 5
+  # [V:T1]  (B2c2 d2g2)  | f8        | d3c (d2fe)  | H d6    ||
+  # [V:T2]       z8      |     z8    | B3A (B2c2)  | H A6    ||
+  # [V:B1]  (d2f2 b2e'2) | d'8       | g3g  g4     | H^f6    ||
+  # [V:B2]       x8      | z2B2 c2d2 | e3e (d2c2)  | H d6    ||
+  # This layout closely resembles printed music, and permits the corresponding notes on different voices to be vertically aligned so that the chords can be read directly from the abc. The addition of single remark lines "%" between the grouped staves, indicating the bar numbers, also makes the source more legible.
+  # V: can appear both in the body and the header. In the latter case, V: is used exclusively to set voice properties. For example, the name property in the example above, specifies which label should be printed on the first staff of the voice in question. Note that these properties may be also set or changed in the tune body. The V: properties are fully explained below.
+  # Please note that the exact grouping of voices on the staff or staves is not specified by V: itself. This may be specified with the %%score stylesheet directive. See voice grouping for details.
+  # For playback, see instrumentation directives for details of how to assign a General MIDI instrument to a voice using a %%MIDI stylesheet directive.
+  # Although it is not recommended, the tune body of fragment X:1, could also be notated this way:
+  # X:2
+  # T:Zocharti Loch
+  # %...skipping rest of the header...
+  # K:Gm
+  # %               Start of tune body:
+  # V:T1
+  #  (B2c2 d2g2) | f6e2 | (d2c2 d2)e2 | d4 c2z2 |
+  #  (B2c2 d2g2) | f8 | d3c (d2fe) | H d6 ||
+  # V:T2
+  #  (G2A2 B2e2) | d6c2 | (B2A2 B2)c2 | B4 A2z2 |
+  #  z8 | z8 | B3A (B2c2) | H A6 ||
+  # V:B1
+  #  z8 | z2f2 g2a2 | b2z2 z2 e2 | f4 f2z2 |
+  #  (d2f2 b2e'2) | d'8 | g3g  g4 | H^f6 ||
+  # V:B2
+  #  x8 | x8 | x8 | x8 |
+  #  x8 | z2B2 c2d2 | e3e (d2c2) | H d6 ||
+  # In the example above, each V: label occurs only once, and the complete part for that voice follows. The output of tune X:2 will be exactly the same as the output of tune X:1; the source code of X:1, however, is much easier to read.
+
+  rule voice_body_field do
+    'V:' id:alphanum+ <FieldNode> {
+      def content_value
+        id.text_value[0..19] # first 20 chars only
+      end
+      def type
+        :voice_marker
+      end
+    }
+  end
+
+
+  # 7.1 Voice properties
+  # VOLATILE: See above.
+  # V: fields can contain voice specifiers such as name, clef, and so on. For example,
+  # V:T name="Tenor" clef=treble-8
+  # indicates that voice T will be drawn on a staff labelled Tenor, using the treble clef with a small 8 underneath. Player programs will transpose the notes by one octave. Possible voice definitions include:
+  # name="voice name" - the voice name is printed on the left of the first staff only. The characters \n produce a newline in the output.
+  # subname="voice subname" - the voice subname is printed on the left of all staves but the first one.
+  # stem=up/down - forces the note stem direction.
+  # clef= - specifies a clef; see clefs and transposition for details.
+  # The name specifier may be abbreviated to nm=. The subname specifier may be abbreviated to snm=.
+  # Applications may implement their own specifiers, but must gracefully ignore specifiers they don't understand or implement. This is required for portability of abc files between applications.
+
+  rule voice_name do
+    ('name' / 'nm') '=' name:quoted_string {
+      def set_voice_opts(opts)
+        opts.merge!(:name => name.value)
+      end
+    }
+  end
+  
+  rule voice_subname do
+    ('subname' / 'snm') '=' subname:quoted_string {
+      def set_voice_opts(opts)
+        opts.merge!(:subname => subname.value)
+      end
+    }
+  end
+    
+  rule voice_stem do
+    'stem' '=' stem:('up' / 'down') {
+      def set_voice_opts(opts)
+        opts.merge!(:stem => stem.text_value.to_sym)
+      end
+    }
+  end
+
+  rule voice_specifier do
+    voice_name / voice_subname / voice_stem / clef_specifier
+  end
+
+  rule voice_header_field do
+    'V:' content:voice_definition <FieldNode>
+  end
+
+  rule voice_definition do
+    id:alphanum+ specifiers:(space+ spec:voice_specifier)* {
+      def id
+        super.text_value[0..19] # first 20 chars only
+      end
+      def value
+        @value ||= Voice.new(id, opts.merge!(:clef => Clef.new(opts[:clef_opts])))
+      end
+      def opts
+        @opts ||= specifiers.elements.inject({ :clef_opts => {} }) do |opts, node|
+          node.spec.set_voice_opts(opts) if node.spec.respond_to?(:set_voice_opts)
+          node.spec.set_clef_opts(opts[:clef_opts]) if node.spec.respond_to?(:set_clef_opts)
+          opts
+        end
+      end
+    }
+  end
+
   
   rule macro_field do
     'not implemented'
@@ -2027,80 +2163,6 @@ rule key_field do
 
 
 
-    # MULTIPLE VOICES
-
-    rule voice_name do
-      ('name' / 'nm') '=' name:quoted_string {
-        def set_voice_opts(opts)
-          opts[:name] = name.value
-        end
-      }
-    end
-
-    rule voice_subname do
-      ('subname' / 'snm') '=' subname:quoted_string {
-        def set_voice_opts(opts)
-          opts[:subname] = subname.value
-        end
-      }
-    end
-    
-    rule voice_stem do
-      'stem' '=' stem:('up' / 'down') {
-        def set_voice_opts(opts)
-          opts[:stem] = stem.text_value.to_sym
-        end
-      }
-    end
-
-    rule voice_specifier do
-      voice_name / voice_subname / voice_stem / clef_specifier
-    end
-
-    # TODO make this conform to content value paradigm
-    rule voice_header_field do
-      'V:' content:voice_definition <FieldNode>
-    end
-
-    rule voice_definition do
-      id:alphanum+ specifiers:(space+ specifier:voice_specifier)* {
-        def id
-          super.text_value[0..19] # first 20 chars only
-        end
-        def value
-          if !@value
-            opts = {}
-            specifiers.elements.each do |node|
-              node.specifier.set_voice_opts(opts) if node.specifier.respond_to?(:set_voice_opts)
-            end
-            @value = Voice.new(id, opts)
-            @value.clef = clef
-          end
-          @value
-        end
-        def clef
-          unless @clef
-            opts = {}
-            specifiers.elements.each do |node|
-              node.specifier.set_clef_opts(opts) if node.specifier.respond_to?(:set_clef_opts)
-            end
-            @clef = Clef.new(opts)
-          end
-          @clef
-        end
-      }
-    end
-
-    rule voice_body_field do
-      'V:' id:alphanum+ <FieldNode> {
-        def content_value
-          id.text_value[0..19] # first 20 chars only
-        end
-        def type
-          :voice_marker
-        end
-      }
-    end
 
     # VOICE OVERLAYS
 

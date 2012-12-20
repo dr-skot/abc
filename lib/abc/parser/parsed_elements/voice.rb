@@ -16,7 +16,8 @@ module ABC
       super(id)
       @name = opts[:name]
       @subname = opts[:subname]
-      @stem = opts[:stem] if opts[:stem]
+      @stem = opts[:stem]
+      @clef = opts[:clef]
       @measures = []
     end
 

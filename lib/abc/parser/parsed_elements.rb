@@ -40,6 +40,7 @@ require "abc/parser/parsed_elements/tempo"
 require "abc/parser/parsed_elements/clef"
 require "abc/parser/parsed_elements/key"
 require "abc/parser/parsed_elements/meter"
+require "abc/parser/parsed_elements/part_sequence"
 
 require "abc/parser/parsed_elements/music_line_break"
 require "abc/parser/parsed_elements/spacer"
