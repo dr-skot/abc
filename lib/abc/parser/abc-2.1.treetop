@@ -2007,17 +2007,62 @@ rule key_field do
         super.text_value[0..19] # first 20 chars only
       end
       def value
-        @value ||= Voice.new(id, opts.merge!(:clef => Clef.new(opts[:clef_opts])))
+        @value ||= Voice.new(id, opts)
       end
       def opts
-        @opts ||= specifiers.elements.inject({ :clef_opts => {} }) do |opts, node|
+        @opts ||= specifiers.elements.inject({ :clef => {} }) do |opts, node|
           node.spec.set_voice_opts(opts) if node.spec.respond_to?(:set_voice_opts)
-          node.spec.set_clef_opts(opts[:clef_opts]) if node.spec.respond_to?(:set_clef_opts)
+          node.spec.set_clef_opts(opts[:clef]) if node.spec.respond_to?(:set_clef_opts)
           opts
         end
       end
     }
   end
+
+
+  # 7.2 Breaking lines
+  # VOLATILE: See above. In particular the following may be relaxed with the introduction of a control voice.
+  # The rules for typesetting line-breaks in multi-voice abc tunes are the same as for single voice music although additionally a line-break in one voice must be matched in the other voices. See the example tune Canzonetta.abc.
+
+  # ^^ no tests
+  # TODO enforce linebreak matching?
+
+
+  # 7.3 Inline fields
+  # VOLATILE: See above.
+  # To avoid ambiguity, inline fields that specify music properties should be repeated in every voice to which they apply.
+  # Example:
+  # [V:1] C4|[M:3/4]CEG|Gce|
+  # [V:2] E4|[M:3/4]G3 |E3 |
+
+  # ^^ no tests
+  # TODO some sort of consistency check for voices
+
+
+  # 7.4 Voice overlay
+  # VOLATILE: See above.
+  # The & operator may be used to temporarily overlay several voices within one measure. Each & operator sets the time point of the music back by one bar line, and the notes which follow it form a temporary voice in parallel with the preceding one. This may only be used to add one complete bar's worth of music for each &.
+  # Example:
+  # A2 | c d e f g  a  &\
+  #      A A A A A  A  &\
+  #      F E D C B, A, |]
+  # Words in w: lines (and symbols in s: lines) are matched to the corresponding notes as per the normal rules for lyric alignment (see lyrics), disregarding any overlay in the accompanying music code.
+  # Example:
+  #     g4 f4 | e6 e2 |
+  # && (d8    | c6) c2|
+  # w: ha-la-| lu-yoh
+  # +: lu-   |   -yoh
+  # This revokes the abc 2.0 usage of & in w: and s: lines, which is now deprecated (see disallowed).
+
+  rule overlay_delimiter do
+    '&'+ <ValueNode> {
+      def value
+        @value ||= OverlayMarker.new(text_value.length)
+      end
+    }
+  end
+
+
 
   
   rule macro_field do
@@ -2162,17 +2207,6 @@ rule key_field do
 
 
 
-
-
-    # VOICE OVERLAYS
-
-    rule overlay_delimiter do
-      '&' <ValueNode> {
-        def value
-          ABCElement::OVERLAY_DELIMITER
-        end
-      }
-    end
 
 
     # BASICS

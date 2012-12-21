@@ -44,3 +44,4 @@ require "abc/parser/parsed_elements/part_sequence"
 
 require "abc/parser/parsed_elements/music_line_break"
 require "abc/parser/parsed_elements/spacer"
+require "abc/parser/parsed_elements/overlay_marker"

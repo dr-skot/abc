@@ -1,8 +1,5 @@
 module ABC
 
-  class Overlay < Part
-  end
-
   class Voice < Part
     attr_accessor :name
     attr_accessor :subname
@@ -17,7 +14,7 @@ module ABC
       @name = opts[:name]
       @subname = opts[:subname]
       @stem = opts[:stem]
-      @clef = opts[:clef]
+      @clef = (opts[:clef] && opts[:clef] != {}) ? Clef.new(opts[:clef]) : nil
       @measures = []
     end
 
@@ -46,22 +43,37 @@ module ABC
     end
 
     def collect_measures
-      measures << (measure = Measure.new)
+      return unless measures == []
+      containers = []
+      bar_line, blank_elements, waiting_for_content = nil, [], true
+      waiting_for_content = true
       elements.each do |element|
-        if element.is_a? BarLine
-          if measure == measures[0] && measure.empty?
-            # left bar on first measure shouldn't make a new measure
-            measure.left_bar = element
-          else
-            # new measure
-            measure.right_bar = element
-            (measure = Measure.new).left_bar = element
-            measures << measure
+        if element.is_a? OverlayMarker
+          # TODO error if not enough measures
+          # TODO error if overlays already
+          1.upto(element.num_measures) { |i| containers.unshift(measures[-i].new_overlay) }
+          bar_line, blank_elements, waiting_for_content = nil, [], true
+        elsif element.is_a? BarLine
+          bar_line = element
+          unless waiting_for_content
+            # finish current measure/overlay
+            containers[0].right_bar = element
+            containers.shift
+            waiting_for_content = true
           end
-        elsif element.type == :overlay_delimiter
-          measure.overlays << Overlay.new
+        elsif waiting_for_content && !element.is_a?(MusicElement)
+          blank_elements << element
         else
-          (measure.overlays? ? measure.overlays.last : measure).elements << element
+          waiting_for_content = false
+          if containers == []
+            m = Measure.new
+            m.left_bar = bar_line
+            m.elements.concat(blank_elements)
+            containers << m
+            measures << m
+            bar_line, blank_elements = nil, []
+          end
+          containers[0].elements << element
         end
       end
     end

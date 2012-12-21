@@ -18,6 +18,10 @@ module ABC
       elements.empty? && left_bar == nil
     end
 
+    def new_overlay
+      overlays << (result = Measure.new); result
+    end
+
   end
   
 end
