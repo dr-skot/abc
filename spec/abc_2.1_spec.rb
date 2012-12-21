@@ -3659,11 +3659,17 @@ describe "abc 2.1:" do
       p.measures[1].notes[0].pitch.height.should == 12
       p.measures[1].overlays[0].notes[0].pitch.height.should == 0
     end
-    it "is aligned with lyrics without regard to overlay" do
-      
+    it "is aligns notes with lyrics in whatever sequence they occur in the music code" do
+      p = parse_fragment "g4 f4|e6 e2| && (d8|c6)c2|\nw:ha-la-|lu-yoh \n+: lu-   |   -yoh"
+      p.measures[0].notes[0].lyric.text.should == "ha"
+      p.measures[0].notes[1].lyric.text.should == "la"
+      p.measures[1].notes[0].lyric.text.should == "lu"
+      p.measures[1].notes[1].lyric.text.should == "yoh"
+      p.measures[0].overlay.notes[0].lyric.text.should == "lu"
+      p.measures[1].overlay.notes[0].lyric.should == nil
+      p.measures[1].overlay.notes[1].lyric.text.should == "yoh"
     end
   end
-
 
   describe "measure support" do
     it "allows bars[] as a synonym for measures[]" do

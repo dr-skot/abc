@@ -11,7 +11,6 @@ module ABC
 
     CODE_LINEBREAK = ABCElement.new(:code_linebreak)
     SCORE_LINEBREAK = ABCElement.new(:score_linebreak)
-    OVERLAY_DELIMITER = ABCElement.new(:overlay_delimiter)
 
   end
 end

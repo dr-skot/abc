@@ -141,7 +141,7 @@ module ABC
           symbol_reset = i = restart ? symbol_reset : j  
           j = index
           element.symbols.each do |symbol|
-            break if i >= j # stop setting lyrics at lyric line
+            break if i >= j # stop setting symbols at symbol line
             if symbol.is_a?(SymbolSkip, :type => :note)
               # advance to next note, then skip it
               i += 1 until i >= j || elements[i].is_a?(NoteOrChord)
@@ -151,7 +151,7 @@ module ABC
               i += 1 until i >= j || (elements[i].is_a?(BarLine) && !elements[i].dotted?)
               i += 1
             else
-              # find next note and set this lyric on it
+              # find next note and set this symbol on it
               i += 1 until i >= j || elements[i].is_a?(NoteOrChord)
               elements[i].embellishments << symbol if i < j
               i += 1
@@ -181,8 +181,15 @@ module ABC
               i += 1 until i >= j || (elements[i].is_a?(BarLine) && !elements[i].dotted?)
               i += 1
             else
+              # skip notes if lyric unit says so
+              if unit.note_skip > 0
+                1.upto unit.note_skip do
+                  i += 1 until i >= j || (elements[i].is_a?(NoteOrChord))
+                  i += 1
+                end
+              end
               # find next note and set this lyric on it
-              i += 1 until i >= j || elements[i].is_a?(NoteOrChord);
+              i += 1 until i >= j || elements[i].is_a?(NoteOrChord)
               elements[i].lyrics << unit if i < j
               # how many notes does it apply to?
               note_count = unit.note_count

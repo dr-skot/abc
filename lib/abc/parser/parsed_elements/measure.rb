@@ -10,14 +10,18 @@ module ABC
       @overlays = []
     end
 
-    def overlays?
-      overlays.count > 0
-    end
-    
     def empty?
       elements.empty? && left_bar == nil
     end
 
+    def overlay
+      overlays[0]
+    end
+    
+    def overlays?
+      overlays.count > 0
+    end
+    
     def new_overlay
       overlays << (result = Measure.new); result
     end

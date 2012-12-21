@@ -1746,9 +1746,10 @@ rule key_field do
   end
 
   rule lyrics_unit do
-    lyrics_word hyphen:(space? '-'+)? stretch:'_'* {
+    prehyphen:'-'* lyrics_word hyphen:(space? '-'+)? stretch:'_'* {
       def value
-        LyricsUnit.new(lyrics_word.value, hyphen.text_value, stretch.text_value)
+        LyricsUnit.new(lyrics_word.value, hyphen.text_value, stretch.text_value, 
+                       prehyphen.text_value)
       end
     }
   end
