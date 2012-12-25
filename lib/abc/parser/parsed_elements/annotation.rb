@@ -7,7 +7,7 @@ module ABC
     def initialize(placement, text, shortcut=nil)
       super(shortcut)
       @placement = placement
-      @text = text
+      @text = TextString.new(text)
     end
 
   end

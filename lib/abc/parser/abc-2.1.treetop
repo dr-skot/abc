@@ -127,7 +127,7 @@ grammar ABC do
   end
 
   rule line_feed do
-    "\r"? "\n"
+    "\r\n" / "\r" / "\n"
   end
 
   rule end_of_line do
@@ -282,7 +282,7 @@ grammar ABC do
   rule string_field_content do
     start:(!line_ender .)* extra:(line_ender '+:' content:string_field_content)? {
       def value
-        start.text_value + (extra.empty? ? '' : ' ' + extra.content.value)
+        TextString.new(start.text_value + (extra.empty? ? '' : ' ' + extra.content.value))
       end
     }
   end
@@ -342,7 +342,11 @@ grammar ABC do
   end
 
   rule inline_string_field_content do
-    (!(']'/line_ender) .)+ 
+    (!(']'/line_ender) .)+ {
+      def value
+        TextString.new(text_value)
+      end
+    }
   end
 
   rule inline_field do
@@ -1631,7 +1635,7 @@ rule key_field do
   # "Gm7"(v.=G,2~^c'2)
 
   rule note_or_chord do
-    gb:grace_and_broken? space* embellishments stroke <ValueNode> {
+    gb:grace_and_broken? space_or_ignored* embellishments stroke <ValueNode> {
       def value
         @value ||= stroke.value(embellishments.value, gb.value)
       end
@@ -1639,7 +1643,8 @@ rule key_field do
   end
   
   rule grace_and_broken do
-    (gn:grace_note space* br:broken_rhythm? / br:broken_rhythm space* gn:grace_note?) {
+    (gn:grace_note space_or_ignored* br:broken_rhythm? / 
+     br:broken_rhythm space_or_ignored* gn:grace_note?) {
       def value
         @value ||= { :grace_notes => gn.value, :broken_rhythm_marker => br.value }
       end
@@ -1647,7 +1652,7 @@ rule key_field do
   end
   
   rule embellishments do
-    chord:chord_annotation? space* annotations_and_decorations {
+    chord:chord_annotation? space_or_ignored* annotations_and_decorations {
       def value
         @value ||= [chord.value, *annotations_and_decorations.value].select { |v| v != nil }
       end
@@ -1655,7 +1660,7 @@ rule key_field do
   end
   
   rule annotations_and_decorations do
-    (node:(annotation / decoration) space*)* {
+    (node:(annotation / decoration) space_or_ignored*)* {
       def value
         elements.map { |el| el.node.value }
       end
@@ -2065,7 +2070,32 @@ rule key_field do
 
 
 
+  # 8. Abc data format
+  # Each line in the file may end with white-space which will be ignored. For the purpose of this standard, ASCII tab and space characters are equivalent and are both included in the term 'white-space'. Applications must be able to interpret end-of-line markers in Unix (<LF>), Windows/DOS (<CR><LF>), and Macintosh style (<CR>) correctly.
+
+  # 8.1 Tune body
+  # Within the tune body, all the printable ASCII characters may be used for the music code. These are:
+  #  !"#$%&'()*+,-./0123456789:;<=>?@
+  # ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`
+  # abcdefghijklmnopqrstuvwxyz{|}~
+  # Of these, the following characters are currently reserved:
+  # # * ; ? @
+  # In future standards they may be used to extend the abc syntax.
+  # To ensure forward compatibility, current software should ignore these characters when they appear inside or between note groups, possibly giving a warning. However, these characters may not be ignored when they appear inside text strings or information fields.
+  # Example:
+  # @a !pp! #bc2/3* [K:C#] de?f "@this $2was difficult to parse?" y |**
+  # should be treated as:
+  # a !pp! bc2/3 [K:C#] def "@this $2was difficult to parse?" y |
   
+  rule ignored_char do
+    "#" / "*" / ";" / "?" / "@" # TODO: issue warning?
+  end
+
+  rule space_or_ignored do
+    space / ignored_char
+  end
+
+
   rule macro_field do
     'not implemented'
   end
@@ -2193,20 +2223,6 @@ rule key_field do
   rule decoration_delimiter_default do
     '!'
   end
-
-
-   
-  # "# $ * ; ? @
-  #  To ensure forward compatibility, current software should ignore these characters
-  #  when they appear inside or between note groups, possibly giving a warning."
-  #
-  # "Back quotes ` may be used freely between beamed notes to increase legibility. 
-  #  They are ignored by computer programs."
-  rule ignored_char do
-    "#" / "$" / "*" / "?" / "@" # TODO: issue warning?
-  end
-
-
 
 
 

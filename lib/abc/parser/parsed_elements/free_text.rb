@@ -4,7 +4,7 @@ module ABC
     attr_reader :text
 
     def initialize(text)
-      @text = text
+      @text = TextString.new(text)
     end
 
   end
