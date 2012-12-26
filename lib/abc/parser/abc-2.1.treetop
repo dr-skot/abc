@@ -51,7 +51,7 @@ grammar ABC do
   # Abc music code lines are those lines in the tune body which give notes, bar lines and other musical symbols - see the tune body for details. In effect, music code is the contents of any line which is not an information field, stylesheet directive or comment line.
 
   rule tune do
-    comment_line* tune_header tune_body? <ValueNode> {
+    comment_line* tune_header tune_body? <TuneNode> {
       def value
         @value ||= Tune.new(values)
       end
@@ -767,9 +767,6 @@ rule key_field do
     'I:' directive content:inline_instruction_content <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
-      end
-      def inclusion # handles abc-include
-        value.inclusion
       end
     }
   end
@@ -2096,10 +2093,168 @@ rule key_field do
   end
 
 
-  rule macro_field do
-    'not implemented'
+  # 8.2 Text strings
+  # Text written within an abc file, either as part of an information field, an annotation or as free text / typeset text, is known as a text string, or more fully, an abc text string. (Note that the abc standard version 2.0 referred to a text string as an abc string.)
+  # Typically when there are several lines of text, each line forms a separate text string, although the distinction is not essential.
+  # The contents of a text string may be written using any legal character set. The default character set is utf-8, giving access to every Unicode character.
+  # However, not all text editors support utf-8 and so to avoid portability problems when writing accented characters in text strings, it also possible to use three other encoding options:
+  # mnemonics - for example, é can be represented by \'e. These mnemonics are are based on TeX encodings and are always in the format backslash-mnemonic-letter. They have been available since the earliest days of abc and are widely used in legacy abc files. They are generally easy to remember and easy to read, but are not comprehensive in terms of the possible accents they can represent.
+  # named html entities - for example, é can be represented by &eacute;. These encodings are not common in legacy abc files but are convenient for websites which use abc and generally easy to remember. However they are not particularly easy to read and are not fully comprehensive in terms of the possible accents they can represent.
+  # fixed width unicode - for example, é can be represented by \u00e9 using the 16-bit unicode representation 00e9 (or \U000000e9 using 32-bit). These encodings are not common in legacy abc files and are not easy to read but give comprehensive access to all unicode characters.
+  # All conforming abc typesetting software should support (understand and be able to convert) the subset of accents and ligatures given in the appendix, supported accents & ligatures, together with the special characters and symbols listed below.
+  # A summary, with examples, is as follows:
+
+  # Accent	 Examples	 Encodings
+  # grave	À à è ò	\`A \`a \`e \`o
+  # acute	Á á é ó	\'A \'a \'e \'o
+  # circumflex	Â â ê ô	\^A \^a \^e \^o
+  # tilde	Ã ã ñ õ	\~A \~a \~n \~o
+  # umlaut	Ä ä ë ö	\"A \"a \"e \"o
+  # cedilla	Ç ç	\cC \cc
+  # ring	Å å	\AA \aa
+  # slash	Ø ø	\/O \/o
+  # breve	Ă ă Ĕ ĕ	\uA \ua \uE \ue
+  # caron	Š š Ž ž	\vS \vs \vZ \vz
+  # double acute	Ő ő Ű ű	\HO \Ho \HU \Hu
+  # ligatures	ß Æ æ œ	\ss \AE \ae \oe
+
+  # Programs that have difficulty typesetting accented letters may reduce them to the base letter or, in the case of ligatures, the two base letters ignoring the backslash.
+  # Examples: When reduced to the base letter, \oA becomes A, \"o becomes o, \ss becomes ss, \AE becomes AE, etc.
+  # For fixed width unicode, \u or \U must be followed by 4 or 8 hexadecimal characters respectively. Thus if any of the 4 characters after \u is not hexadecimal, then it is interpreted as a breve.
+  # Special characters
+  # Characters that are meaningful in the context of a text string can be escaped using a backslash as follows:
+  # type \\ to get a backslash;
+  # type \% to get a percent symbol that is not interpreted as the start of a comment;
+  # type \& to get an ampersand that is not interpreted as the start of a named html entity (although an ampersand followed by white-space is interpreted as is - for example, gin & tonic is OK, but G\&T requires the backslash);
+  # type &quot; or \u0022 to get double quote marks in an annotation
+  # Special symbols
+  # The following symbols are also useful:
+  # type &copy; or \u00a9 for the copyright symbol ©
+  # type \u266d for a flat symbol ♭
+  # type \u266e for a natural symbol ♮
+  # type \u266f for a sharp symbol ♯
+  # VOLATILE: Finally note that currently the specifiers $1, $2, $3 and $4 can be used to change the font within a text string. However, this feature is likely to change in future versions of the standard - see font directives for more details.
+
+  # ^^ accomplished in post-processing (see TextString class)
+
+
+  # 9. Macros
+  # This standard defines an optional system of macros which is principally used to define the way in which ornament symbols such as the tilde ~ are played (although it could be used for many other purposes).
+  # Software implementing these macros, should first expand the macros defined in this section, and only afterwards apply any relevant U: replacement (see Redefinable symbols).
+  # When these macros are stored in an abc header file (see include field), they may form a powerful library.
+  # There are two kinds of macro, called Static and Transposing.
+
+  rule abc_file_preprocess do
+    header_section_pre? text_section* tune_section_pre (any_section_pre)*
   end
+
+  rule header_section_pre do
+    comment_line* (any_field_pre line_ender)+ end_of_section
+  end
+
+  rule any_field_pre do
+    include_field / macro_field / any_other_field_pre
+  end
+
+  rule include_field do
+    "I:abc-include" field_space+ content:string_field_content {
+      def value
+        @value ||= InstructionField.new(text_value[0], 'abc-include', content.value)
+      end
+      def inclusion # handles abc-include
+        value.inclusion
+      end
+    }
+  end
+
+  rule any_other_field_pre do
+    [A-Za-z] ':' string_field_content
+  end
+
+  rule tune_section_pre do
+    tune_header_pre tune_body_pre
+  end
+
+  rule tune_header_pre do
+    comment_line* (any_field_pre line_ender)+ key_field_line
+  end
+
+  rule any_section_pre do
+    tune_section_pre / text_section
+  end
+
+  rule tune_body_pre do
+    # should ignore comments
+    '[r: ignore]'
+  end
+
+
+  # 9.1 Static macros
+  # You define a static macro by writing into the tune header something like this:
+  #  m: ~G3 = G{A}G{F}G
+  # When you play the tune, the program searches the tune header for macro definitions, then does a search and replace on its internal copy of the text before passing that to the parser which plays the tune. Every occurence of ~G3 in the tune is replaced by G{A}G{F}G, and that is what gets played. Only ~G3 notes are affected, ~G2, ~g3, ~F3 etc. are ignored.
+  # You can put in as many macros as you want, and indeed, if you only use static macros you will need to write a separate macro for each combination of pitch and note-length. Here is an example:
+  # X:50
+  # T:Apples in Winter
+  # S:Trad, arr. Paddy O'Brien
+  # R:jig
+  # m: ~g2 = {a}g{f}g
+  # m: ~D2 = {E}D{C}D
+  # M:6/8
+  # K:D
+  # G/2A/2|BEE dEE|BAG FGE|~D2D FDF|ABc ded|
+  # BEE BAB|def ~g2 e|fdB AGF|GEE E2:|
+  # d|efe edB|ege fdB|dec dAF|DFA def|
+  # [1efe edB|def ~g2a|bgb afa|gee e2:|
+  # [2edB def|gba ~g2e|fdB AGF|GEE E2||
+  # Here I have put in two static macros, since there are two different notes in the tune marked with a tilde.
+  # A static macro definition consists of four parts:
+  # the field identifier m:
+  # the target string - e.g ~G3
+  # the equals sign
+  # the replacement string - e.g. G{A}G{F}G
+  # The target string can consist of any string up to 31 characters in length, except that it may not include the letter 'n', for reasons which will become obvious later. You don't have to use the tilde, but of course if you don't use a legal combination of abc, other programs will not be able to play your tune.
+  # The replacement string consists of any legal abc text up to 200 characters in length. It's up to you to ensure that the target and replacement strings occupy the same time interval (the program does not check this). Both the target and replacement strings may include spaces if necessary, but leading and trailing spaces are stripped off so
+  # m:~g2={a}g{f}g
+  # is perfectly OK, although less readable.
+
+  rule macro_field do
+    '[r: ignore]'
+  end
+
   
+  # 9.2 Transposing macros
+  # If your tune has ornaments on lots of different notes, and you want them to all play with the same ornament pattern, you can use transposing macros to achieve this. Transposing macros are written in exactly the same way as static macros, except that the note symbol in the target string is represented by 'n' (meaning any note) and the note symbols in the replacement string by other letters (h to z) which are interpreted according to their position in the alphabet relative to n.
+
+  # So, for example I could re-write the static macro m: ~G3 = G{A}G{F}G as a transposing macro m: ~n3 = n{o}n{m}n. When the transposing macro is expanded, any note of the form ~n3 will be replaced by the appropriate pattern of notes. Notes of the form ~n2 (or other lengths) will be ignored, so you will have to write separate transposing macros for each note length.
+
+  # Here's an example:
+
+  # X:35
+  # T:Down the Broom
+  # S:Trad, arr. Paddy O'Brien
+  # R:reel
+  # M:C|
+  # m: ~n2 = (3o/n/m/ n                % One macro does for all four rolls
+  # K:ADor
+  # EAAG~A2 Bd|eg~g2 egdc|BGGF GAGE|~D2B,D GABG|
+  # EAAG ~A2 Bd|eg~g2 egdg|eg~g2 dgba|gedB BAA2:|
+  # ~a2ea agea|agbg agef|~g2dg Bgdg|gfga gede|
+  # ~a2 ea agea|agbg ageg|dg~g2 dgba|gedB BA A2:|
+  # A transposing macro definition consists of four parts:
+
+  # the field identifier m:
+  # the target string - e.g ~n3
+  # the equals sign
+  # the replacement string - e.g. n{o}n{m}n
+  # The target string can consist of any string up to 31 characters in length, except that it must conclude with the letter 'n', followed by a number which specifies the note length.
+
+  # The replacement string consists of any legal abc text up to 200 characters in length, where note pitches are defined by the letters h - z, the pitches being interpreted relative to that of the letter n. Once again you should ensure that the time intervals match. You should not use accidentals in transposing macros
+
+  # Comment: It is almost impossible to think of a way to transpose ~=a3 or ~^G2 which will work correctly under all circumstances, so a static macro should be used for cases like these.
+
+
+
   
    # TODO: deal with escaped " ?
    rule quoted_string do
@@ -2193,7 +2348,7 @@ rule key_field do
   end
 
   rule tune_body do
-    tune_line+
+    tune_line+ <TuneBodyNode>
   end
 
   rule tune_line do

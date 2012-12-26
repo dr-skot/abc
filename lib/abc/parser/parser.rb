@@ -26,7 +26,12 @@ module ABC
         if input != input_with_inclusions
           parse(input_with_inclusions, options)
         else
-          p.value.postprocess
+          input_with_macros = p.text_value_with_macros
+          if input != input_with_macros
+            parse(input_with_macros, options)
+          else
+            p.value.postprocess
+          end
         end
       end
     end

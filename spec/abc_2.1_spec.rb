@@ -3840,11 +3840,11 @@ describe "abc 2.1:" do
     it "interprets named html entities" do
       TextString.new("&egrave;").should == "è"
     end
-    it "interprets fixed width unicode codes" do
+    it "interprets 16-bit fixed width unicode codes" do
       TextString.new("\\u00e8").should == "è"
       TextString.new("\\u266d").should == "♭"
     end
-    it "interprets fixed width unicode codes" do
+    it "interprets 32-bit fixed width unicode codes" do
       TextString.new("\\U000000e8").should == "è"
       TextString.new("\\U0000266d").should == "♭"
     end
@@ -3855,7 +3855,6 @@ describe "abc 2.1:" do
     it "escapes ampersand with backslash" do
       TextString.new("\\&egrave;").should == "&egrave;"
     end
-    # TODO support \U (32 bit unicode)
 
   end
 

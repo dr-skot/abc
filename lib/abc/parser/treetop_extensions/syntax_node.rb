@@ -17,6 +17,7 @@ module Treetop
     class SyntaxNode
       attr_accessor :parser
       attr_reader :inclusion
+      attr_accessor :with_macros
       
       def christen_once
         christen if !@christened and respond_to? :christen
@@ -32,6 +33,17 @@ module Treetop
           elements.map { |elem| elem.text_value_with_inclusions } * ""
         end
       end
+
+      def text_value_with_macros
+        if with_macros
+          with_macros
+        elsif terminal?
+          text_value
+        else
+          elements.map { |elem| elem.text_value_with_macros } * ""
+        end
+      end
+
 
       def values(*types)
         types << ValueNode if types.count > 0
