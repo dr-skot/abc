@@ -234,7 +234,7 @@ grammar ABC do
   # Note for developers: For processing as an abc tune, the parsing code is notionally assumed to add empty X:, T: and K: fields, if these are missing. However, since the processing generally takes place internally within a software package, these need not be added in actuality.
 
   rule abc_fragment do
-    '' (partial_tune_header tune_body? / tune_body) <ValueNode> {
+    '' (partial_tune_header tune_body? / tune_body) <TuneNode> {
       def value
         @value ||= Tune.new(values)
       end
@@ -2219,7 +2219,14 @@ rule key_field do
   # is perfectly OK, although less readable.
 
   rule macro_field do
-    '[r: ignore]'
+    'm:' target:(![n \t=] .)+ field_space* '=' field_space* repl:string_field_content <MacroFieldNode> {
+      def target
+        super.text_value
+      end
+      def replacement
+        repl.text_value
+      end
+    }
   end
 
   

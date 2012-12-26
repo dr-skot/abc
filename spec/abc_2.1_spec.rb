@@ -3855,7 +3855,48 @@ describe "abc 2.1:" do
     it "escapes ampersand with backslash" do
       TextString.new("\\&egrave;").should == "&egrave;"
     end
+  end
 
+  # 9. Macros
+  # This standard defines an optional system of macros which is principally used to define the way in which ornament symbols such as the tilde ~ are played (although it could be used for many other purposes).
+  # Software implementing these macros, should first expand the macros defined in this section, and only afterwards apply any relevant U: replacement (see Redefinable symbols).
+  # When these macros are stored in an abc header file (see include field), they may form a powerful library.
+  # There are two kinds of macro, called Static and Transposing.
+
+  # 9.1 Static macros
+  # You define a static macro by writing into the tune header something like this:
+  #  m: ~G3 = G{A}G{F}G
+  # When you play the tune, the program searches the tune header for macro definitions, then does a search and replace on its internal copy of the text before passing that to the parser which plays the tune. Every occurence of ~G3 in the tune is replaced by G{A}G{F}G, and that is what gets played. Only ~G3 notes are affected, ~G2, ~g3, ~F3 etc. are ignored.
+  # You can put in as many macros as you want, and indeed, if you only use static macros you will need to write a separate macro for each combination of pitch and note-length. Here is an example:
+  # X:50
+  # T:Apples in Winter
+  # S:Trad, arr. Paddy O'Brien
+  # R:jig
+  # m: ~g2 = {a}g{f}g
+  # m: ~D2 = {E}D{C}D
+  # M:6/8
+  # K:D
+  # G/2A/2|BEE dEE|BAG FGE|~D2D FDF|ABc ded|
+  # BEE BAB|def ~g2 e|fdB AGF|GEE E2:|
+  # d|efe edB|ege fdB|dec dAF|DFA def|
+  # [1efe edB|def ~g2a|bgb afa|gee e2:|
+  # [2edB def|gba ~g2e|fdB AGF|GEE E2||
+  # Here I have put in two static macros, since there are two different notes in the tune marked with a tilde.
+  # A static macro definition consists of four parts:
+  # the field identifier m:
+  # the target string - e.g ~G3
+  # the equals sign
+  # the replacement string - e.g. G{A}G{F}G
+  # The target string can consist of any string up to 31 characters in length, except that it may not include the letter 'n', for reasons which will become obvious later. You don't have to use the tilde, but of course if you don't use a legal combination of abc, other programs will not be able to play your tune.
+  # The replacement string consists of any legal abc text up to 200 characters in length. It's up to you to ensure that the target and replacement strings occupy the same time interval (the program does not check this). Both the target and replacement strings may include spaces if necessary, but leading and trailing spaces are stripped off so
+  # m:~g2={a}g{f}g
+  # is perfectly OK, although less readable.
+
+  describe "a static macro" do
+    it "can replace a target string with a replacement string" do
+      p = parse_fragment "m:~g3={a}g{f}g\nK:C\n~g3"
+      p.notes.count.should == 2
+    end
   end
 
 

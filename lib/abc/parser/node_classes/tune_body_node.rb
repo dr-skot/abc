@@ -1,4 +1,5 @@
 module ABC
-  class TuneBodyNode < SyntaxNode
+  class TuneBodyNode < ABCNode
+
   end
 end
