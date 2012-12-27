@@ -3868,9 +3868,11 @@ describe "abc 2.1:" do
   describe "m: (macro) field" do
     it "can appear in the tune header" do
       p = parse_fragment "m:~a3=a{d}a{e}a"
+      p.macros['~a3'] = 'a{d}a{e}a'
     end
     it "can appear in the file header" do
       p = parse "m:~a3=a{d}a{e}a\n\nX:1\nT:\nK:C"
+      p.macros['~a3'] = 'a{d}a{e}a'
     end
     it "can't appear in the tune body" do
       fail_to_parse_fragment "abc\nm:~a3=a{d}a{e}a\ndef"

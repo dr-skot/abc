@@ -72,7 +72,13 @@ module ABC
 
     def instructions
       @instructions ||= header.fields(:instruction).inject({}) do |result, field|
-        result.merge(field.name => field.value)
+        result.merge!(field.name => field.value)
+      end
+    end
+
+    def macros
+      @macros ||= header.fields(:macro).inject({}) do |result, field|
+        result.merge!(field.value)
       end
     end
 
