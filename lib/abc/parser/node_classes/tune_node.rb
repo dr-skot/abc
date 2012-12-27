@@ -1,8 +1,13 @@
 module ABC
   class TuneNode < ValueNode 
+    attr_accessor :file_macros
+
+    def file_macros
+      @file_macros ||= {}
+    end
 
     def macros
-      @macros ||= next_descendants(MacroFieldNode).inject({}) do |result, m|
+      @macros ||= next_descendants(MacroFieldNode).inject(file_macros.dup) do |result, m|
         result.merge!(m.target => m) # use hash so later definitions overwrite prior ones
       end
     end

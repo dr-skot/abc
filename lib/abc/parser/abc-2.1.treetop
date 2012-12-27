@@ -23,7 +23,7 @@ grammar ABC do
 
   rule abc_file do
     # guarantee at least one tune section, and allow text sections anywhere
-    file_header_section? text_section* tune_section (tune_section / text_section)* <ValueNode> {
+    file_header_section? text_section* tune_section (tune_section / text_section)* <FileNode> {
       def value
         @value ||= Tunebook.new(values)
       end
@@ -300,7 +300,7 @@ grammar ABC do
   end
 
   rule tune_body_field_excludes do
-    [A-Ga-gX-Zx-zHOS] / tune_body_instruction_field_excludes
+    [A-Ga-gX-Zx-zHOSm] / tune_body_instruction_field_excludes
   end
   
   rule file_header_field do
@@ -2144,11 +2144,6 @@ rule key_field do
   # When these macros are stored in an abc header file (see include field), they may form a powerful library.
   # There are two kinds of macro, called Static and Transposing.
 
-  rule macro_field do
-    static_macro_field / transposing_macro_field
-  end
-
-
   # 9.1 Static macros
   # You define a static macro by writing into the tune header something like this:
   #  m: ~G3 = G{A}G{F}G
@@ -2178,19 +2173,6 @@ rule key_field do
   # m:~g2={a}g{f}g
   # is perfectly OK, although less readable.
 
-  rule static_macro_field do
-    'm:' field_space* target:(![n \t=] .)+ field_space* '=' field_space* 
-      repl:string_field_content <MacroFieldNode> {
-      def target
-        super.text_value
-      end
-      def replacement
-        repl.value
-      end
-    }
-  end
-
-  
   # 9.2 Transposing macros
   # If your tune has ornaments on lots of different notes, and you want them to all play with the same ornament pattern, you can use transposing macros to achieve this. Transposing macros are written in exactly the same way as static macros, except that the note symbol in the target string is represented by 'n' (meaning any note) and the note symbols in the replacement string by other letters (h to z) which are interpreted according to their position in the alphabet relative to n.
   # So, for example I could re-write the static macro m: ~G3 = G{A}G{F}G as a transposing macro m: ~n3 = n{o}n{m}n. When the transposing macro is expanded, any note of the form ~n3 will be replaced by the appropriate pattern of notes. Notes of the form ~n2 (or other lengths) will be ignored, so you will have to write separate transposing macros for each note length.
@@ -2215,22 +2197,36 @@ rule key_field do
   # The replacement string consists of any legal abc text up to 200 characters in length, where note pitches are defined by the letters h - z, the pitches being interpreted relative to that of the letter n. Once again you should ensure that the time intervals match. You should not use accidentals in transposing macros
   # Comment: It is almost impossible to think of a way to transpose ~=a3 or ~^G2 which will work correctly under all circumstances, so a static macro should be used for cases like these.
 
-  rule transposing_macro_field do
-    'm:' field_space* target:(![ \t=] .)+ field_space* '=' field_space* 
-      repl:string_field_content <MacroFieldNode> {
+  rule macro_field do
+    'm:' field_space* macro_target field_space* '=' field_space* macro_replace <MacroFieldNode> {
+      def content_value
+        { target => replacement }
+      end
       def target
-        super.text_value
+        macro_target.text_value
       end
       def replacement
-        repl.value
+        macro_replace.value
       end
     }
   end
 
+  rule macro_target do
+    (![ \t=] .)+
+  end
 
-
+  rule macro_replace do
+    string_field_content
+  end
   
-   # TODO: deal with escaped " ?
+  # TODO really differentiate between static and transposing?
+  # TODO enforce transposing must end with n<note_length>?
+  # TODO note differences between implementation and the spec
+  
+
+
+
+   # TODO: deal with escaped " ? NO: use &quot;
    rule quoted_string do
     '"' value_node:(!'"' .)* '"' {
       def value

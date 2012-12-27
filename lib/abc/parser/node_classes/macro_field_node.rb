@@ -1,5 +1,5 @@
 module ABC
-  class MacroFieldNode < ABCNode
+  class MacroFieldNode < FieldNode
 
     def process_text(s)
       s.gsub(regexp) do
@@ -18,11 +18,9 @@ module ABC
 
     def transpose_pitch(pitch, transpose_letter)
       diff = transpose_letter.unpack("H*")[0].to_i(16) - "n".unpack("H*")[0].to_i(16)
-      index = "CDEFGABcdefgab".index(pitch[0]) + diff
-      i = index % 7
-      j = index / 7
-      p = "CDEFGAB"[i] + ((j > 0 ? "'" : ",") * j.abs) + pitch[1..-1]
-      p = unsplit_pitch(*split_pitch(p))
+      letter, octave = split_pitch(pitch)
+      index = "CDEFGAB".index(letter) + diff
+      unsplit_pitch("CDEFGAB"[index % 7], octave + index / 7)
     end
 
     def split_pitch(pitch)
