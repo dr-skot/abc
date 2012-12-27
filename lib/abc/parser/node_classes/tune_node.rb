@@ -14,7 +14,7 @@ module ABC
           body.with_macros = m.process_text(body.text_value_with_macros)
         end
       end
-      nil
+      nil # with_macros triggers rewrite of tune body but no change on tune node itself
     end
 
   end

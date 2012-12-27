@@ -2144,48 +2144,8 @@ rule key_field do
   # When these macros are stored in an abc header file (see include field), they may form a powerful library.
   # There are two kinds of macro, called Static and Transposing.
 
-  rule abc_file_preprocess do
-    header_section_pre? text_section* tune_section_pre (any_section_pre)*
-  end
-
-  rule header_section_pre do
-    comment_line* (any_field_pre line_ender)+ end_of_section
-  end
-
-  rule any_field_pre do
-    include_field / macro_field / any_other_field_pre
-  end
-
-  rule include_field do
-    "I:abc-include" field_space+ content:string_field_content {
-      def value
-        @value ||= InstructionField.new(text_value[0], 'abc-include', content.value)
-      end
-      def inclusion # handles abc-include
-        value.inclusion
-      end
-    }
-  end
-
-  rule any_other_field_pre do
-    [A-Za-z] ':' string_field_content
-  end
-
-  rule tune_section_pre do
-    tune_header_pre tune_body_pre
-  end
-
-  rule tune_header_pre do
-    comment_line* (any_field_pre line_ender)+ key_field_line
-  end
-
-  rule any_section_pre do
-    tune_section_pre / text_section
-  end
-
-  rule tune_body_pre do
-    # should ignore comments
-    '[r: ignore]'
+  rule macro_field do
+    static_macro_field / transposing_macro_field
   end
 
 
@@ -2218,13 +2178,14 @@ rule key_field do
   # m:~g2={a}g{f}g
   # is perfectly OK, although less readable.
 
-  rule macro_field do
-    'm:' target:(![n \t=] .)+ field_space* '=' field_space* repl:string_field_content <MacroFieldNode> {
+  rule static_macro_field do
+    'm:' field_space* target:(![n \t=] .)+ field_space* '=' field_space* 
+      repl:string_field_content <MacroFieldNode> {
       def target
         super.text_value
       end
       def replacement
-        repl.text_value
+        repl.value
       end
     }
   end
@@ -2232,11 +2193,8 @@ rule key_field do
   
   # 9.2 Transposing macros
   # If your tune has ornaments on lots of different notes, and you want them to all play with the same ornament pattern, you can use transposing macros to achieve this. Transposing macros are written in exactly the same way as static macros, except that the note symbol in the target string is represented by 'n' (meaning any note) and the note symbols in the replacement string by other letters (h to z) which are interpreted according to their position in the alphabet relative to n.
-
   # So, for example I could re-write the static macro m: ~G3 = G{A}G{F}G as a transposing macro m: ~n3 = n{o}n{m}n. When the transposing macro is expanded, any note of the form ~n3 will be replaced by the appropriate pattern of notes. Notes of the form ~n2 (or other lengths) will be ignored, so you will have to write separate transposing macros for each note length.
-
   # Here's an example:
-
   # X:35
   # T:Down the Broom
   # S:Trad, arr. Paddy O'Brien
@@ -2249,16 +2207,25 @@ rule key_field do
   # ~a2ea agea|agbg agef|~g2dg Bgdg|gfga gede|
   # ~a2 ea agea|agbg ageg|dg~g2 dgba|gedB BA A2:|
   # A transposing macro definition consists of four parts:
-
   # the field identifier m:
   # the target string - e.g ~n3
   # the equals sign
   # the replacement string - e.g. n{o}n{m}n
   # The target string can consist of any string up to 31 characters in length, except that it must conclude with the letter 'n', followed by a number which specifies the note length.
-
   # The replacement string consists of any legal abc text up to 200 characters in length, where note pitches are defined by the letters h - z, the pitches being interpreted relative to that of the letter n. Once again you should ensure that the time intervals match. You should not use accidentals in transposing macros
-
   # Comment: It is almost impossible to think of a way to transpose ~=a3 or ~^G2 which will work correctly under all circumstances, so a static macro should be used for cases like these.
+
+  rule transposing_macro_field do
+    'm:' field_space* target:(![ \t=] .)+ field_space* '=' field_space* 
+      repl:string_field_content <MacroFieldNode> {
+      def target
+        super.text_value
+      end
+      def replacement
+        repl.value
+      end
+    }
+  end
 
 
 
@@ -2397,5 +2364,52 @@ rule key_field do
     rule digit do
       [0-9]
     end
+
+
+
+
+  rule abc_file_preprocess do
+    header_section_pre? text_section* tune_section_pre (any_section_pre)*
+  end
+
+  rule header_section_pre do
+    comment_line* (any_field_pre line_ender)+ end_of_section
+  end
+
+  rule any_field_pre do
+    include_field / macro_field / any_other_field_pre
+  end
+
+  rule include_field do
+    "I:abc-include" field_space+ content:string_field_content {
+      def value
+        @value ||= InstructionField.new(text_value[0], 'abc-include', content.value)
+      end
+      def inclusion # handles abc-include
+        value.inclusion
+      end
+    }
+  end
+
+  rule any_other_field_pre do
+    [A-Za-z] ':' string_field_content
+  end
+
+  rule tune_section_pre do
+    tune_header_pre tune_body_pre
+  end
+
+  rule tune_header_pre do
+    comment_line* (any_field_pre line_ender)+ key_field_line
+  end
+
+  rule any_section_pre do
+    tune_section_pre / text_section
+  end
+
+  rule tune_body_pre do
+    # should ignore comments
+    '[r: ignore]'
+  end
 
   end

@@ -47,11 +47,5 @@ describe "abc 2.1:" do
   end
 
 
-  describe "a static macro" do
-    it "can replace a target string with a replacement string" do
-      p = parse_fragment "m:~g3={a}g{f}g\nK:C\n~g3"
-      p.notes.count.should == 2
-    end
-  end
 
 end
