@@ -3352,7 +3352,8 @@ describe "abc 2.1:" do
       p.tunes[1].lines.count.should == 2
     end
     it "overrides previous values in the same header" do
-      p = parse_fragment "I:linebreak <EOL>\nI:linebreak $\nabc\ndef\nabc$def"
+      p = parse_fragment "I:linebreak <EOL>\nI:linebreak !\nabc\ndef\nabc!def"
+      p.instructions['linebreak'].should == '!'
       p.lines.count.should == 2
     end
     it "has the I:decoration + side effect for only 1 tune if it appears in the tune header" do
@@ -4036,6 +4037,66 @@ describe "abc 2.1:" do
     end
   end
 
+  
+  # TODO section 10 deprecated syntax
+  # (tackle this when we have proper warning and error messages)
 
+  
+  # 11. Stylesheet directives and pseudo-comments
+  # 11.0 Introduction to directives
+
+  # 11.0.1 Disclaimer
+  # In the early days of abc, pseudo-comments (lines starting with %%) were introduced as a means of adding software-specific information and formatting instructions into abc files; because they started with a % symbol software that didn't recognise them would ignore them as a comment.
+  # In a valiant effort, abc 2.0 made an attempt to standardise these pseudo-comments with the introduction stylesheet directives and the abc stylesheet specification. This was described as "not part of the ABC specification itself" but as "an additional standard" containing directives to control how the content and structural information described by the abc code "is to be actually rendered, for example by a typesetting or player program".
+  # Unfortunately, however, there are a very large number of pseudo-comment directives and not all of them are well-defined. Furthermore, some directives, in particular the text directives and accidental directives, actually contain content and / or structural information (as opposed to rendering instructions).
+  # Abc 2.1 has stepped away from this approach somewhat.
+  # The pseudo-comments are still very much accepted as a way for developers to introduce experimental features and software-specific formatting instructions. However, when a directive gains acceptance, either by being implemented in more than one piece of software, or by its use in a substantial body of tunes, the aim is that the usage will be standardised and adopted in the standard and the I: instruction form recommended in place of the %% pseudo-comment form.
+  # In particular, it is intended that abc 2.3 will address markup and embedding and at that point a number of the text-based directives, together with other widely accepted forms, will be formally incorporated.
+  # For the moment, section 11 is retained mostly unchanged from abc 2.0 (save for typo corrections) but, as a result of the foregoing, the whole of section 11 and all stylesheet directives should regarded as VOLATILE.
+
+  # 11.0.2 Stylesheet directives
+  # A stylesheet directive is a line that starts with %%, followed by a directive that gives instructions to typesetting or player programs.
+  # Examples:
+  # %%papersize A4
+  # %%newpage
+  # %%setbarnb 10
+  # Alternatively, any stylesheet directive may be written as an I:instruction field although this is not recommended for usages which have not been standardised (i.e. it is not recommended for any directives described in section 11).
+  # Examples: Not recommended.
+  # I:papersize A4
+  # I:newpage
+  # I:setbarnb 10
+  # Inline field notation may be used to place a stylesheet directive in the middle of a line of music:
+  # Example:
+  # CDEFG|[I:setbarnb 10]ABc
+  # If a program doesn't recognise a stylesheet directive, it should just ignore it.
+  # It should be stressed that the stylesheet directives are not formally part of the abc standard itself. Furthermore, the list of possible directives is long and not standardised. They are provided by a variety of programs for specifying layout, text annotations, fonts, spacings, voice instruments, transposition and other details.
+  # Strictly speaking, abc applications don't have to conform to the same set of stylesheet directives. However, it is desirable that they do in order to make abc files portable between different computer systems.
+
+  describe "a stylesheet directive" do
+    it "is processed the same as an instruction field" do
+      p = parse_fragment "%%papersize A4"
+      p.instructions['papersize'].should == 'A4'
+    end
+    it "is differentiated from instruction fields by the identifier '%'" do
+      p = parse_fragment "%%papersize A4"
+      p.header.fields[0].type.should == :instruction
+      p.header.fields[0].identifier.should == "%"
+    end
+    it "can appear inside a tune" do
+      p = parse_fragment "abc\n%%newpage\ndef"
+      p.items[3].type.should == :instruction
+      p.items[3].directive.should == "newpage"
+    end
+    it "cannot appear inline" do
+      fail_to_parse_fragment "abc %%newpage\ndef"
+    end
+    it "can be expressed in I: notation for inline use" do
+      p = parse_fragment "abc[I:newpage]def"
+      p.items[3].type.should == :instruction
+      p.items[3].directive.should == "newpage"
+    end
+  end
+
+  
 end
 

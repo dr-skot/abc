@@ -47,5 +47,11 @@ describe "abc 2.1:" do
   end
 
 
+    it "can appear in the file header" do
+      p = parse "I:linebreak !\n\nX:1\nT:T\nK:C\nabc!def!g\n\nX:2\nT:T2\nK:D\nabc!d!ef\ng"
+      p.tunes[0].lines.count.should == 3
+      p.tunes[1].lines.count.should == 3
+    end
+
 
 end

@@ -55,9 +55,6 @@ grammar ABC do
       def value
         @value ||= Tune.new(values)
       end
-      def christen
-        value.christen(self)
-      end
     }
   end
 
@@ -78,7 +75,8 @@ grammar ABC do
   rule file_header do
     comment_line* (file_header_field line_ender)+ <HeaderNode> {
       def christen
-        value.christen(self, :file_header)
+        super
+        parser.globals[:file_header] = self.value
       end
     }
   end
@@ -159,7 +157,7 @@ grammar ABC do
   # Important clarification: lines which just contain a comment are processed as if the entire line were removed, even if the comment is preceded by white-space (i.e. the % symbol is the not first character). In other words, removing the comment effectively removes the entire line and so no empty line is introduced.
   
   rule comment do
-    '%' (!end_of_line .)+
+    !pseudo_comment '%' (!end_of_line .)+
   end
 
   rule comment_line do
@@ -737,17 +735,19 @@ rule key_field do
   # Comment: Remember that abc software which extracts separate tunes from a file must insert the fields of the original file header into the header of the extracted tune: this is also true for the fields defined in this section.
 
   rule instruction_field do
-    'I:' directive content:instruction_content? <FieldNode> {
+    ('I:'/'%%') directive content:instruction_content? <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
       end
       def inclusion # handles abc-include
         value.inclusion
       end
-      def christen
-        value.christen(self)
-      end
     }
+  end
+
+  rule instruction_field_identifier do
+    # for %% see below: 11. Stylesheet directives and pseudo-comments
+    'I:' / '%%'
   end
 
   rule directive do
@@ -764,7 +764,7 @@ rule key_field do
 
   rule inline_instruction_field do
     !tune_body_instruction_field_excludes 
-    'I:' directive content:inline_instruction_content <FieldNode> {
+    instruction_field_identifier directive content:inline_instruction_content? <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
       end
@@ -780,11 +780,12 @@ rule key_field do
   end
 
   rule tune_header_instruction_field_excludes do
-    'I:' ('abc-charset') !directive
+    instruction_field_identifier ('abc-charset') !directive
   end
 
   rule tune_body_instruction_field_excludes do
-    'I:' ('abc-charset' / 'abc-include' / 'abc-version' / 'linebreak') !directive
+    instruction_field_identifier
+    ('abc-charset' / 'abc-include' / 'abc-version' / 'linebreak') !directive
   end
 
 
@@ -2085,7 +2086,7 @@ rule key_field do
   # a !pp! bc2/3 [K:C#] def "@this $2was difficult to parse?" y |
   
   rule ignored_char do
-    "#" / "*" / ";" / "?" / "@" # TODO: issue warning?
+    "#" / "*" / ";" / "?" / "@" # TODO: issue warning
   end
 
   rule space_or_ignored do
@@ -2222,7 +2223,41 @@ rule key_field do
   # TODO really differentiate between static and transposing?
   # TODO enforce transposing must end with n<note_length>?
   # TODO note differences between implementation and the spec
+
+
+  # 11. Stylesheet directives and pseudo-comments
+  # 11.0 Introduction to directives
+
+  # 11.0.1 Disclaimer
+  # In the early days of abc, pseudo-comments (lines starting with %%) were introduced as a means of adding software-specific information and formatting instructions into abc files; because they started with a % symbol software that didn't recognise them would ignore them as a comment.
+  # In a valiant effort, abc 2.0 made an attempt to standardise these pseudo-comments with the introduction stylesheet directives and the abc stylesheet specification. This was described as "not part of the ABC specification itself" but as "an additional standard" containing directives to control how the content and structural information described by the abc code "is to be actually rendered, for example by a typesetting or player program".
+  # Unfortunately, however, there are a very large number of pseudo-comment directives and not all of them are well-defined. Furthermore, some directives, in particular the text directives and accidental directives, actually contain content and / or structural information (as opposed to rendering instructions).
+  # Abc 2.1 has stepped away from this approach somewhat.
+  # The pseudo-comments are still very much accepted as a way for developers to introduce experimental features and software-specific formatting instructions. However, when a directive gains acceptance, either by being implemented in more than one piece of software, or by its use in a substantial body of tunes, the aim is that the usage will be standardised and adopted in the standard and the I: instruction form recommended in place of the %% pseudo-comment form.
+  # In particular, it is intended that abc 2.3 will address markup and embedding and at that point a number of the text-based directives, together with other widely accepted forms, will be formally incorporated.
+  # For the moment, section 11 is retained mostly unchanged from abc 2.0 (save for typo corrections) but, as a result of the foregoing, the whole of section 11 and all stylesheet directives should regarded as VOLATILE.
+
+  # 11.0.2 Stylesheet directives
+  # A stylesheet directive is a line that starts with %%, followed by a directive that gives instructions to typesetting or player programs.
+  # Examples:
+  # %%papersize A4
+  # %%newpage
+  # %%setbarnb 10
+  # Alternatively, any stylesheet directive may be written as an I:instruction field although this is not recommended for usages which have not been standardised (i.e. it is not recommended for any directives described in section 11).
+  # Examples: Not recommended.
+  # I:papersize A4
+  # I:newpage
+  # I:setbarnb 10
+  # Inline field notation may be used to place a stylesheet directive in the middle of a line of music:
+  # Example:
+  # CDEFG|[I:setbarnb 10]ABc
+  # If a program doesn't recognise a stylesheet directive, it should just ignore it.
+  # It should be stressed that the stylesheet directives are not formally part of the abc standard itself. Furthermore, the list of possible directives is long and not standardised. They are provided by a variety of programs for specifying layout, text annotations, fonts, spacings, voice instruments, transposition and other details.
+  # Strictly speaking, abc applications don't have to conform to the same set of stylesheet directives. However, it is desirable that they do in order to make abc files portable between different computer systems.
   
+  rule pseudo_comment do
+    instruction_field
+  end
 
 
 

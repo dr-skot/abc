@@ -74,12 +74,16 @@ module ABC
       list.count == 0 ? nil : list.count == 1 ? list[0] : list
     end
 
-    def christen(node, type)
-      if type == :file_header
-        # these parser methods must reset after each tune is parsed
-        node.parser.alias_rule(:score_linebreak_default, :score_linebreak)
-        node.parser.alias_rule(:decoration_delimiter_default, :decoration_delimiter)
+    def christen(node)
+      adjust_parser(node.parser)
+    end
+
+    def adjust_parser(parser)
+      if (fh = parser.globals[:file_header]) && fh != self
+        self.master_header = fh
       end
+      field = fields(:instruction).select { |f| f.name == "linebreak" }.last
+      field.adjust_parser(parser) if field
     end
 
   end

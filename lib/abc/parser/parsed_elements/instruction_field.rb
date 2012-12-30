@@ -1,6 +1,7 @@
 module ABC
   class InstructionField < Field
     attr_accessor :name
+    alias_method :directive, :name
     
     def initialize(identifier, name, value)
       super(identifier, value, :instruction)
@@ -12,7 +13,8 @@ module ABC
       @inclusion ||= IO.read(value).sub(/\s+$/, '') if name == "abc-include"
     end
     
-    def christen(node)
+    def adjust_parser(parser)
+      "instruction field adjust parser #{value}"
       if name == 'linebreak'
         dollar, bang = value.include?('$'), value.include?('!')        
         if dollar && bang
@@ -24,9 +26,9 @@ module ABC
         else
           rule = :score_linebreak_none
         end
-        node.parser.alias_rule(:score_linebreak, rule)
+        parser.alias_rule(:score_linebreak, rule)
         if bang
-          node.parser.alias_rule(:decoration_delimiter, :decoration_delimiter_plus)
+          parser.alias_rule(:decoration_delimiter, :decoration_delimiter_plus)
         end
       end
     end
