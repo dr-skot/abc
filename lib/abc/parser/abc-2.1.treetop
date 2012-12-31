@@ -736,7 +736,7 @@ rule key_field do
   end
 
   rule special_instruction_field do
-    voice_grouping_field
+    staves_field
   end
 
   rule general_instruction_field do
@@ -2300,29 +2300,30 @@ rule key_field do
   # An alternative directive to %%score is %%staves.
   # Both %%score and %%staves directives accept the same parameters, but measure bar indications work the opposite way. Therefore, %%staves [S|A|T|B] is equivalent to %%score [S A T B] and means that continued bar lines are not drawn between the associated staves, while %%staves [S A T B] is equivalent to %%score [S|A|T|B] and means that they are drawn.
 
-  rule voice_grouping_field do
+  rule staves_field do
     instruction_field_identifier 
-    directive:('score'/'staves') field_space+ voice_grouping <FieldNode> {
+    directive:('score'/'staves') field_space+ staves <FieldNode> {
       def value
-        @value ||= InstructionField.new(text_value[0], directive.text_value, voice_grouping.value)
+        @value ||= InstructionField.new(text_value[0], 'staves', 
+                                        staves.value(directive.text_value == 'staves'))
       end
     }
   end
   
-  rule voice_grouping do
+  rule staves do
     first:voice_block rest:(field_space+ item:voice_block)* {
-      def value
-        @value ||= Staff.new(item_values, :type => :list) # see SyntaxNode::item_values
-      end      
+      def value(invert_bar_continuation=false)
+        Staff::list(item_values, :invert_bar_continuation => invert_bar_continuation)
+      end
     }
   end
 
   rule staff do
     voices:(single_voice_staff / multivoice_staff) fv:floating_voice* bc:bar_continuation? {
       def value
-        @value ||= Staff.new(voices.value, :type => :staff, 
-                                  :floaters => fv.elements.map { |el| el.value },
-                                  :continue_bar_lines => !bc.empty?)
+        Staff.new(voices.value,
+                  :floaters => fv.elements.map { |el| el.value },
+                  :continue_bar_lines => !bc.empty?)
       end
     }
   end
@@ -2358,7 +2359,7 @@ rule key_field do
   rule braced_staves do
     '{' field_space* first:staff rest:(field_space+ item:staff)* field_space* '}' {
       def value
-        @value ||= Staff.new(item_values, :type => :braced)
+        @value ||= Staff::list(item_values, :type => :braced)
       end
     }
   end
@@ -2370,7 +2371,7 @@ rule key_field do
   rule bracketed_staves do
     '[' field_space* first:staff_unit rest:(field_space+ item:staff_unit)* field_space* ']' {
       def value
-        @value ||= Staff.new(item_values, :type => :bracketed)
+        @value ||= Staff::list(item_values, :type => :bracketed)
       end
     }
   end

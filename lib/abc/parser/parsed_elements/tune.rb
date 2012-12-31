@@ -87,7 +87,7 @@ module ABC
     alias_method :bars, :measures
 
     def staves
-      instructions["score"].staves if instructions["score"]
+      instructions["staves"]
     end
 
     def postprocess
