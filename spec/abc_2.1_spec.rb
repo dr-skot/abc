@@ -4194,9 +4194,58 @@ describe "abc 2.1:" do
       p.staves[0].floaters.count.should == 1
       p.staves[0].floaters.should == ["M"]
     end
-    it "can appear in the tune body" do
-      # TODO implement
+    it "can appear in the tune body as %%score" do
       p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n%%score T B\n[V:T]def[V:B]def"
+      p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
+      f = p.all_elements[9]
+      f.is_a?(InstructionField).should == true
+      f.value.is_a?(Array).should == true
+      f.value.count.should == 2
+      f.value.each { |s| s.is_a?(Staff).should == true }
+      f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
+    end
+    it "can appear in the tune body as %%staves" do
+      p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n%%staves T B\n[V:T]def[V:B]def"
+      p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
+      f = p.all_elements[9]
+      f.is_a?(InstructionField).should == true
+      f.value.is_a?(Array).should == true
+      f.value.count.should == 2
+      f.value.each { |s| s.is_a?(Staff).should == true }
+      f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
+    end
+    it "can appear in the tune body as I:score" do
+      p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\nI:score T B\n[V:T]def[V:B]def"
+      p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
+      f = p.all_elements[9]
+      f.is_a?(InstructionField).should == true
+      f.value.is_a?(Array).should == true
+      f.value.count.should == 2
+      f.value.each { |s| s.is_a?(Staff).should == true }
+      f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
+    end
+    it "can appear in the tune body as I:staves" do
+      p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\nI:staves T B\n[V:T]def[V:B]def"
+      p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
+      f = p.all_elements[9]
+      f.is_a?(InstructionField).should == true
+      f.value.is_a?(Array).should == true
+      f.value.count.should == 2
+      f.value.each { |s| s.is_a?(Staff).should == true }
+      f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
+    end
+    it "can appear in an inline field as I:score" do
+      p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n[I:score T B]\n[V:T]def[V:B]def"
+      p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
+      f = p.all_elements[9]
+      f.is_a?(InstructionField).should == true
+      f.value.is_a?(Array).should == true
+      f.value.count.should == 2
+      f.value.each { |s| s.is_a?(Staff).should == true }
+      f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
+    end
+    it "can appear in an inline field as I:staves" do
+      p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n[I:staves T B]\n[V:T]def[V:B]def"
       p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
       f = p.all_elements[9]
       f.is_a?(InstructionField).should == true

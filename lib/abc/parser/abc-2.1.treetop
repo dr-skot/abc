@@ -776,6 +776,10 @@ rule key_field do
   end
 
   rule inline_instruction_field do
+    special_instruction_field / general_inline_instruction_field
+  end
+  
+  rule general_inline_instruction_field do
     !tune_body_instruction_field_excludes 
     instruction_field_identifier directive content:inline_instruction_content? <FieldNode> {
       def value
