@@ -15,6 +15,7 @@ module ABC
     end
 
     attr_reader :voices
+    attr_reader :floaters
     attr_accessor :continue_bar_lines
     attr_accessor :start_brace
     attr_accessor :end_brace
@@ -25,7 +26,7 @@ module ABC
 
     def initialize(voices, options={})
       @voices = voices
-      @type = options[:type]
+      @floaters = options[:floaters] || []
       @continue_bar_lines = options[:continue_bar_lines] ? true : false
       @start_brace = 0
       @end_brace = 0

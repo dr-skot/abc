@@ -4180,6 +4180,13 @@ describe "abc 2.1:" do
       p = parse_fragment "%%score {RH | LH}"
       p.staves[0].continue_bar_lines?.should == true
     end
+    it "can specify floating voices" do
+      p = parse_fragment "%%score {RH | LH}"
+      p.staves[0].floaters.should == []
+      p = parse_fragment "%%score {RH *M| LH}"
+      p.staves[0].floaters.count.should == 1
+      p.staves[0].floaters.should == ["M"]
+    end
   end
   
 end
