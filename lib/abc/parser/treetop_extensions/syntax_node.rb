@@ -18,6 +18,24 @@ module Treetop
       attr_accessor :parser
       attr_reader :inclusion
       attr_accessor :with_macros
+
+      # default value is nil
+      def value
+        nil
+      end
+      
+      # convenience for collecting lists
+      # for example a list of things might be specified by the rule
+      #   first:thing rest:(delimiter item:thing)*
+      # this returns a list of those things, provided first, rest, and item are so defined
+      def items
+        rest.elements.inject([first]) { |list, el| list << el.item }
+      end
+
+      def item_values
+        items.map { |it| it.value }
+      end
+
       
       def christen_once
         christen if !@christened and respond_to? :christen
@@ -75,10 +93,6 @@ module Treetop
       # returns the first child (of type, optionally) or nil if no children
       def child(type=nil)
         c = children(type)[0]
-      end
-
-      def value
-        nil
       end
 
     end

@@ -2312,17 +2312,15 @@ rule key_field do
   rule voice_grouping do
     first:voice_block rest:(field_space+ item:voice_block)* {
       def value
-        @value ||= 
-          VoiceBlock.new(rest.elements.inject([first.value]) { |list, el| list << el.item.value },
-                         :type => :list)
+        @value ||= VoiceBlock.new(item_values, :type => :list) # see SyntaxNode::item_values
       end      
     }
   end
 
   rule staff do
-    staff:(single_voice_staff / multivoice_staff) fv:floating_voice* bc:bar_continuation? {
+    voices:(single_voice_staff / multivoice_staff) fv:floating_voice* bc:bar_continuation? {
       def value
-        @value ||= VoiceBlock.new(staff.value, :type => :staff, 
+        @value ||= VoiceBlock.new(voices.value, :type => :staff, 
                                   :floaters => fv.elements.map { |el| el.value },
                                   :continue_bar_lines => !bc.empty?)
       end
@@ -2340,8 +2338,8 @@ rule key_field do
   rule multivoice_staff do
     '(' field_space* first:voice_id rest:(field_space+ item:voice_id)* field_space* ')' {
       def value
-        @value ||= rest.elements.inject([first.value]) { |list, el| list << el.item.value }
-      end      
+        @value ||= item_values
+      end
     }
   end
   
@@ -2360,9 +2358,7 @@ rule key_field do
   rule braced_staves do
     '{' field_space* first:staff rest:(field_space+ item:staff)* field_space* '}' {
       def value
-        @value ||= 
-          VoiceBlock.new(rest.elements.inject([first.value]) { |list, el| list << el.item.value },
-                         :type => :braced)
+        @value ||= VoiceBlock.new(item_values, :type => :braced)
       end
     }
   end
@@ -2374,9 +2370,7 @@ rule key_field do
   rule bracketed_staves do
     '[' field_space* first:staff_unit rest:(field_space+ item:staff_unit)* field_space* ']' {
       def value
-        @value ||= 
-          VoiceBlock.new(rest.elements.inject([first.value]) { |list, el| list << el.item.value },
-                         :type => :bracketed)
+        @value ||= VoiceBlock.new(item_values, :type => :bracketed)
       end
     }
   end
