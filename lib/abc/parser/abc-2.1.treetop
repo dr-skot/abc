@@ -2311,7 +2311,7 @@ rule key_field do
   end
   
   rule staves do
-    first:voice_block rest:(field_space+ item:voice_block)* {
+    first:voice_block rest:(field_space* item:voice_block)* {
       def value(invert_bar_continuation=false)
         Staff::list(item_values, :invert_bar_continuation => invert_bar_continuation)
       end
@@ -2321,7 +2321,7 @@ rule key_field do
   rule staff do
     voices:(single_voice_staff / multivoice_staff) fv:floating_voice* bc:bar_continuation? {
       def value
-        Staff.new(voices.value,
+        @value ||= Staff.new(voices.value,
                   :floaters => fv.elements.map { |el| el.value },
                   :continue_bar_lines => !bc.empty?)
       end

@@ -11,6 +11,9 @@ module ABC
         list.first.start_bracket += 1
         list.last.end_bracket += 1
       end
+      if options[:invert_bar_continuation]
+        list.each { |s| s.continue_bar_lines = !s.continue_bar_lines }
+      end
       list
     end
 

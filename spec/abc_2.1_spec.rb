@@ -4180,12 +4180,43 @@ describe "abc 2.1:" do
       p = parse_fragment "%%score {RH | LH}"
       p.staves[0].continue_bar_lines?.should == true
     end
+    it "does not require spaces around |" do
+      p = parse_fragment "%%score RH|LH"
+      p.staves.count.should == 2
+      p.staves[0].voices.should == ["RH"]
+      p.staves[0].continue_bar_lines?.should == true
+      p.staves[1].voices.should == ["LH"]
+    end
     it "can specify floating voices" do
       p = parse_fragment "%%score {RH | LH}"
       p.staves[0].floaters.should == []
       p = parse_fragment "%%score {RH *M| LH}"
       p.staves[0].floaters.count.should == 1
       p.staves[0].floaters.should == ["M"]
+    end
+    it "can appear in the tune body" do
+      # TODO implement
+      p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n%%score T B\n[V:T]def[V:B]def"
+      p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
+      f = p.all_elements[9]
+      f.is_a?(InstructionField).should == true
+      f.value.is_a?(Array).should == true
+      f.value.count.should == 2
+      f.value.each { |s| s.is_a?(Staff).should == true }
+      f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
+    end
+    it "can be omitted, in which case each voice has its own staff" do
+      p = parse_fragment "[V:V1]abc[V:V2]abc[V:V3]ABC"
+      p.staves.count.should == 3
+      p.staves[0].voices.should == ["V1"]
+      p.staves[1].voices.should == ["V2"]
+      p.staves[2].voices.should == ["V3"]      
+    end
+    it "uses reverse bar line notation when the directive is 'staves'" do
+      p = parse_fragment "%%staves S A | T B"
+      p.staves[0].continue_bar_lines?.should == true
+      p.staves[1].continue_bar_lines?.should == false
+      p.staves[2].continue_bar_lines?.should == true
     end
   end
   

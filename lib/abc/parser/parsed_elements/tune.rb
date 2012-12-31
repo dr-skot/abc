@@ -87,7 +87,7 @@ module ABC
     alias_method :bars, :measures
 
     def staves
-      instructions["staves"]
+      @staves ||= instructions["staves"] || voices.values.map { |v| Staff.new([v.id]) }
     end
 
     def postprocess
