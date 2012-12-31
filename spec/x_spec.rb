@@ -47,11 +47,12 @@ describe "abc 2.1:" do
   end
 
 
-    it "can appear in the file header" do
-      p = parse "I:linebreak !\n\nX:1\nT:T\nK:C\nabc!def!g\n\nX:2\nT:T2\nK:D\nabc!d!ef\ng"
-      p.tunes[0].lines.count.should == 3
-      p.tunes[1].lines.count.should == 3
-    end
-
+  it "specifies which voices should be printed" do
+    p = parse_fragment "%%score V1 V3\n[V:V1]abc[V:V2]def[V:V3]gfe"
+    p.staves.count.should == 2
+    p.staves[0].voices.should == ['V1']
+    p.staves[1].voices.should == ['V3']
+  end
+  
 
 end

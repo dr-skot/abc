@@ -44,7 +44,6 @@ grammar ABC do
   
 
   # 2.2.1 Abc tune
-  # An abc tune itself consists of a tune header and a tune body, terminated by an empty line or the end of the file. It may also contain comment lines or stylesheet directives.
   # The tune header is composed of several information field lines, which are further discussed in information fields. The tune header should start with an X:(reference number) field followed by a T:(title) field and finish with a K:(key) field.
   # The tune body, which contains the music code, follows immediately after. Certain fields may also be used inside the tune body - see use of fields within the tune body.
   # It is legal to write an abc tune without a tune body. This feature can be used to document tunes without transcribing them.
@@ -58,10 +57,8 @@ grammar ABC do
     }
   end
 
-  # TODO reconsider this extended info field
   rule tune_header do
-    refnum_field_line title_field_line 
-    (extended_info_field / tune_header_line)* key_field_line <HeaderNode>
+    refnum_field_line title_field_line tune_header_line* key_field_line <HeaderNode>
   end
 
 
@@ -447,7 +444,7 @@ grammar ABC do
     first:posint rest:('+' number:posint)+ {
       def addends
         @addends ||= rest.elements.inject([first.value]) do |list, el| 
-          list << el.number.value; list
+          list << el.number.value
         end
       end
     }
@@ -548,7 +545,7 @@ grammar ABC do
     dots? items:(item:(parts_atom / parts_group) dots?)+ {
       def value
         @value ||= 
-          PartSequence.new(items.elements.inject([]) { |list, el| list << el.item.value; list })
+          PartSequence.new(items.elements.inject([]) { |list, el| list << el.item.value })
       end
     }
   end
@@ -735,7 +732,15 @@ rule key_field do
   # Comment: Remember that abc software which extracts separate tunes from a file must insert the fields of the original file header into the header of the extracted tune: this is also true for the fields defined in this section.
 
   rule instruction_field do
-    ('I:'/'%%') directive content:instruction_content? <FieldNode> {
+    special_instruction_field / general_instruction_field
+  end
+
+  rule special_instruction_field do
+    voice_grouping_field
+  end
+
+  rule general_instruction_field do
+    instruction_field_identifier directive content:instruction_content? <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
       end
@@ -751,7 +756,15 @@ rule key_field do
   end
 
   rule directive do
+    !special_directive directive_chars
+  end
+
+  rule directive_chars do
     [a-z\-]+
+  end
+
+  rule special_directive do
+    ('score' / 'staves') !directive_chars
   end
 
   rule instruction_content do
@@ -780,12 +793,12 @@ rule key_field do
   end
 
   rule tune_header_instruction_field_excludes do
-    instruction_field_identifier ('abc-charset') !directive
+    instruction_field_identifier ('abc-charset') !directive_chars
   end
 
   rule tune_body_instruction_field_excludes do
     instruction_field_identifier
-    ('abc-charset' / 'abc-include' / 'abc-version' / 'linebreak') !directive
+    ('abc-charset' / 'abc-include' / 'abc-version' / 'linebreak') !directive_chars
   end
 
 
@@ -1865,7 +1878,7 @@ rule key_field do
   end
   
   rule score_linebreak_none do
-    '[r: unlikely to be matched, and if matched will be ignored]'
+    match_nothing
   end
   
   rule score_linebreak_both do
@@ -1950,10 +1963,7 @@ rule key_field do
   # In the example above, each V: label occurs only once, and the complete part for that voice follows. The output of tune X:2 will be exactly the same as the output of tune X:1; the source code of X:1, however, is much easier to read.
 
   rule voice_body_field do
-    'V:' id:alphanum+ <FieldNode> {
-      def content_value
-        id.text_value[0..19] # first 20 chars only
-      end
+    'V:' content:voice_id <FieldNode> {
       def type
         :voice_marker
       end
@@ -2006,12 +2016,9 @@ rule key_field do
   end
 
   rule voice_definition do
-    id:alphanum+ specifiers:(space+ spec:voice_specifier)* {
-      def id
-        super.text_value[0..19] # first 20 chars only
-      end
+    voice_id specifiers:(space+ spec:voice_specifier)* {
       def value
-        @value ||= Voice.new(id, opts)
+        @value ||= Voice.new(voice_id.value, opts)
       end
       def opts
         @opts ||= specifiers.elements.inject({ :clef => {} }) do |opts, node|
@@ -2019,6 +2026,14 @@ rule key_field do
           node.spec.set_clef_opts(opts[:clef]) if node.spec.respond_to?(:set_clef_opts)
           opts
         end
+      end
+    }
+  end
+
+  rule voice_id do
+    alphanum+ {
+      def value
+        text_value[0..19] # first 20 chars only
       end
     }
   end
@@ -2260,6 +2275,105 @@ rule key_field do
   end
 
 
+  # 11.1 Voice grouping
+  # VOLATILE: This section is under review as part of the general discussion about multiple voices for abc 2.2. See also the section 11 disclaimer.
+  # Basic syntax:
+  # %%score <voice-id1> <voice-id2> ... <voice-idn>
+  # The score directive specifies which voices should be printed in the score and how they should be grouped on the staves.
+  # Voices that are enclosed by parentheses () will go on one staff. Together they form a voice group. A voice that is not enclosed by parentheses forms a voice group on its own that will be printed on a separate staff.
+  # If voice groups are enclosed by curly braces {}, the corresponding staves will be connected by a big curly brace printed in front of the staves. Together they form a voice block. This format is used especially for typesetting keyboard music.
+  # If voice groups or braced voice blocks are enclosed by brackets [], the corresponding staves will be connected by a big bracket printed in front of the staves. Together they form a voice block.
+  # If voice blocks or voice groups are separated from each other by a | character, continued bar lines will be drawn between the associated staves.
+  # Example:
+  # %%score Solo  [(S A) (T B)]  {RH | (LH1 LH2)}
+  # If a single voice surrounded by two voice groups is preceded by a star (*), the voice is marked to be floating. This means that the voice won't be printed on it's own staff; rather the software should automatically determine, for each note of the voice, whether it should be printed on the preceding staff or on the following staff.
+  # Software that does not support floating voices may simply print the voice on the preceding staff, as if it were part of the preceding voice group.
+  # Examples:
+  # %%score {RH *M| LH}
+  # %%score {(RH1 RH2) *M| (LH1 LH2)}
+  # String parts in an orchestral work are usually bracketed together and the top two (1st/2nd violins) then braced outside the bracket:
+  # %%score [{Vln1 | Vln2} | Vla | Vc | DB]
+  # Any voices appearing in the tune body will only be printed if it is mentioned in the score directive.
+  # When the score directive occurs within the tune body, it resets the music generator, so that voices may appear and disappear for some period of time.
+  # If no score directive is used, all voices that appear in the tune body are printed on separate staves.
+  # See Canzonetta.abc for an extensive example.
+  # An alternative directive to %%score is %%staves.
+  # Both %%score and %%staves directives accept the same parameters, but measure bar indications work the opposite way. Therefore, %%staves [S|A|T|B] is equivalent to %%score [S A T B] and means that continued bar lines are not drawn between the associated staves, while %%staves [S A T B] is equivalent to %%score [S|A|T|B] and means that they are drawn.
+
+  rule voice_grouping_field do
+    instruction_field_identifier 
+    directive:('score'/'staves') field_space+ voice_grouping <FieldNode> {
+      def value
+        @value ||= InstructionField.new(text_value[0], directive.text_value, voice_grouping.value)
+      end
+    }
+  end
+  
+  rule voice_grouping do
+    first:voice_block rest:(field_space+ item:voice_block)* {
+      def value
+        @value ||= 
+          VoiceBlock.new(rest.elements.inject([first.value]) { |list, el| list << el.item.value },
+                         :type => :list)
+      end      
+    }
+  end
+
+  rule staff do
+    single_voice_staff / multivoice_staff
+  end
+
+  rule single_voice_staff do
+    voice_id '' {
+      def value
+        @value ||= VoiceBlock.new([voice_id.value], :type => :staff)
+      end
+    }
+  end
+
+  rule multivoice_staff do
+    '(' field_space* first:voice_id rest:(field_space+ item:voice_id)* field_space* ')' {
+      def value
+        @value ||= 
+          VoiceBlock.new(rest.elements.inject([first.value]) { |list, el| list << el.item.value },
+                         :type => :staff)
+      end      
+    }
+  end
+
+  rule braced_staves do
+    '{' field_space* first:staff rest:(field_space+ item:staff)* field_space* '}' {
+      def value
+        @value ||= 
+          VoiceBlock.new(rest.elements.inject([first.value]) { |list, el| list << el.item.value },
+                         :type => :braced)
+      end
+    }
+  end
+  
+  rule staff_unit do
+    staff / braced_staves
+  end
+  
+  rule bracketed_staves do
+    '[' field_space* first:staff_unit rest:(field_space+ item:staff_unit)* field_space* ']' {
+      def value
+        @value ||= 
+          VoiceBlock.new(rest.elements.inject([first.value]) { |list, el| list << el.item.value },
+                         :type => :bracketed)
+      end
+    }
+  end
+
+  rule voice_block do
+    staff_unit / bracketed_staves
+  end
+
+
+
+
+
+
 
    # TODO: deal with escaped " ? NO: use &quot;
    rule quoted_string do
@@ -2328,25 +2442,6 @@ rule key_field do
 
 
   
-  # "3.3 Extended information fields"
-  # "They start with the characters %%, possibly followed by spaces, after which the name
-  #  of the field follows, followed by a space and the contents of the field."
-  rule extended_info_field do
-    '%%' space* label:extended_info_field_name space+ value:(!end_of_line .)+ end_of_line <InfoField> {
-      def label
-        super.text_value
-      end
-      def value
-        super.text_value
-      end
-    }
-  end
-
-  # not specified in the draft, but seems to be alphanumeric plus hyphen
-  rule extended_info_field_name do
-    # "abc-copyright" / "abc-version" / "abc-creator" / "abc-charset" / "abc-include" / "abc-edited-by" / "score"
-    [A-Za-z\-_]+
-  end
 
   rule key_field_line do
     key_field line_ender
@@ -2386,15 +2481,20 @@ rule key_field do
 
 
 
-    # BASICS
+  # BASICS
 
-    rule alphanum do
-      [A-Za-z0-9_\-]
-    end
+  rule alphanum do
+    [A-Za-z0-9_\-]
+  end
 
-    rule digit do
-      [0-9]
-    end
+  rule digit do
+    [0-9]
+  end
+
+  # TODO this is only appropriate inside the tune body
+  rule match_nothing do
+    '[r: unlikely to be matched, and if matched will be rightly ignored]'
+  end
 
 
 
@@ -2412,7 +2512,7 @@ rule key_field do
   end
 
   rule include_field do
-    "I:abc-include" field_space+ content:string_field_content {
+    instruction_field_identifier "abc-include" field_space+ content:string_field_content {
       def value
         @value ||= InstructionField.new(text_value[0], 'abc-include', content.value)
       end
@@ -2439,8 +2539,8 @@ rule key_field do
   end
 
   rule tune_body_pre do
-    # should ignore comments
-    '[r: ignore]'
+    match_nothing
   end
+
 
   end

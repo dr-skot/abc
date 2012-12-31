@@ -4097,6 +4097,66 @@ describe "abc 2.1:" do
     end
   end
 
+
+  # 11.1 Voice grouping
+  # VOLATILE: This section is under review as part of the general discussion about multiple voices for abc 2.2. See also the section 11 disclaimer.
+  # Basic syntax:
+  # %%score <voice-id1> <voice-id2> ... <voice-idn>
+  # The score directive specifies which voices should be printed in the score and how they should be grouped on the staves.
+  # Voices that are enclosed by parentheses () will go on one staff. Together they form a voice group. A voice that is not enclosed by parentheses forms a voice group on its own that will be printed on a separate staff.
+  # If voice groups are enclosed by curly braces {}, the corresponding staves will be connected by a big curly brace printed in front of the staves. Together they form a voice block. This format is used especially for typesetting keyboard music.
+  # If voice groups or braced voice blocks are enclosed by brackets [], the corresponding staves will be connected by a big bracket printed in front of the staves. Together they form a voice block.
+  # If voice blocks or voice groups are separated from each other by a | character, continued bar lines will be drawn between the associated staves.
+  # Example:
+  # %%score Solo  [(S A) (T B)]  {RH | (LH1 LH2)}
+  # If a single voice surrounded by two voice groups is preceded by a star (*), the voice is marked to be floating. This means that the voice won't be printed on it's own staff; rather the software should automatically determine, for each note of the voice, whether it should be printed on the preceding staff or on the following staff.
+  # Software that does not support floating voices may simply print the voice on the preceding staff, as if it were part of the preceding voice group.
+  # Examples:
+  # %%score {RH *M| LH}
+  # %%score {(RH1 RH2) *M| (LH1 LH2)}
+  # String parts in an orchestral work are usually bracketed together and the top two (1st/2nd violins) then braced outside the bracket:
+  # %%score [{Vln1 | Vln2} | Vla | Vc | DB]
+  # Any voices appearing in the tune body will only be printed if it is mentioned in the score directive.
+  # When the score directive occurs within the tune body, it resets the music generator, so that voices may appear and disappear for some period of time.
+  # If no score directive is used, all voices that appear in the tune body are printed on separate staves.
+  # See Canzonetta.abc for an extensive example.
+  # An alternative directive to %%score is %%staves.
+  # Both %%score and %%staves directives accept the same parameters, but measure bar indications work the opposite way. Therefore, %%staves [S|A|T|B] is equivalent to %%score [S A T B] and means that continued bar lines are not drawn between the associated staves, while %%staves [S A T B] is equivalent to %%score [S|A|T|B] and means that they are drawn.
+
+  describe "a score directive" do
+    it "specifies which voices should be printed" do
+      p = parse_fragment "%%score V1 V3\n[V:V1]abc[V:V2]def[V:V3]gfe"
+      p.staves.count.should == 2
+      p.staves[0].voices.should == ['V1']
+      p.staves[1].voices.should == ['V3']
+    end
+    it "puts two voices on one staff with ()" do
+      p = parse_fragment "%%score (V1 V2) V3\n[V:V1]abc[V:V2]def[V:V3]gfe"
+      p.staves.count.should == 2
+      p.staves[0].voices.should == ['V1', 'V2']
+      p.staves[1].voices.should == ['V3']
+    end
+    it "can connect staves with curly braces {}" do
+      p = parse_fragment "%%score {RH LH}"
+      p.staves.count.should == 2
+      p.staves[0].start_brace.should == 1
+      p.staves[0].end_brace.should == 0
+      p.staves[1].start_brace.should == 0
+      p.staves[1].end_brace.should == 1
+    end
+    it "can connect staves with brackets []" do
+      p = parse_fragment "%%score [Solo {RH LH}]"
+      p.staves.count.should == 3
+      p.staves[0].start_bracket.should == 1
+      p.staves[0].end_bracket.should == 0
+      p.staves[1].start_bracket.should == 0
+      p.staves[1].end_bracket.should == 0
+      p.staves[2].start_bracket.should == 0
+      p.staves[2].end_bracket.should == 1
+      p.staves[1].start_brace.should == 1
+      p.staves[2].end_brace.should == 1
+    end
+  end
   
 end
 

@@ -16,6 +16,7 @@ module ABC
       @stem = opts[:stem]
       @clef = (opts[:clef] && opts[:clef] != {}) ? Clef.new(opts[:clef]) : nil
       @measures = []
+      @printed = true
     end
 
     def apply_note_lengths(start_note_length)

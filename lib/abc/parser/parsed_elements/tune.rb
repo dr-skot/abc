@@ -86,6 +86,10 @@ module ABC
     end
     alias_method :bars, :measures
 
+    def staves
+      instructions["score"].staves if instructions["score"]
+    end
+
     def postprocess
       divvy_voices
       divvy_parts
