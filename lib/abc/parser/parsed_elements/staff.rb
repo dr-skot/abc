@@ -1,5 +1,5 @@
 module ABC
-  class VoiceBlock
+  class Staff
 
     attr_reader :list
     attr_reader :type
