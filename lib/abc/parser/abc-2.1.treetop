@@ -2320,13 +2320,19 @@ rule key_field do
   end
 
   rule staff do
-    single_voice_staff / multivoice_staff
+    staff:(single_voice_staff / multivoice_staff) fv:floating_voice* bc:bar_continuation? {
+      def value
+        @value ||= VoiceBlock.new(staff.value, :type => :staff, 
+                                  :floaters => fv.elements.map { |el| el.value },
+                                  :continue_bar_lines => !bc.empty?)
+      end
+    }
   end
 
   rule single_voice_staff do
     voice_id '' {
       def value
-        @value ||= VoiceBlock.new([voice_id.value], :type => :staff)
+        @value ||= [voice_id.value]
       end
     }
   end
@@ -2334,11 +2340,21 @@ rule key_field do
   rule multivoice_staff do
     '(' field_space* first:voice_id rest:(field_space+ item:voice_id)* field_space* ')' {
       def value
-        @value ||= 
-          VoiceBlock.new(rest.elements.inject([first.value]) { |list, el| list << el.item.value },
-                         :type => :staff)
+        @value ||= rest.elements.inject([first.value]) { |list, el| list << el.item.value }
       end      
     }
+  end
+  
+  rule floating_voice do
+    field_space* '*' voice_id {
+      def value
+        voice_id.value
+      end
+    }
+  end
+
+  rule bar_continuation do
+    field_space* '|'
   end
 
   rule braced_staves do

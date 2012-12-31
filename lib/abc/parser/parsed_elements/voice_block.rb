@@ -3,14 +3,18 @@ module ABC
 
     attr_reader :list
     attr_reader :type
+    attr_accessor :continue_bar_lines
     attr_accessor :start_brace
     attr_accessor :end_brace
     attr_accessor :start_bracket
     attr_accessor :end_bracket
 
+    alias_method :continue_bar_lines?, :continue_bar_lines
+
     def initialize(list, options={:type => :staff})
       @list = list
       @type = options[:type]
+      @continue_bar_lines = options[:continue_bar_lines] ? true : false
       @start_brace = 0
       @end_brace = 0
       if type == :braced

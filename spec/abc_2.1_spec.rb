@@ -4144,7 +4144,25 @@ describe "abc 2.1:" do
       p.staves[1].start_brace.should == 0
       p.staves[1].end_brace.should == 1
     end
+    it "can nest () inside {}" do
+      p = parse_fragment "%%score {RH (LH1 LH2)}"
+      p.staves.count.should == 2
+      p.staves[0].voices.count.should == 1
+      p.staves[1].voices.count.should == 2
+      p.staves[0].start_brace.should == 1
+      p.staves[0].end_brace.should == 0
+      p.staves[1].start_brace.should == 0
+      p.staves[1].end_brace.should == 1
+    end
     it "can connect staves with brackets []" do
+      p = parse_fragment "%%score [S B]"
+      p.staves.count.should == 2
+      p.staves[0].start_bracket.should == 1
+      p.staves[0].end_bracket.should == 0
+      p.staves[1].start_bracket.should == 0
+      p.staves[1].end_bracket.should == 1
+    end
+    it "can nest curly braces inside brackets" do
       p = parse_fragment "%%score [Solo {RH LH}]"
       p.staves.count.should == 3
       p.staves[0].start_bracket.should == 1
@@ -4155,6 +4173,12 @@ describe "abc 2.1:" do
       p.staves[2].end_bracket.should == 1
       p.staves[1].start_brace.should == 1
       p.staves[2].end_brace.should == 1
+    end
+    it "specifies continued bar lines with |" do
+      p = parse_fragment "%%score {RH LH}"
+      p.staves[0].continue_bar_lines?.should == false
+      p = parse_fragment "%%score {RH | LH}"
+      p.staves[0].continue_bar_lines?.should == true
     end
   end
   
