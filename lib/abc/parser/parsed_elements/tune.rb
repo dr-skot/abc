@@ -230,7 +230,11 @@ module ABC
     end
 
     def apply_key_signatures
-      voices.each_value { |v| v.apply_key_signatures(key) }
+      voices.each_value { |v| v.apply_key_signatures(key, propagate_accidentals) }
+    end
+
+    def propagate_accidentals
+      instructions['propagate-accidentals']
     end
 
     def apply_clefs

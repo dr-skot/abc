@@ -1,5 +1,6 @@
 
-require "abc/parser/abc-2.1.treetop"
+require "treetop"
+require "abc/parser/abc-2.1.rb"
 
 require "abc/parser/ruby_extensions"
 require "abc/parser/parsed_elements"

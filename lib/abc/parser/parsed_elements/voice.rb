@@ -93,30 +93,34 @@ module ABC
       end
     end
 
-    def apply_key_signatures(key)
-      base_signature = key.signature.dup
-      signature = base_signature
+    def apply_key_signatures(key, propagate_accidentals)
+      locals = {} # accidentals that have occurred in this measure
       items.each do |item|
         if item.respond_to?(:grace_notes) && item.grace_notes
-          item.grace_notes.notes.each { |n| n.pitch.signature = signature }
+          item.grace_notes.notes.each { |n| n.pitch.set_accidentals(key.signature, locals) }
         end
         if item.respond_to?(:pitch) && item.pitch
-          item.pitch.signature = signature
-          # note's accidental may have altered the signature so ask for it back
-          signature = item.pitch.signature
+          locals = set_accidentals(item.pitch, key.signature, locals, propagate_accidentals)
         elsif item.respond_to?(:notes)
-          item.notes.each do |note|
-            note.pitch.signature = signature
-            signature = note.pitch.signature
+          item.notes.each do |n| 
+            locals = set_accidentals(n.pitch, key.signature, locals, propagate_accidentals)
           end
         elsif item.is_a?(BarLine) && !item.dotted?
-          # reset to base signature at end of each measure
-          signature = base_signature
+          locals = {}
         elsif item.is_a?(Field, :type => :key)
-          # key change
-          base_signature = item.value.signature.dup
-          signature = base_signature
+          key = item.value
+          locals = {}
         end
+      end
+    end
+
+    def set_accidentals(pitch, key_signature, locals, propagate)
+      pitch.set_accidentals(key_signature, locals)
+      if pitch.accidental && propagate != 'not'
+        k = propagate == 'octave' ? [pitch.note, pitch.octave] : pitch.note
+        locals.merge(k => pitch.accidental)
+      else
+        locals
       end
     end
 

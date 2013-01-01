@@ -367,29 +367,6 @@ describe "abc-2.1 PEG" do
       p.items[5].pitch.height.should == -7
     end
 
-    it "knows height given a key signature" do
-      p = parse_fragment "CD=DEF^FG_G"
-      key = { 'C'=>1, 'D'=>1, 'F'=>1, 'G'=>1 } # E maj
-      p.items[0].pitch.height(key).should == 1
-      p.items[1].pitch.height(key).should == 3
-      p.items[2].pitch.height(key).should == 2
-      p.items[3].pitch.height(key).should == 4
-      p.items[4].pitch.height(key).should == 6
-      p.items[5].pitch.height(key).should == 6
-      p.items[6].pitch.height(key).should == 8
-      p.items[7].pitch.height(key).should == 6
-      p = parse_fragment "AB=BCD^DE_E"
-      key = { 'A'=>-1, 'B'=>-1, 'D'=>-1, 'E'=>-1 } # Ab maj
-      p.items[0].pitch.height(key).should == 8
-      p.items[1].pitch.height(key).should == 10
-      p.items[2].pitch.height(key).should == 11
-      p.items[3].pitch.height(key).should == 0
-      p.items[4].pitch.height(key).should == 1
-      p.items[5].pitch.height(key).should == 3
-      p.items[6].pitch.height(key).should == 3
-      p.items[7].pitch.height(key).should == 3
-    end
-
   end
 
   describe "key signatures" do

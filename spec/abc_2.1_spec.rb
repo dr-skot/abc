@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# TODO fields should be objects not nodes
-# TODO get rid of label: on fields
-# TODO change item.is_a?(Field) and item.label.text_value == 'K' to 
-#    item.is_a?(Field, :type => :key)
-
-require 'polyglot'
-require 'treetop'
-
 $LOAD_PATH.unshift File.expand_path('../lib')
 require 'abc/parser'
 include ABC
@@ -4339,6 +4331,25 @@ describe "abc 2.1:" do
       p.items[0].directive.should == 'MIDI'
       p.items[0].subdirective.should == 'chordprog'
       p.items[0].value.should == 20
+    end
+  end
+
+
+  # 11.3 Accidental directives
+  # VOLATILE: This section is under active discussion. See also the section 11 disclaimer.
+  # %%propagate-accidentals not | octave | pitch
+  # When set to not, accidentals apply only to the note they're attached to. When set to octave, accidentals also apply to all the notes of the same pitch in the same octave up to the end of the bar. When set to pitch, accidentals also apply to all the notes of the same pitch in all octaves up to the end of the bar.
+  # The default value is pitch.
+  # %%writeout-accidentals none | added | all
+  # When set to none, modifying or explicit accidentals that appear in the key signature field (K:) are printed in the key signature. When set to added, only the accidentals belonging to the mode indicated in the K: field, are printed in the key signature. Modifying or explicit accidentals are printed in front of the notes to which they apply. When set to all, both the accidentals belonging to the mode and possible modifying or explicit accidentals are printed in front of the notes to which they apply; no key signature will be printed.
+  # The default value is none.
+
+  describe "the propagate-accidentals directive" do
+    it "can specify no propagation at all" do
+      p = parse_fragment "%%propagate-accidentals not\n_CC|C"
+      p.notes[0].pitch.height.should == -1
+      p.notes[1].pitch.height.should == 0
+      p.notes[2].pitch.height.should == 0      
     end
   end
 
