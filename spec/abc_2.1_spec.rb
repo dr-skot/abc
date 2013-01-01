@@ -4268,6 +4268,79 @@ describe "abc 2.1:" do
       p.staves[2].continue_bar_lines?.should == true
     end
   end
-  
+
+
+  # 11.2 Instrumentation directives
+  # VOLATILE: See the section 11 disclaimer.
+  # %%MIDI voice [<ID>] [instrument=<integer> [bank=<integer>]] [mute]
+  # Assigns a MIDI instrument to the indicated abc voice. The MIDI instruments are organized in banks of 128 instruments each. Both the instruments and the banks are numbered starting from one.
+  # The General MIDI (GM) standard defines a portable, numbered set of 128 instruments (numbered from 1-128) - see http://www.midi.org/techspecs/gm1sound.php. The GM instruments can be used by selecting bank one. Since the contents of the other MIDI banks is platform dependent, it is highly recommended to only use the first MIDI bank in tunes that are to be distributed.
+  # The default bank number is 1 (one).
+  # Example: The following assigns GM instrument 59 (tuba) to voice 'Tb'.
+  # %%MIDI voice Tb instrument=59
+  # If the voice ID is omitted, the instrument is assigned to the current voice.
+  # Example:
+  # M:C
+  # L:1/8
+  # Q:1/4=66
+  # K:C
+  # V:Rueckpos
+  # %%MIDI voice instrument=53 bank=2
+  # A3B    c2c2    |d2e2    de/f/P^c3/d/|d8    |z8           |
+  # V:Organo
+  # %%MIDI voice instrument=73 bank=2
+  # z2E2-  E2AG    |F2E2    F2E2        |F6  F2|E2CD   E3F/G/|
+  # You can use the keyword mute to mute the specified voice.
+  # Some abc players can automatically generate an accompaniment based on the chord symbols specified in the melody line. To suggest a GM instrument for playing this accompaniment, use the following directive:
+  # %%MIDI chordprog 20 % Church organ
+
+  describe "an instrumentation (%%MIDI) directive" do
+    it "can specify which instrument to use for a voice" do
+      p = parse_fragment "%%MIDI voice Tb instrument=59 bank=2 mute"
+      p.midi.voices['Tb'].instrument.should == 59
+      p.midi.voices['Tb'].bank.should == 2
+      p.midi.voices['Tb'].mute?.should == true
+    end
+    it "defaults to not mute" do
+      p = parse_fragment "%%MIDI voice Tb instrument=59 bank=2"
+      p.midi.voices['Tb'].instrument.should == 59
+      p.midi.voices['Tb'].bank.should == 2
+      p.midi.voices['Tb'].mute?.should == false
+    end
+    it "defaults to bank 1" do
+      p = parse_fragment "%%MIDI voice Tb instrument=59"
+      p.midi.voices['Tb'].instrument.should == 59
+      p.midi.voices['Tb'].bank.should == 1
+      p.midi.voices['Tb'].mute?.should == false
+    end
+    it "can specify a voice instrument in the tune body" do
+      p = parse_fragment "K:C\nV:Rueckpos\n%%MIDI voice Rueckpos instrument=53 bank=2\nA3B"
+      p.items[1].is_a?(InstructionField).should == true
+      p.items[1].directive.should == 'MIDI'
+      p.items[1].subdirective.should == 'voice'
+      midi = p.items[1].value
+      midi.is_a?(MidiVoice).should == true
+      midi.voice.should == "Rueckpos"
+      midi.instrument.should == 53
+      midi.bank.should == 2
+      midi.mute?.should == false
+    end
+    it "defaults to current voice if voice id omitted" do
+      p = parse_fragment "K:C\nV:Rueckpos\n%%MIDI voice instrument=53 bank=2\nA3B"
+      p.items[1].value.voice.should == "Rueckpos"
+    end
+    it "can specify an instrument to play the chord progression" do
+      p = parse_fragment "%%MIDI chordprog 20"
+      p.midi.chordprog.should == 20
+    end
+    it "can specify a chord progression instrument in the tune body" do
+      p = parse_fragment "K:C\n%%MIDI chordprog 20\nabc"
+      p.items[0].is_a?(InstructionField).should == true
+      p.items[0].directive.should == 'MIDI'
+      p.items[0].subdirective.should == 'chordprog'
+      p.items[0].value.should == 20
+    end
+  end
+
 end
 

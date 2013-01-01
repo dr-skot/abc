@@ -1,11 +1,13 @@
 module ABC
   class InstructionField < Field
-    attr_accessor :name
-    alias_method :directive, :name
+    attr_accessor :directive
+    attr_accessor :subdirective
+    alias_method :name, :directive
     
-    def initialize(identifier, name, value)
+    def initialize(identifier, directive, value, options={})
       super(identifier, value, :instruction)
-      @name = name
+      @directive = directive
+      @subdirective = options[:subdirective]
     end
       
     def inclusion

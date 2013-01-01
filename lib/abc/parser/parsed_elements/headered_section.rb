@@ -76,6 +76,18 @@ module ABC
       end
     end
 
+    def directive_fields(d)
+      header.fields(:instruction).inject([]) do |result, field|
+        result << field.value if field.directive == d
+      end
+    end
+
+    def subdirective_values(directive, sub)
+      header.fields(:instruction).inject([]) do |result, field|
+        result << field.value if field.directive == directive && field.subdirective == sub
+      end
+    end
+
     def macros
       @macros ||= header.fields(:macro).inject({}) do |result, field|
         result.merge!(field.value)

@@ -90,6 +90,10 @@ module ABC
       @staves ||= instructions["staves"] || voices.values.map { |v| Staff.new([v.id]) }
     end
 
+    def midi
+      @midi ||= MidiSettings.new(header.fields(:instruction).select { |f| f.directive == 'MIDI' })
+    end
+
     def postprocess
       divvy_voices
       divvy_parts
@@ -105,6 +109,7 @@ module ABC
       apply_redefinable_symbols
       apply_lyrics
       collect_measures
+      apply_midi_instruments
       self
     end
 
@@ -263,6 +268,17 @@ module ABC
 
     def collect_measures
       voices.each_value { |v| v.collect_measures }
+    end
+
+    def apply_midi_instruments
+      voice_id = first_voice ? first_voice.id : nil
+      all_items.each do |item|
+        if item.is_a?(InstructionField, :directive => 'MIDI', :subdirective => 'voice')
+          item.value.voice ||= voice_id
+        elsif item.is_a?(Field, :type => :voice_marker)
+          voice_id = item.value
+        end
+      end
     end
 
     def lines
