@@ -1,3 +1,5 @@
+require 'abc/parser/ruby_extensions/hash'
+
 module ABC
 
   # A Key is initialized with a tonic eg 'C#', a mode eg 'minor' or 'Dorian' or '' (= major), 
