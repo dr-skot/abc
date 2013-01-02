@@ -1,3 +1,5 @@
+require 'abc/parser/parsed_elements/pitch'
+
 module ABC
 
   class Clef

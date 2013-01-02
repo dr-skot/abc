@@ -65,6 +65,7 @@ describe "abc 2.1:" do
       p.notes[4].pitch.height.should == 12
     end
     # TODO warning if any other value provided
+    # TODO either support or disallow this within the tune body
   end
   
 
