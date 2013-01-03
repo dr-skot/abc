@@ -348,6 +348,7 @@ describe "the propagate-accidentals directive" do
   # TODO either support or disallow this within the tune body
 end
 
+
 # 11.4 Formatting directives
 # VOLATILE: See the section 11 disclaimer.
 # Typesetting programs should accept the set of directives in the next sections. The parameter of a directive can be a text string, a logical value true or false, an integer number, a number with decimals (just 'number' in the following), or a unit of length. Units can be expressed in cm, in, and pt (points, 1/72 inch).
@@ -364,10 +365,86 @@ end
 # %%landscape        <logical>
 
 describe "a formatting directive" do
-  it "can specify pageheight in units" do
-    p = parse_fragment "%%pageheight 11in"
-    #p.instructions['pageheight'].number.should == 11
-    #p.instructions['pageheight'].unit.should == :inch
+  it "can specify page height in points" do
+    p = parse_fragment "%%pageheight 792pt"
+    p.instructions['pageheight'].measure.should == 792
+    p.instructions['pageheight'].unit.should == 'pt'
   end
-  
+  it "can specify page width in inches" do
+    p = parse_fragment "%%pagewidth 8.5 in"
+    p.instructions['pagewidth'].measure.should == 8.5
+    p.instructions['pagewidth'].unit.should == 'in'
+  end
+  it "can specify all four margins in various units" do
+    p = parse_fragment "%%topmargin 18pt"
+    p.instructions['topmargin'].measure.should == 18
+    p.instructions['topmargin'].unit.should == 'pt'
+    p = parse_fragment "%%leftmargin 2. cm"
+    p.instructions['leftmargin'].measure.should == 2
+    p.instructions['leftmargin'].unit.should == 'cm'
+    p = parse_fragment "%%rightmargin .6 in"
+    p.instructions['rightmargin'].measure.should == 0.6
+    p.instructions['rightmargin'].unit.should == 'in'
+    p = parse_fragment "%%botmargin 0.8 in"
+    p.instructions['botmargin'].measure.should == 0.8
+    p.instructions['botmargin'].unit.should == 'in'
+  end
+  it "can specify indent" do
+    p = parse_fragment "%%indent 0.5in"
+    p.instructions['indent'].measure.should == 0.5
+    p.instructions['indent'].unit.should == 'in'
+  end
+  it "can specify landscape or portrait" do
+    p = parse_fragment "%%landscape true"
+    p.instructions['landscape'].should == true
+    p = parse_fragment "%%landscape false"
+    p.instructions['landscape'].should == false
+  end
+end
+
+
+  # 11.4.2 Font directives
+  # VOLATILE: Font directives are due to be considered in abc 2.3 - see the section 11 disclaimer.
+  # PostScript and PDF are the standard file formats for distributing printable material. For portability reasons, typesetters will use the PostScript font names. The size parameter should be an integer, but is optional.
+
+  # %%titlefont        <font name>  <size>
+  # %%subtitlefont     <font name>  <size>
+  # %%composerfont     <font name>  <size>
+  # %%partsfont        <font name>  <size>
+  # %%tempofont        <font name>  <size>
+  # %%gchordfont       <font name>  <size> % for chords symbols
+  # %%annotationfont   <font name>  <size> % for "^..." annotations
+  # %%infofont         <font name>  <size>
+  # %%textfont         <font name>  <size>
+  # %%vocalfont        <font name>  <size> % for w:
+  # %%wordsfont        <font name>  <size> % for W:
+  # The specifiers $1, $2, $3 and $4 can be used to change the font within a text string. The font to be used can be specified with the %%setfont-n directives. $0 resets the font to its default value. $$ gives an actual dollar sign.
+
+  # %%setfont-1        <font name>  <size>
+  # %%setfont-2        <font name>  <size>
+  # %%setfont-3        <font name>  <size>
+  # %%setfont-4        <font name>  <size>
+
+describe "a font directive" do  
+  it "can specify a font for various elements" do
+    %w{title subtitle composer parts tempo gchord annotation info text vocal words}.each do |name|
+      p = parse_fragment("%%#{name}font Bodoni 5")
+      p.instructions["#{name}font"].name.should == "Bodoni"
+      p.instructions["#{name}font"].size.should == 5      
+    end
+  end
+  it "can appear without a size parameter" do
+    p = parse_fragment "%%titlefont Garamond" do
+      p.instructions["titlefont"].name.should == "Garamond"
+      p.instructions["titlefont"].size.should == nil
+    end
+  end
+  it 'can specify fonts for $1 $2 $3 $4' do
+    (1..4).each do |i|
+      p = parse_fragment "%%setfont-#{i} GillSans 12"
+      p.instructions["setfont-#{i}"].name.should == "GillSans"
+      p.instructions["setfont-#{i}"].size.should == 12
+    end
+    #TODO work out how these are applied to text strings
+  end
 end

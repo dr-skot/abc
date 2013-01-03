@@ -887,10 +887,10 @@ describe "information field continuation" do
   end
   it "works across stylesheet directives" do
     p = parse_fragment ["abcd abc",
-                        "%%vocalfont Times-Roman 14",
+                        "%vocalfont Times-Roman 14",
                         "w:nor-mal",
                         "% legal, but not recommended",
-                        "%%vocalfont Times-Italic *",
+                        "%vocalfont Times-Italic *",
                         "+:i-ta-lic",
                         "%%vocalfont Times-Roman 14",
                         "+:nor-mal"].join("\n")

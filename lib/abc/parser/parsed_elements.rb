@@ -51,3 +51,6 @@ require "abc/parser/parsed_elements/midi_voice"
 require "abc/parser/parsed_elements/midi_settings"
 
 require "abc/parser/parsed_elements/text_string"
+
+require "abc/parser/parsed_elements/length"
+require "abc/parser/parsed_elements/font_specifier"

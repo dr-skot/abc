@@ -736,7 +736,7 @@ rule key_field do
   end
 
   rule special_instruction_field do
-    staves_field / midi_field
+    staves_field / midi_field / formatting_field
   end
 
   rule general_instruction_field do
@@ -764,7 +764,7 @@ rule key_field do
   end
 
   rule special_directive do
-    ('score' / 'staves' / 'MIDI') !directive_chars
+    ('score' / 'staves' / 'MIDI' / formatting_directive) !directive_chars
   end
 
   rule instruction_content do
@@ -825,9 +825,12 @@ rule key_field do
   # +:nor-mal
 
   rule field_space do
-    space / line_ender '+:'
+    space / line_ender pseudo_comment_line* '+:'
   end
   
+  rule pseudo_comment_line do
+    pseudo_comment line_ender
+  end
 
   # 4. The tune body
 
@@ -2273,7 +2276,10 @@ rule key_field do
   # If a program doesn't recognise a stylesheet directive, it should just ignore it.
   # It should be stressed that the stylesheet directives are not formally part of the abc standard itself. Furthermore, the list of possible directives is long and not standardised. They are provided by a variety of programs for specifying layout, text annotations, fonts, spacings, voice instruments, transposition and other details.
   # Strictly speaking, abc applications don't have to conform to the same set of stylesheet directives. However, it is desirable that they do in order to make abc files portable between different computer systems.
-  
+
+  # TODO differentiate pseudo_comment from instruction field:
+  # pseudo_comment starts with '%%' is one line, cannot be continued with +:, cannot appear
+  # as an inline field, can appear inside a field (eg stylesheet directives inside w: fields)
   rule pseudo_comment do
     instruction_field
   end
@@ -2461,6 +2467,127 @@ rule key_field do
   end
 
 
+# 11.3 Accidental directives
+# VOLATILE: This section is under active discussion. See also the section 11 disclaimer.
+# %%propagate-accidentals not | octave | pitch
+# When set to not, accidentals apply only to the note they're attached to. When set to octave, accidentals also apply to all the notes of the same pitch in the same octave up to the end of the bar. When set to pitch, accidentals also apply to all the notes of the same pitch in all octaves up to the end of the bar.
+# The default value is pitch.
+# %%writeout-accidentals none | added | all
+# When set to none, modifying or explicit accidentals that appear in the key signature field (K:) are printed in the key signature. When set to added, only the accidentals belonging to the mode indicated in the K: field, are printed in the key signature. Modifying or explicit accidentals are printed in front of the notes to which they apply. When set to all, both the accidentals belonging to the mode and possible modifying or explicit accidentals are printed in front of the notes to which they apply; no key signature will be printed.
+# The default value is none.
+
+# ^^ no new rules needed
+
+
+# 11.4 Formatting directives
+# VOLATILE: See the section 11 disclaimer.
+# Typesetting programs should accept the set of directives in the next sections. The parameter of a directive can be a text string, a logical value true or false, an integer number, a number with decimals (just 'number' in the following), or a unit of length. Units can be expressed in cm, in, and pt (points, 1/72 inch).
+# The following directives should be self-explanatory.
+# 11.4.1 Page format directives
+# VOLATILE: See the section 11 disclaimer.
+# %%pageheight       <length>
+# %%pagewidth        <length>
+# %%topmargin        <length>
+# %%botmargin        <length>
+# %%leftmargin       <length>
+# %%rightmargin      <length>
+# %%indent           <length>
+# %%landscape        <logical>
+
+  rule formatting_field do
+    length_formatting / logical_formatting / font_formatting
+  end
+
+  rule formatting_directive do
+    length_directive / logical_directive / font_directive
+  end
+
+  rule length_formatting do
+    instruction_field_identifier 
+    directive:length_directive field_space+ length_measure <FieldNode> {
+      def value
+        @value ||= InstructionField.new(text_value[0], directive.text_value, length_measure.value)
+      end
+    }
+  end
+
+  rule length_directive do
+    'page' ('height'/'width') / ('top'/'bot'/'left'/'right') 'margin' / 'indent'
+  end
+
+  rule length_measure do
+    float field_space* unit_of_length {
+      def value
+        Length.new(float.value, unit_of_length.text_value)
+      end
+    }
+  end
+
+  rule unit_of_length do
+    'in' / 'cm' / 'pt'
+  end
+
+  rule logical_formatting do
+    instruction_field_identifier 
+    directive:logical_directive field_space+ bool:('true'/'false') <FieldNode> {
+      def value
+        @value ||= InstructionField.new(text_value[0], directive.text_value, 
+                                        bool.text_value == 'true')
+      end
+    }
+  end
+
+  rule logical_directive do
+    'landscape'
+  end
+
+
+  # 11.4.2 Font directives
+  # VOLATILE: Font directives are due to be considered in abc 2.3 - see the section 11 disclaimer.
+  # PostScript and PDF are the standard file formats for distributing printable material. For portability reasons, typesetters will use the PostScript font names. The size parameter should be an integer, but is optional.
+
+  # %%titlefont        <font name>  <size>
+  # %%subtitlefont     <font name>  <size>
+  # %%composerfont     <font name>  <size>
+  # %%partsfont        <font name>  <size>
+  # %%tempofont        <font name>  <size>
+  # %%gchordfont       <font name>  <size> % for chords symbols
+  # %%annotationfont   <font name>  <size> % for "^..." annotations
+  # %%infofont         <font name>  <size>
+  # %%textfont         <font name>  <size>
+  # %%vocalfont        <font name>  <size> % for w:
+  # %%wordsfont        <font name>  <size> % for W:
+  # The specifiers $1, $2, $3 and $4 can be used to change the font within a text string. The font to be used can be specified with the %%setfont-n directives. $0 resets the font to its default value. $$ gives an actual dollar sign.
+
+  # %%setfont-1        <font name>  <size>
+  # %%setfont-2        <font name>  <size>
+  # %%setfont-3        <font name>  <size>
+  # %%setfont-4        <font name>  <size>
+
+  rule font_formatting do
+    instruction_field_identifier 
+    directive:font_directive space+ font <FieldNode> {
+      def value
+        @value ||= InstructionField.new(text_value[0], directive.text_value, font.value) 
+      end
+    }
+  end
+
+  rule font_directive do
+    ('title'/'subtitle'/'composer'/'parts'/'tempo'/'gchord'/'annotation'/'info'/'text'/
+     'vocal'/'words') 'font' / 'setfont-' [1-4]
+  end
+
+  rule font do
+    name:alphanum+ size:(space+ num:(posint / '*'))? {
+      def value
+        FontSpecifier.new(name.text_value, size.empty? ? nil : size.num.value)
+      end
+    }
+  end
+
+  
+
    # TODO: deal with escaped " ? NO: use &quot;
    rule quoted_string do
     '"' value_node:(!'"' .)* '"' {
@@ -2514,6 +2641,14 @@ rule key_field do
     [1-9] [0-9]* {
       def value
         text_value.to_i
+      end
+    }
+  end
+
+  rule float do
+    (integer !'.' / integer '.' integer? / '.' integer) '' {
+      def value
+        text_value.to_f
       end
     }
   end
