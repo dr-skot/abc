@@ -86,6 +86,11 @@ module ABC
     end
     alias_method :bars, :measures
 
+    def measure(number)
+      first_voice.measure(number) if first_voice
+    end
+    alias_method :bar, :measure
+
     def staves
       @staves ||= instructions["staves"] || voices.values.map { |v| Staff.new([v.id]) }
     end
@@ -271,7 +276,8 @@ module ABC
     end
 
     def collect_measures
-      voices.each_value { |v| v.collect_measures }
+      first_number = instructions['measurefirst'] || 1
+      voices.each_value { |v| v.collect_measures(first_number) }
     end
 
     def apply_midi_instruments

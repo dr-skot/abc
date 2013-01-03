@@ -43,12 +43,15 @@ module ABC
       end
     end
 
-    def collect_measures
+    def collect_measures(first_number=1)
       return unless measures == []
-      containers = []
+      number = first_number
+      containers = [] # where to put content; if this is empty, make a new measure
       bar_line, blank_elements, waiting_for_content = nil, [], true
-      waiting_for_content = true
       elements.each do |element|
+        if element.is_a?(InstructionField, :directive => 'setbarnb')
+          number = element.value
+        end
         if element.is_a? OverlayMarker
           # TODO error if not enough measures
           # TODO error if overlays already
@@ -67,12 +70,13 @@ module ABC
         else
           waiting_for_content = false
           if containers == []
-            m = Measure.new
+            m = Measure.new(:number => number)
             m.left_bar = bar_line
             m.elements.concat(blank_elements)
             containers << m
             measures << m
             bar_line, blank_elements = nil, []
+            number += 1
           end
           containers[0].elements << element
         end
@@ -210,6 +214,15 @@ module ABC
         end
       end
     end
+
+    def bar(number)
+      # TODO issue warning if two bars have same number? or how to handle it?
+      @bars_by_number ||= bars.inject({}) do |result, bar|
+        result.merge!(bar.number => bar)
+      end
+      @bars_by_number[number]
+    end
+    alias_method :measure, :bar
 
   end
 end

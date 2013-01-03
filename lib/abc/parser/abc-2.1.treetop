@@ -2521,7 +2521,7 @@ rule key_field do
   end
 
   rule logical_directive do
-    page_format_logical_directive / space_logical_directive
+    page_format_logical_directive / space_logical_directive / measure_logical_directive
   end
 
   rule integer_predicate do
@@ -2529,7 +2529,7 @@ rule key_field do
   end
 
   rule integer_directive do
-    space_integer_directive
+    space_integer_directive / measure_integer_directive
   end
 
   rule number_predicate do
@@ -2656,6 +2656,24 @@ rule key_field do
   rule space_logical_directive do
     'stretchstaff' / 'stretchlast'
   end
+
+
+  # 11.4.4 Measure directives
+  # VOLATILE: See the section 11 disclaimer.
+  # %%measurefirst     <integer> % number of first measure
+  # %%barnumbers       <integer> % bar numbers every 'n' measures
+  # %%measurenb        <integer> % same as %%barnumbers
+  # %%measurebox       <logical>
+  # %%setbarnb         <integer> % set measure number
+
+  rule measure_integer_directive do
+    'measurefirst' / 'barnumbers' / 'measurenb' / 'setbarnb'
+  end
+
+  rule measure_logical_directive do
+    'measure_box'
+  end
+
 
 
    # TODO: deal with escaped " ? NO: use &quot;

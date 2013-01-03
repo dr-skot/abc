@@ -13088,8 +13088,13 @@ module ABC
       if r2
         r0 = r2
       else
-        @index = i0
-        r0 = nil
+        r3 = _nt_measure_logical_directive
+        if r3
+          r0 = r3
+        else
+          @index = i0
+          r0 = nil
+        end
       end
     end
 
@@ -13168,7 +13173,19 @@ module ABC
       return cached
     end
 
-    r0 = _nt_space_integer_directive
+    i0 = index
+    r1 = _nt_space_integer_directive
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_measure_integer_directive
+      if r2
+        r0 = r2
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
 
     node_cache[:integer_directive][start_index] = r0
 
@@ -14399,6 +14416,94 @@ module ABC
     end
 
     node_cache[:space_logical_directive][start_index] = r0
+
+    r0
+  end
+
+  def _nt_measure_integer_directive
+    start_index = index
+    if node_cache[:measure_integer_directive].has_key?(index)
+      cached = node_cache[:measure_integer_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    if has_terminal?('measurefirst', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 12))
+      @index += 12
+    else
+      terminal_parse_failure('measurefirst')
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+    else
+      if has_terminal?('barnumbers', false, index)
+        r2 = instantiate_node(SyntaxNode,input, index...(index + 10))
+        @index += 10
+      else
+        terminal_parse_failure('barnumbers')
+        r2 = nil
+      end
+      if r2
+        r0 = r2
+      else
+        if has_terminal?('measurenb', false, index)
+          r3 = instantiate_node(SyntaxNode,input, index...(index + 9))
+          @index += 9
+        else
+          terminal_parse_failure('measurenb')
+          r3 = nil
+        end
+        if r3
+          r0 = r3
+        else
+          if has_terminal?('setbarnb', false, index)
+            r4 = instantiate_node(SyntaxNode,input, index...(index + 8))
+            @index += 8
+          else
+            terminal_parse_failure('setbarnb')
+            r4 = nil
+          end
+          if r4
+            r0 = r4
+          else
+            @index = i0
+            r0 = nil
+          end
+        end
+      end
+    end
+
+    node_cache[:measure_integer_directive][start_index] = r0
+
+    r0
+  end
+
+  def _nt_measure_logical_directive
+    start_index = index
+    if node_cache[:measure_logical_directive].has_key?(index)
+      cached = node_cache[:measure_logical_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    if has_terminal?('measure_box', false, index)
+      r0 = instantiate_node(SyntaxNode,input, index...(index + 11))
+      @index += 11
+    else
+      terminal_parse_failure('measure_box')
+      r0 = nil
+    end
+
+    node_cache[:measure_logical_directive][start_index] = r0
 
     r0
   end

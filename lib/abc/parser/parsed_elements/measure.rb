@@ -4,9 +4,11 @@ module ABC
     attr_accessor :left_bar
     attr_accessor :right_bar
     attr_accessor :overlays
+    attr_accessor :number
 
-    def initialize
+    def initialize(options={})
       super(nil)
+      @number = options[:number] || 1
       @overlays = []
     end
 

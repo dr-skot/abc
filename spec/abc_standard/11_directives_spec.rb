@@ -515,3 +515,43 @@ describe "a space directive" do
     p.instructions["scale"].should == 0.75
   end
 end
+
+
+# 11.4.4 Measure directives
+# VOLATILE: See the section 11 disclaimer.
+# %%measurefirst     <integer> % number of first measure
+# %%barnumbers       <integer> % bar numbers every 'n' measures
+# %%measurenb        <integer> % same as %%barnumbers
+# %%measurebox       <logical>
+# %%setbarnb         <integer> % set measure number
+
+describe "a measure directive" do
+  it "can specify the number of the first measure" do
+    p = parse_fragment "%%measurefirst 5\n|abc|def"
+    p.instructions['measurefirst'].should == 5
+    p.bars[0].number.should == 5
+    # p.bar(5).should = p.bars[0]
+  end
+  it "can specify how frequently bar numbers appear" do
+    p = parse_fragment "%%barnumbers 3"
+    p.instructions['barnumbers'].should == 3
+    p = parse_fragment "%%measurenb 3"
+    p.instructions['measurenb'].should == 3
+  end
+  it "can set the number of the current bar" do
+    p = parse_fragment "abc|\n%%setbarnb 5\ndef"
+    p.measures[0].number.should == 1
+    p.measures[1].number.should == 5
+    p.bar(1).should == p.bars[0]
+    p.bar(2).should == nil
+    p.bar(5).should == p.bars[1]
+  end
+  it "can set the number using an inline field" do
+    p = parse_fragment "abc|[I:setbarnb 5]def"
+    p.bars[0].number.should == 1
+    p.bars[1].number.should == 5
+    p.measure(1).should == p.bars[0]
+    p.measure(2).should == nil
+    p.measure(5).should == p.bars[1]
+  end
+end
