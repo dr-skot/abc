@@ -764,7 +764,7 @@ rule key_field do
   end
 
   rule special_directive do
-    ('score' / 'staves' / 'MIDI' / formatting_directive) !directive_chars
+    ('score' / 'staves' / 'MIDI' / formatting_predicate) !directive_chars
   end
 
   rule instruction_content do
@@ -2495,26 +2495,67 @@ rule key_field do
 # %%landscape        <logical>
 
   rule formatting_field do
-    length_formatting / logical_formatting / font_formatting
-  end
-
-  rule formatting_directive do
-    length_directive / logical_directive / font_directive
-  end
-
-  rule length_formatting do
-    instruction_field_identifier 
-    directive:length_directive field_space+ length_measure <FieldNode> {
+    instruction_field_identifier pred:formatting_predicate <FieldNode> {
       def value
-        @value ||= InstructionField.new(text_value[0], directive.text_value, length_measure.value)
+        @value ||= InstructionField.new(text_value[0], pred.directive.text_value, 
+                                        pred.parameter.value)
       end
     }
   end
 
-  rule length_directive do
-    'page' ('height'/'width') / ('top'/'bot'/'left'/'right') 'margin' / 'indent'
+  rule formatting_predicate do
+    string_predicate / logical_predicate / integer_predicate / number_predicate /
+    length_predicate / font_predicate
   end
 
+  rule string_predicate do
+    directive:string_directive space+ parameter:'not implemented'
+  end
+
+  rule string_directive do
+    'not implemented'
+  end
+
+  rule logical_predicate do
+    directive:logical_directive space+ parameter:boolean
+  end
+
+  rule logical_directive do
+    page_format_logical_directive / space_logical_directive
+  end
+
+  rule integer_predicate do
+    directive:integer_directive space+ parameter:integer
+  end
+
+  rule integer_directive do
+    space_integer_directive
+  end
+
+  rule number_predicate do
+    directive:number_directive space+ parameter:float
+  end
+
+  rule number_directive do
+    space_number_directive
+  end
+
+  rule length_predicate do
+    directive:length_directive field_space+ parameter:length_measure
+  end
+
+  rule length_directive do
+    page_format_length_directive / space_length_directive
+  end
+  
+  rule boolean do
+    ('true'/'false') {
+      def value
+        text_value == 'true'
+      end
+    }
+  end
+    
   rule length_measure do
     float field_space* unit_of_length {
       def value
@@ -2527,19 +2568,14 @@ rule key_field do
     'in' / 'cm' / 'pt'
   end
 
-  rule logical_formatting do
-    instruction_field_identifier 
-    directive:logical_directive field_space+ bool:('true'/'false') <FieldNode> {
-      def value
-        @value ||= InstructionField.new(text_value[0], directive.text_value, 
-                                        bool.text_value == 'true')
-      end
-    }
-  end
-
-  rule logical_directive do
+  rule page_format_logical_directive do
     'landscape'
   end
+
+  rule page_format_length_directive do
+    'page' ('height'/'width') / ('top'/'bot'/'left'/'right') 'margin' / 'indent'     
+  end
+
 
 
   # 11.4.2 Font directives
@@ -2564,13 +2600,8 @@ rule key_field do
   # %%setfont-3        <font name>  <size>
   # %%setfont-4        <font name>  <size>
 
-  rule font_formatting do
-    instruction_field_identifier 
-    directive:font_directive space+ font <FieldNode> {
-      def value
-        @value ||= InstructionField.new(text_value[0], directive.text_value, font.value) 
-      end
-    }
+  rule font_predicate do
+    directive:font_directive space+ parameter:font
   end
 
   rule font_directive do
@@ -2587,6 +2618,45 @@ rule key_field do
   end
 
   
+  # 11.4.3 Space directives
+  # VOLATILE: See the section 11 disclaimer.
+  # %%topspace         <length>
+  # %%titlespace       <length>
+  # %%subtitlespace    <length>
+  # %%composerspace    <length>
+  # %%musicspace       <length> % between composer and 1st staff
+  # %%partsspace       <length>
+  # %%vocalspace       <length>
+  # %%wordsspace       <length>
+  # %%textspace        <length>
+  # %%infospace        <length>
+  # %%staffsep         <length> % between systems
+  # %%sysstaffsep      <length> % between staves in the same system
+  # %%barsperstaff     <integer>
+  # %%parskipfac       <number> % space between parts
+  # %%lineskipfac      <number> % space between lines of text
+  # %%stretchstaff     <logical>
+  # %%stretchlast      <logical>
+  # %%maxshrink        <number> % shrinking notes
+  # %%scale            <number>
+
+  rule space_length_directive do
+    ('top'/'title'/'subtitle'/'composer'/'music'/'parts'/'vocal'/'words'/'text'/'info') 'space' /
+      ('staff'/'syststaff') 'sep'
+  end
+
+  rule space_integer_directive do
+    'barsperstaff'
+  end
+
+  rule space_number_directive do
+    'parskipfac' / 'lineskipfac' / 'maxshrink' / 'scale'
+  end
+
+  rule space_logical_directive do
+    'stretchstaff' / 'stretchlast'
+  end
+
 
    # TODO: deal with escaped " ? NO: use &quot;
    rule quoted_string do

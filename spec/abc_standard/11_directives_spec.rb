@@ -448,3 +448,70 @@ describe "a font directive" do
     #TODO work out how these are applied to text strings
   end
 end
+
+
+# 11.4.3 Space directives
+# VOLATILE: See the section 11 disclaimer.
+# %%topspace         <length>
+# %%titlespace       <length>
+# %%subtitlespace    <length>
+# %%composerspace    <length>
+# %%musicspace       <length> % between composer and 1st staff
+# %%partsspace       <length>
+# %%vocalspace       <length>
+# %%wordsspace       <length>
+# %%textspace        <length>
+# %%infospace        <length>
+# %%staffsep         <length> % between systems
+# %%sysstaffsep      <length> % between staves in the same system
+# %%barsperstaff     <integer>
+# %%parskipfac       <number> % space between parts
+# %%lineskipfac      <number> % space between lines of text
+# %%stretchstaff     <logical>
+# %%stretchlast      <logical>
+# %%maxshrink        <number> % shrinking notes
+# %%scale            <number>
+
+describe "a space directive" do
+  it "can specify space measurements in various units" do
+    %w{top title subtitle composer music parts vocal words text info}.each do |name|
+      p = parse_fragment "%%#{name}space 1.5in"
+      p.instructions["#{name}space"].measure.should == 1.5
+      p.instructions["#{name}space"].unit.should == 'in'
+    end
+  end
+  it "can specify staff sep measurements" do
+    %w{staff syststaff}.each do |name|
+      p = parse_fragment "%%#{name}sep 3 cm"
+      p.instructions["#{name}sep"].measure.should == 3
+      p.instructions["#{name}sep"].unit.should == 'cm'
+    end
+  end
+  it "can specify bars per staff as an integer" do
+    p = parse_fragment "%%barsperstaff 5"
+    p.instructions["barsperstaff"].should == 5
+    fail_to_parse_fragment "%%barsperstaff 5.1"
+  end
+  it "can specify skip factors as floats" do
+    p = parse_fragment "%%parskipfac .5"
+    p.instructions["parskipfac"].should == 0.5
+    p = parse_fragment "%%lineskipfac 0.5"
+    p.instructions["lineskipfac"].should == 0.5
+  end
+  it "can set the stretchstaff and stretchlast flags" do
+    p = parse_fragment "%%stretchstaff true"
+    p.instructions["stretchstaff"].should == true
+    p = parse_fragment "%%stretchstaff false"
+    p.instructions["stretchstaff"].should == false
+    p = parse_fragment "%%stretchlast true"
+    p.instructions["stretchlast"].should == true
+    p = parse_fragment "%%stretchlast false"
+    p.instructions["stretchlast"].should == false
+  end
+  it "can specify maxshrink and scale as floats" do
+    p = parse_fragment "%%maxshrink .8"
+    p.instructions["maxshrink"].should == 0.8
+    p = parse_fragment "%%scale 0.75"
+    p.instructions["scale"].should == 0.75
+  end
+end

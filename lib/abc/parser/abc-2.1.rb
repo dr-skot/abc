@@ -5276,7 +5276,7 @@ module ABC
         if r4
           r1 = r4
         else
-          r5 = _nt_formatting_directive
+          r5 = _nt_formatting_predicate
           if r5
             r1 = r5
           else
@@ -12821,6 +12821,23 @@ module ABC
     r0
   end
 
+  module FormattingField0
+    def instruction_field_identifier
+      elements[0]
+    end
+
+    def pred
+      elements[1]
+    end
+  end
+
+  module FormattingField1
+    def value
+      @value ||= InstructionField.new(text_value[0], pred.directive.text_value, 
+                                      pred.parameter.value)
+    end
+  end
+
   def _nt_formatting_field
     start_index = index
     if node_cache[:formatting_field].has_key?(index)
@@ -12832,23 +12849,20 @@ module ABC
       return cached
     end
 
-    i0 = index
-    r1 = _nt_length_formatting
+    i0, s0 = index, []
+    r1 = _nt_instruction_field_identifier
+    s0 << r1
     if r1
-      r0 = r1
+      r2 = _nt_formatting_predicate
+      s0 << r2
+    end
+    if s0.last
+      r0 = instantiate_node(FieldNode,input, i0...index, s0)
+      r0.extend(FormattingField0)
+      r0.extend(FormattingField1)
     else
-      r2 = _nt_logical_formatting
-      if r2
-        r0 = r2
-      else
-        r3 = _nt_font_formatting
-        if r3
-          r0 = r3
-        else
-          @index = i0
-          r0 = nil
-        end
-      end
+      @index = i0
+      r0 = nil
     end
 
     node_cache[:formatting_field][start_index] = r0
@@ -12856,10 +12870,10 @@ module ABC
     r0
   end
 
-  def _nt_formatting_directive
+  def _nt_formatting_predicate
     start_index = index
-    if node_cache[:formatting_directive].has_key?(index)
-      cached = node_cache[:formatting_directive][index]
+    if node_cache[:formatting_predicate].has_key?(index)
+      cached = node_cache[:formatting_predicate][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -12868,53 +12882,58 @@ module ABC
     end
 
     i0 = index
-    r1 = _nt_length_directive
+    r1 = _nt_string_predicate
     if r1
       r0 = r1
     else
-      r2 = _nt_logical_directive
+      r2 = _nt_logical_predicate
       if r2
         r0 = r2
       else
-        r3 = _nt_font_directive
+        r3 = _nt_integer_predicate
         if r3
           r0 = r3
         else
-          @index = i0
-          r0 = nil
+          r4 = _nt_number_predicate
+          if r4
+            r0 = r4
+          else
+            r5 = _nt_length_predicate
+            if r5
+              r0 = r5
+            else
+              r6 = _nt_font_predicate
+              if r6
+                r0 = r6
+              else
+                @index = i0
+                r0 = nil
+              end
+            end
+          end
         end
       end
     end
 
-    node_cache[:formatting_directive][start_index] = r0
+    node_cache[:formatting_predicate][start_index] = r0
 
     r0
   end
 
-  module LengthFormatting0
-    def instruction_field_identifier
+  module StringPredicate0
+    def directive
       elements[0]
     end
 
-    def directive
-      elements[1]
-    end
-
-    def length_measure
-      elements[3]
+    def parameter
+      elements[2]
     end
   end
 
-  module LengthFormatting1
-    def value
-      @value ||= InstructionField.new(text_value[0], directive.text_value, length_measure.value)
-    end
-  end
-
-  def _nt_length_formatting
+  def _nt_string_predicate
     start_index = index
-    if node_cache[:length_formatting].has_key?(index)
-      cached = node_cache[:length_formatting][index]
+    if node_cache[:string_predicate].has_key?(index)
+      cached = node_cache[:string_predicate][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -12923,52 +12942,373 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_string_directive
     s0 << r1
     if r1
-      r2 = _nt_length_directive
+      s2, i2 = [], index
+      loop do
+        r3 = _nt_space
+        if r3
+          s2 << r3
+        else
+          break
+        end
+      end
+      if s2.empty?
+        @index = i2
+        r2 = nil
+      else
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+      end
       s0 << r2
       if r2
-        s3, i3 = [], index
-        loop do
-          r4 = _nt_field_space
-          if r4
-            s3 << r4
-          else
-            break
-          end
-        end
-        if s3.empty?
-          @index = i3
-          r3 = nil
+        if has_terminal?('not implemented', false, index)
+          r4 = instantiate_node(SyntaxNode,input, index...(index + 15))
+          @index += 15
         else
-          r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
+          terminal_parse_failure('not implemented')
+          r4 = nil
         end
-        s0 << r3
-        if r3
-          r5 = _nt_length_measure
-          s0 << r5
-        end
+        s0 << r4
       end
     end
     if s0.last
-      r0 = instantiate_node(FieldNode,input, i0...index, s0)
-      r0.extend(LengthFormatting0)
-      r0.extend(LengthFormatting1)
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(StringPredicate0)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:length_formatting][start_index] = r0
+    node_cache[:string_predicate][start_index] = r0
 
     r0
   end
 
-  module LengthDirective0
+  def _nt_string_directive
+    start_index = index
+    if node_cache[:string_directive].has_key?(index)
+      cached = node_cache[:string_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    if has_terminal?('not implemented', false, index)
+      r0 = instantiate_node(SyntaxNode,input, index...(index + 15))
+      @index += 15
+    else
+      terminal_parse_failure('not implemented')
+      r0 = nil
+    end
+
+    node_cache[:string_directive][start_index] = r0
+
+    r0
   end
 
-  module LengthDirective1
+  module LogicalPredicate0
+    def directive
+      elements[0]
+    end
+
+    def parameter
+      elements[2]
+    end
+  end
+
+  def _nt_logical_predicate
+    start_index = index
+    if node_cache[:logical_predicate].has_key?(index)
+      cached = node_cache[:logical_predicate][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    r1 = _nt_logical_directive
+    s0 << r1
+    if r1
+      s2, i2 = [], index
+      loop do
+        r3 = _nt_space
+        if r3
+          s2 << r3
+        else
+          break
+        end
+      end
+      if s2.empty?
+        @index = i2
+        r2 = nil
+      else
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+      end
+      s0 << r2
+      if r2
+        r4 = _nt_boolean
+        s0 << r4
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(LogicalPredicate0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:logical_predicate][start_index] = r0
+
+    r0
+  end
+
+  def _nt_logical_directive
+    start_index = index
+    if node_cache[:logical_directive].has_key?(index)
+      cached = node_cache[:logical_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    r1 = _nt_page_format_logical_directive
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_space_logical_directive
+      if r2
+        r0 = r2
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
+
+    node_cache[:logical_directive][start_index] = r0
+
+    r0
+  end
+
+  module IntegerPredicate0
+    def directive
+      elements[0]
+    end
+
+    def parameter
+      elements[2]
+    end
+  end
+
+  def _nt_integer_predicate
+    start_index = index
+    if node_cache[:integer_predicate].has_key?(index)
+      cached = node_cache[:integer_predicate][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    r1 = _nt_integer_directive
+    s0 << r1
+    if r1
+      s2, i2 = [], index
+      loop do
+        r3 = _nt_space
+        if r3
+          s2 << r3
+        else
+          break
+        end
+      end
+      if s2.empty?
+        @index = i2
+        r2 = nil
+      else
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+      end
+      s0 << r2
+      if r2
+        r4 = _nt_integer
+        s0 << r4
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(IntegerPredicate0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:integer_predicate][start_index] = r0
+
+    r0
+  end
+
+  def _nt_integer_directive
+    start_index = index
+    if node_cache[:integer_directive].has_key?(index)
+      cached = node_cache[:integer_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    r0 = _nt_space_integer_directive
+
+    node_cache[:integer_directive][start_index] = r0
+
+    r0
+  end
+
+  module NumberPredicate0
+    def directive
+      elements[0]
+    end
+
+    def parameter
+      elements[2]
+    end
+  end
+
+  def _nt_number_predicate
+    start_index = index
+    if node_cache[:number_predicate].has_key?(index)
+      cached = node_cache[:number_predicate][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    r1 = _nt_number_directive
+    s0 << r1
+    if r1
+      s2, i2 = [], index
+      loop do
+        r3 = _nt_space
+        if r3
+          s2 << r3
+        else
+          break
+        end
+      end
+      if s2.empty?
+        @index = i2
+        r2 = nil
+      else
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+      end
+      s0 << r2
+      if r2
+        r4 = _nt_float
+        s0 << r4
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(NumberPredicate0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:number_predicate][start_index] = r0
+
+    r0
+  end
+
+  def _nt_number_directive
+    start_index = index
+    if node_cache[:number_directive].has_key?(index)
+      cached = node_cache[:number_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    r0 = _nt_space_number_directive
+
+    node_cache[:number_directive][start_index] = r0
+
+    r0
+  end
+
+  module LengthPredicate0
+    def directive
+      elements[0]
+    end
+
+    def parameter
+      elements[2]
+    end
+  end
+
+  def _nt_length_predicate
+    start_index = index
+    if node_cache[:length_predicate].has_key?(index)
+      cached = node_cache[:length_predicate][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    r1 = _nt_length_directive
+    s0 << r1
+    if r1
+      s2, i2 = [], index
+      loop do
+        r3 = _nt_field_space
+        if r3
+          s2 << r3
+        else
+          break
+        end
+      end
+      if s2.empty?
+        @index = i2
+        r2 = nil
+      else
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+      end
+      s0 << r2
+      if r2
+        r4 = _nt_length_measure
+        s0 << r4
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(LengthPredicate0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:length_predicate][start_index] = r0
+
+    r0
   end
 
   def _nt_length_directive
@@ -12983,139 +13323,70 @@ module ABC
     end
 
     i0 = index
-    i1, s1 = index, []
-    if has_terminal?('page', false, index)
-      r2 = instantiate_node(SyntaxNode,input, index...(index + 4))
-      @index += 4
-    else
-      terminal_parse_failure('page')
-      r2 = nil
-    end
-    s1 << r2
-    if r2
-      i3 = index
-      if has_terminal?('height', false, index)
-        r4 = instantiate_node(SyntaxNode,input, index...(index + 6))
-        @index += 6
-      else
-        terminal_parse_failure('height')
-        r4 = nil
-      end
-      if r4
-        r3 = r4
-      else
-        if has_terminal?('width', false, index)
-          r5 = instantiate_node(SyntaxNode,input, index...(index + 5))
-          @index += 5
-        else
-          terminal_parse_failure('width')
-          r5 = nil
-        end
-        if r5
-          r3 = r5
-        else
-          @index = i3
-          r3 = nil
-        end
-      end
-      s1 << r3
-    end
-    if s1.last
-      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
-      r1.extend(LengthDirective0)
-    else
-      @index = i1
-      r1 = nil
-    end
+    r1 = _nt_page_format_length_directive
     if r1
       r0 = r1
     else
-      i6, s6 = index, []
-      i7 = index
-      if has_terminal?('top', false, index)
-        r8 = instantiate_node(SyntaxNode,input, index...(index + 3))
-        @index += 3
+      r2 = _nt_space_length_directive
+      if r2
+        r0 = r2
       else
-        terminal_parse_failure('top')
-        r8 = nil
-      end
-      if r8
-        r7 = r8
-      else
-        if has_terminal?('bot', false, index)
-          r9 = instantiate_node(SyntaxNode,input, index...(index + 3))
-          @index += 3
-        else
-          terminal_parse_failure('bot')
-          r9 = nil
-        end
-        if r9
-          r7 = r9
-        else
-          if has_terminal?('left', false, index)
-            r10 = instantiate_node(SyntaxNode,input, index...(index + 4))
-            @index += 4
-          else
-            terminal_parse_failure('left')
-            r10 = nil
-          end
-          if r10
-            r7 = r10
-          else
-            if has_terminal?('right', false, index)
-              r11 = instantiate_node(SyntaxNode,input, index...(index + 5))
-              @index += 5
-            else
-              terminal_parse_failure('right')
-              r11 = nil
-            end
-            if r11
-              r7 = r11
-            else
-              @index = i7
-              r7 = nil
-            end
-          end
-        end
-      end
-      s6 << r7
-      if r7
-        if has_terminal?('margin', false, index)
-          r12 = instantiate_node(SyntaxNode,input, index...(index + 6))
-          @index += 6
-        else
-          terminal_parse_failure('margin')
-          r12 = nil
-        end
-        s6 << r12
-      end
-      if s6.last
-        r6 = instantiate_node(SyntaxNode,input, i6...index, s6)
-        r6.extend(LengthDirective1)
-      else
-        @index = i6
-        r6 = nil
-      end
-      if r6
-        r0 = r6
-      else
-        if has_terminal?('indent', false, index)
-          r13 = instantiate_node(SyntaxNode,input, index...(index + 6))
-          @index += 6
-        else
-          terminal_parse_failure('indent')
-          r13 = nil
-        end
-        if r13
-          r0 = r13
-        else
-          @index = i0
-          r0 = nil
-        end
+        @index = i0
+        r0 = nil
       end
     end
 
     node_cache[:length_directive][start_index] = r0
+
+    r0
+  end
+
+  module Boolean0
+    def value
+      text_value == 'true'
+    end
+  end
+
+  def _nt_boolean
+    start_index = index
+    if node_cache[:boolean].has_key?(index)
+      cached = node_cache[:boolean][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    if has_terminal?('true', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 4))
+      @index += 4
+    else
+      terminal_parse_failure('true')
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+      r0.extend(Boolean0)
+    else
+      if has_terminal?('false', false, index)
+        r2 = instantiate_node(SyntaxNode,input, index...(index + 5))
+        @index += 5
+      else
+        terminal_parse_failure('false')
+        r2 = nil
+      end
+      if r2
+        r0 = r2
+        r0.extend(Boolean0)
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
+
+    node_cache[:boolean][start_index] = r0
 
     r0
   end
@@ -13234,109 +13505,10 @@ module ABC
     r0
   end
 
-  module LogicalFormatting0
-    def instruction_field_identifier
-      elements[0]
-    end
-
-    def directive
-      elements[1]
-    end
-
-    def bool
-      elements[3]
-    end
-  end
-
-  module LogicalFormatting1
-    def value
-      @value ||= InstructionField.new(text_value[0], directive.text_value, 
-                                      bool.text_value == 'true')
-    end
-  end
-
-  def _nt_logical_formatting
+  def _nt_page_format_logical_directive
     start_index = index
-    if node_cache[:logical_formatting].has_key?(index)
-      cached = node_cache[:logical_formatting][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
-    s0 << r1
-    if r1
-      r2 = _nt_logical_directive
-      s0 << r2
-      if r2
-        s3, i3 = [], index
-        loop do
-          r4 = _nt_field_space
-          if r4
-            s3 << r4
-          else
-            break
-          end
-        end
-        if s3.empty?
-          @index = i3
-          r3 = nil
-        else
-          r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
-        end
-        s0 << r3
-        if r3
-          i5 = index
-          if has_terminal?('true', false, index)
-            r6 = instantiate_node(SyntaxNode,input, index...(index + 4))
-            @index += 4
-          else
-            terminal_parse_failure('true')
-            r6 = nil
-          end
-          if r6
-            r5 = r6
-          else
-            if has_terminal?('false', false, index)
-              r7 = instantiate_node(SyntaxNode,input, index...(index + 5))
-              @index += 5
-            else
-              terminal_parse_failure('false')
-              r7 = nil
-            end
-            if r7
-              r5 = r7
-            else
-              @index = i5
-              r5 = nil
-            end
-          end
-          s0 << r5
-        end
-      end
-    end
-    if s0.last
-      r0 = instantiate_node(FieldNode,input, i0...index, s0)
-      r0.extend(LogicalFormatting0)
-      r0.extend(LogicalFormatting1)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:logical_formatting][start_index] = r0
-
-    r0
-  end
-
-  def _nt_logical_directive
-    start_index = index
-    if node_cache[:logical_directive].has_key?(index)
-      cached = node_cache[:logical_directive][index]
+    if node_cache[:page_format_logical_directive].has_key?(index)
+      cached = node_cache[:page_format_logical_directive][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -13352,35 +13524,180 @@ module ABC
       r0 = nil
     end
 
-    node_cache[:logical_directive][start_index] = r0
+    node_cache[:page_format_logical_directive][start_index] = r0
 
     r0
   end
 
-  module FontFormatting0
-    def instruction_field_identifier
+  module PageFormatLengthDirective0
+  end
+
+  module PageFormatLengthDirective1
+  end
+
+  def _nt_page_format_length_directive
+    start_index = index
+    if node_cache[:page_format_length_directive].has_key?(index)
+      cached = node_cache[:page_format_length_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    i1, s1 = index, []
+    if has_terminal?('page', false, index)
+      r2 = instantiate_node(SyntaxNode,input, index...(index + 4))
+      @index += 4
+    else
+      terminal_parse_failure('page')
+      r2 = nil
+    end
+    s1 << r2
+    if r2
+      i3 = index
+      if has_terminal?('height', false, index)
+        r4 = instantiate_node(SyntaxNode,input, index...(index + 6))
+        @index += 6
+      else
+        terminal_parse_failure('height')
+        r4 = nil
+      end
+      if r4
+        r3 = r4
+      else
+        if has_terminal?('width', false, index)
+          r5 = instantiate_node(SyntaxNode,input, index...(index + 5))
+          @index += 5
+        else
+          terminal_parse_failure('width')
+          r5 = nil
+        end
+        if r5
+          r3 = r5
+        else
+          @index = i3
+          r3 = nil
+        end
+      end
+      s1 << r3
+    end
+    if s1.last
+      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+      r1.extend(PageFormatLengthDirective0)
+    else
+      @index = i1
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+    else
+      i6, s6 = index, []
+      i7 = index
+      if has_terminal?('top', false, index)
+        r8 = instantiate_node(SyntaxNode,input, index...(index + 3))
+        @index += 3
+      else
+        terminal_parse_failure('top')
+        r8 = nil
+      end
+      if r8
+        r7 = r8
+      else
+        if has_terminal?('bot', false, index)
+          r9 = instantiate_node(SyntaxNode,input, index...(index + 3))
+          @index += 3
+        else
+          terminal_parse_failure('bot')
+          r9 = nil
+        end
+        if r9
+          r7 = r9
+        else
+          if has_terminal?('left', false, index)
+            r10 = instantiate_node(SyntaxNode,input, index...(index + 4))
+            @index += 4
+          else
+            terminal_parse_failure('left')
+            r10 = nil
+          end
+          if r10
+            r7 = r10
+          else
+            if has_terminal?('right', false, index)
+              r11 = instantiate_node(SyntaxNode,input, index...(index + 5))
+              @index += 5
+            else
+              terminal_parse_failure('right')
+              r11 = nil
+            end
+            if r11
+              r7 = r11
+            else
+              @index = i7
+              r7 = nil
+            end
+          end
+        end
+      end
+      s6 << r7
+      if r7
+        if has_terminal?('margin', false, index)
+          r12 = instantiate_node(SyntaxNode,input, index...(index + 6))
+          @index += 6
+        else
+          terminal_parse_failure('margin')
+          r12 = nil
+        end
+        s6 << r12
+      end
+      if s6.last
+        r6 = instantiate_node(SyntaxNode,input, i6...index, s6)
+        r6.extend(PageFormatLengthDirective1)
+      else
+        @index = i6
+        r6 = nil
+      end
+      if r6
+        r0 = r6
+      else
+        if has_terminal?('indent', false, index)
+          r13 = instantiate_node(SyntaxNode,input, index...(index + 6))
+          @index += 6
+        else
+          terminal_parse_failure('indent')
+          r13 = nil
+        end
+        if r13
+          r0 = r13
+        else
+          @index = i0
+          r0 = nil
+        end
+      end
+    end
+
+    node_cache[:page_format_length_directive][start_index] = r0
+
+    r0
+  end
+
+  module FontPredicate0
+    def directive
       elements[0]
     end
 
-    def directive
-      elements[1]
-    end
-
-    def font
-      elements[3]
+    def parameter
+      elements[2]
     end
   end
 
-  module FontFormatting1
-    def value
-      @value ||= InstructionField.new(text_value[0], directive.text_value, font.value) 
-    end
-  end
-
-  def _nt_font_formatting
+  def _nt_font_predicate
     start_index = index
-    if node_cache[:font_formatting].has_key?(index)
-      cached = node_cache[:font_formatting][index]
+    if node_cache[:font_predicate].has_key?(index)
+      cached = node_cache[:font_predicate][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -13389,44 +13706,39 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_font_directive
     s0 << r1
     if r1
-      r2 = _nt_font_directive
+      s2, i2 = [], index
+      loop do
+        r3 = _nt_space
+        if r3
+          s2 << r3
+        else
+          break
+        end
+      end
+      if s2.empty?
+        @index = i2
+        r2 = nil
+      else
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+      end
       s0 << r2
       if r2
-        s3, i3 = [], index
-        loop do
-          r4 = _nt_space
-          if r4
-            s3 << r4
-          else
-            break
-          end
-        end
-        if s3.empty?
-          @index = i3
-          r3 = nil
-        else
-          r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
-        end
-        s0 << r3
-        if r3
-          r5 = _nt_font
-          s0 << r5
-        end
+        r4 = _nt_font
+        s0 << r4
       end
     end
     if s0.last
-      r0 = instantiate_node(FieldNode,input, i0...index, s0)
-      r0.extend(FontFormatting0)
-      r0.extend(FontFormatting1)
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(FontPredicate0)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:font_formatting][start_index] = r0
+    node_cache[:font_predicate][start_index] = r0
 
     r0
   end
@@ -13747,6 +14059,346 @@ module ABC
     end
 
     node_cache[:font][start_index] = r0
+
+    r0
+  end
+
+  module SpaceLengthDirective0
+  end
+
+  module SpaceLengthDirective1
+  end
+
+  def _nt_space_length_directive
+    start_index = index
+    if node_cache[:space_length_directive].has_key?(index)
+      cached = node_cache[:space_length_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    i1, s1 = index, []
+    i2 = index
+    if has_terminal?('top', false, index)
+      r3 = instantiate_node(SyntaxNode,input, index...(index + 3))
+      @index += 3
+    else
+      terminal_parse_failure('top')
+      r3 = nil
+    end
+    if r3
+      r2 = r3
+    else
+      if has_terminal?('title', false, index)
+        r4 = instantiate_node(SyntaxNode,input, index...(index + 5))
+        @index += 5
+      else
+        terminal_parse_failure('title')
+        r4 = nil
+      end
+      if r4
+        r2 = r4
+      else
+        if has_terminal?('subtitle', false, index)
+          r5 = instantiate_node(SyntaxNode,input, index...(index + 8))
+          @index += 8
+        else
+          terminal_parse_failure('subtitle')
+          r5 = nil
+        end
+        if r5
+          r2 = r5
+        else
+          if has_terminal?('composer', false, index)
+            r6 = instantiate_node(SyntaxNode,input, index...(index + 8))
+            @index += 8
+          else
+            terminal_parse_failure('composer')
+            r6 = nil
+          end
+          if r6
+            r2 = r6
+          else
+            if has_terminal?('music', false, index)
+              r7 = instantiate_node(SyntaxNode,input, index...(index + 5))
+              @index += 5
+            else
+              terminal_parse_failure('music')
+              r7 = nil
+            end
+            if r7
+              r2 = r7
+            else
+              if has_terminal?('parts', false, index)
+                r8 = instantiate_node(SyntaxNode,input, index...(index + 5))
+                @index += 5
+              else
+                terminal_parse_failure('parts')
+                r8 = nil
+              end
+              if r8
+                r2 = r8
+              else
+                if has_terminal?('vocal', false, index)
+                  r9 = instantiate_node(SyntaxNode,input, index...(index + 5))
+                  @index += 5
+                else
+                  terminal_parse_failure('vocal')
+                  r9 = nil
+                end
+                if r9
+                  r2 = r9
+                else
+                  if has_terminal?('words', false, index)
+                    r10 = instantiate_node(SyntaxNode,input, index...(index + 5))
+                    @index += 5
+                  else
+                    terminal_parse_failure('words')
+                    r10 = nil
+                  end
+                  if r10
+                    r2 = r10
+                  else
+                    if has_terminal?('text', false, index)
+                      r11 = instantiate_node(SyntaxNode,input, index...(index + 4))
+                      @index += 4
+                    else
+                      terminal_parse_failure('text')
+                      r11 = nil
+                    end
+                    if r11
+                      r2 = r11
+                    else
+                      if has_terminal?('info', false, index)
+                        r12 = instantiate_node(SyntaxNode,input, index...(index + 4))
+                        @index += 4
+                      else
+                        terminal_parse_failure('info')
+                        r12 = nil
+                      end
+                      if r12
+                        r2 = r12
+                      else
+                        @index = i2
+                        r2 = nil
+                      end
+                    end
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+    s1 << r2
+    if r2
+      if has_terminal?('space', false, index)
+        r13 = instantiate_node(SyntaxNode,input, index...(index + 5))
+        @index += 5
+      else
+        terminal_parse_failure('space')
+        r13 = nil
+      end
+      s1 << r13
+    end
+    if s1.last
+      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+      r1.extend(SpaceLengthDirective0)
+    else
+      @index = i1
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+    else
+      i14, s14 = index, []
+      i15 = index
+      if has_terminal?('staff', false, index)
+        r16 = instantiate_node(SyntaxNode,input, index...(index + 5))
+        @index += 5
+      else
+        terminal_parse_failure('staff')
+        r16 = nil
+      end
+      if r16
+        r15 = r16
+      else
+        if has_terminal?('syststaff', false, index)
+          r17 = instantiate_node(SyntaxNode,input, index...(index + 9))
+          @index += 9
+        else
+          terminal_parse_failure('syststaff')
+          r17 = nil
+        end
+        if r17
+          r15 = r17
+        else
+          @index = i15
+          r15 = nil
+        end
+      end
+      s14 << r15
+      if r15
+        if has_terminal?('sep', false, index)
+          r18 = instantiate_node(SyntaxNode,input, index...(index + 3))
+          @index += 3
+        else
+          terminal_parse_failure('sep')
+          r18 = nil
+        end
+        s14 << r18
+      end
+      if s14.last
+        r14 = instantiate_node(SyntaxNode,input, i14...index, s14)
+        r14.extend(SpaceLengthDirective1)
+      else
+        @index = i14
+        r14 = nil
+      end
+      if r14
+        r0 = r14
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
+
+    node_cache[:space_length_directive][start_index] = r0
+
+    r0
+  end
+
+  def _nt_space_integer_directive
+    start_index = index
+    if node_cache[:space_integer_directive].has_key?(index)
+      cached = node_cache[:space_integer_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    if has_terminal?('barsperstaff', false, index)
+      r0 = instantiate_node(SyntaxNode,input, index...(index + 12))
+      @index += 12
+    else
+      terminal_parse_failure('barsperstaff')
+      r0 = nil
+    end
+
+    node_cache[:space_integer_directive][start_index] = r0
+
+    r0
+  end
+
+  def _nt_space_number_directive
+    start_index = index
+    if node_cache[:space_number_directive].has_key?(index)
+      cached = node_cache[:space_number_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    if has_terminal?('parskipfac', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 10))
+      @index += 10
+    else
+      terminal_parse_failure('parskipfac')
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+    else
+      if has_terminal?('lineskipfac', false, index)
+        r2 = instantiate_node(SyntaxNode,input, index...(index + 11))
+        @index += 11
+      else
+        terminal_parse_failure('lineskipfac')
+        r2 = nil
+      end
+      if r2
+        r0 = r2
+      else
+        if has_terminal?('maxshrink', false, index)
+          r3 = instantiate_node(SyntaxNode,input, index...(index + 9))
+          @index += 9
+        else
+          terminal_parse_failure('maxshrink')
+          r3 = nil
+        end
+        if r3
+          r0 = r3
+        else
+          if has_terminal?('scale', false, index)
+            r4 = instantiate_node(SyntaxNode,input, index...(index + 5))
+            @index += 5
+          else
+            terminal_parse_failure('scale')
+            r4 = nil
+          end
+          if r4
+            r0 = r4
+          else
+            @index = i0
+            r0 = nil
+          end
+        end
+      end
+    end
+
+    node_cache[:space_number_directive][start_index] = r0
+
+    r0
+  end
+
+  def _nt_space_logical_directive
+    start_index = index
+    if node_cache[:space_logical_directive].has_key?(index)
+      cached = node_cache[:space_logical_directive][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    if has_terminal?('stretchstaff', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 12))
+      @index += 12
+    else
+      terminal_parse_failure('stretchstaff')
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+    else
+      if has_terminal?('stretchlast', false, index)
+        r2 = instantiate_node(SyntaxNode,input, index...(index + 11))
+        @index += 11
+      else
+        terminal_parse_failure('stretchlast')
+        r2 = nil
+      end
+      if r2
+        r0 = r2
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
+
+    node_cache[:space_logical_directive][start_index] = r0
 
     r0
   end
