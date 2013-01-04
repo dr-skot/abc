@@ -31,13 +31,13 @@ grammar ABC do
   end
 
   rule file_header_section do
-    file_header end_of_section
+    !(typeset_text_section) file_header end_of_section
   end
 
   rule text_section do
-    (typeset_text / free_text) end_of_section
+    typeset_text_section / (free_text end_of_section)
   end
-  
+
   rule tune_section do
     tune end_of_section
   end
@@ -89,11 +89,15 @@ grammar ABC do
   # Typeset text that is included in an abc tune (i.e. within the tune header or tune body), must be retained by any programs, such as databasing software, that splits an abc file into separate abc tunes.
 
   rule typeset_text do
-    '%%' (!end_of_line .)+ <ValueNode> {
+    first:typeset_text_unit rest:(end_of_line item:typeset_text_unit)* <ValueNode> {
       def value
-        @value ||= TypesetText.new(text_value)
+        @value ||= TypesetText.new(item_values)
       end
     }
+  end
+
+  rule typeset_text_section do
+    typeset_text end_of_line end_of_section
   end
 
   # TODO make this stricter? technically free text should not contain *any* info fields; this just insures it doesn't start with one
@@ -263,7 +267,7 @@ grammar ABC do
   # Within the tune body each line of code is processed in sequence. Therefore, with the exception of s:(symbol line), w:(words) and W:(words) which have their own syntax, the same information field may occur a number of times, for example to change key, meter, tempo or voice, and each occurrence has the effect of overriding the previous one, either for the remainder of the tune, or until the next occurrence. See use of fields within the tune body for more details.
 
   rule any_field do
-    special_field / string_field
+    typeset_text / special_field / string_field
   end
 
   rule special_field do
@@ -2675,7 +2679,47 @@ rule key_field do
   end
 
 
+  # 11.4.5 Text directives
+  # VOLATILE: Text directives are due to be considered in abc 2.3 - see the section 11 disclaimer.
+  # The following directives can be used for inserting typeset text within an abc file.
+  # %%text             <text string>
+  # %%center           <text string>
+  # %%begintext
+  # %%...              <text string>
+  # %%endtext
+  # Notes:
+  # %%text prints the following text, treated as a text string.
+  # %%center prints the following text, treated as a text string and centred.
+  # %%begintext and %%endtext mark a section of lines, each of which start with %%, followed by some text. It is an alternative to several %%text lines. [Important note: some extensions offered by abc software programs relax the rule that each line between %%begintext and %%endtext must start with %%. Whilst this should not cause problems for typeset text between tunes, typeset text within a tune header or tune body should respect this rule and, in particular, must not introduce blank lines.]
+  # See further information about directives for more details and to find out about additional parameters for these directives.
+  # Recommendation for users: If you are using text directives for tune-specific information, consider instead using one of the background information fields together with a %%writefields directive (see information directives) so that the information can correctly identified by databasing software.
 
+  rule typeset_text_unit do
+    typeset_text_single_line / typeset_text_multiline
+  end
+
+  rule typeset_text_single_line do
+    '%%' directive:('text'/'center') space text:(!end_of_line .)+ {
+      def value
+        @value ||= TypesetTextLine.new(directive.text_value, text.text_value) 
+      end
+    }
+  end
+
+  rule typeset_text_multiline do
+    '%%begintext' space* attr:(!end_of_line .)* end_of_line
+    lines:('%%' text:(!end_of_line .)* end_of_line)*
+    '%%endtext' space* {
+      def value
+        @value ||= lines.elements.inject([]) do |result, line|
+          result << TypesetTextLine.new(attr.text_value, line.text.text_value)
+        end
+      end
+    }
+  end
+
+
+   
    # TODO: deal with escaped " ? NO: use &quot;
    rule quoted_string do
     '"' value_node:(!'"' .)* '"' {

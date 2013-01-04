@@ -23,6 +23,10 @@ module Treetop
       def value
         nil
       end
+
+      def element_values
+        elements.map { |el| el.value }
+      end
       
       # convenience for collecting lists
       # for example a list of things might be specified by the rule

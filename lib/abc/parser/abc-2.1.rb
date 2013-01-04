@@ -104,11 +104,11 @@ module ABC
 
   module FileHeaderSection0
     def file_header
-      elements[0]
+      elements[1]
     end
 
     def end_of_section
-      elements[1]
+      elements[2]
     end
   end
 
@@ -124,11 +124,22 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_file_header
+    i1 = index
+    r2 = _nt_typeset_text_section
+    if r2
+      r1 = nil
+    else
+      @index = i1
+      r1 = instantiate_node(SyntaxNode,input, index...index)
+    end
     s0 << r1
     if r1
-      r2 = _nt_end_of_section
-      s0 << r2
+      r3 = _nt_file_header
+      s0 << r3
+      if r3
+        r4 = _nt_end_of_section
+        s0 << r4
+      end
     end
     if s0.last
       r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
@@ -144,6 +155,10 @@ module ABC
   end
 
   module TextSection0
+    def free_text
+      elements[0]
+    end
+
     def end_of_section
       elements[1]
     end
@@ -160,31 +175,31 @@ module ABC
       return cached
     end
 
-    i0, s0 = index, []
-    i1 = index
-    r2 = _nt_typeset_text
-    if r2
-      r1 = r2
-    else
-      r3 = _nt_free_text
-      if r3
-        r1 = r3
-      else
-        @index = i1
-        r1 = nil
-      end
-    end
-    s0 << r1
+    i0 = index
+    r1 = _nt_typeset_text_section
     if r1
-      r4 = _nt_end_of_section
-      s0 << r4
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TextSection0)
+      r0 = r1
     else
-      @index = i0
-      r0 = nil
+      i2, s2 = index, []
+      r3 = _nt_free_text
+      s2 << r3
+      if r3
+        r4 = _nt_end_of_section
+        s2 << r4
+      end
+      if s2.last
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+        r2.extend(TextSection0)
+      else
+        @index = i2
+        r2 = nil
+      end
+      if r2
+        r0 = r2
+      else
+        @index = i0
+        r0 = nil
+      end
     end
 
     node_cache[:text_section][start_index] = r0
@@ -447,14 +462,28 @@ module ABC
   end
 
   module TypesetText0
+    def end_of_line
+      elements[0]
+    end
+
+    def item
+      elements[1]
+    end
   end
 
   module TypesetText1
+    def first
+      elements[0]
+    end
+
+    def rest
+      elements[1]
+    end
   end
 
   module TypesetText2
     def value
-      @value ||= TypesetText.new(text_value)
+      @value ||= TypesetText.new(item_values)
     end
   end
 
@@ -470,36 +499,17 @@ module ABC
     end
 
     i0, s0 = index, []
-    if has_terminal?('%%', false, index)
-      r1 = instantiate_node(SyntaxNode,input, index...(index + 2))
-      @index += 2
-    else
-      terminal_parse_failure('%%')
-      r1 = nil
-    end
+    r1 = _nt_typeset_text_unit
     s0 << r1
     if r1
       s2, i2 = [], index
       loop do
         i3, s3 = index, []
-        i4 = index
-        r5 = _nt_end_of_line
-        if r5
-          r4 = nil
-        else
-          @index = i4
-          r4 = instantiate_node(SyntaxNode,input, index...index)
-        end
+        r4 = _nt_end_of_line
         s3 << r4
         if r4
-          if index < input_length
-            r6 = instantiate_node(SyntaxNode,input, index...(index + 1))
-            @index += 1
-          else
-            terminal_parse_failure("any character")
-            r6 = nil
-          end
-          s3 << r6
+          r5 = _nt_typeset_text_unit
+          s3 << r5
         end
         if s3.last
           r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
@@ -514,12 +524,7 @@ module ABC
           break
         end
       end
-      if s2.empty?
-        @index = i2
-        r2 = nil
-      else
-        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
-      end
+      r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
       s0 << r2
     end
     if s0.last
@@ -532,6 +537,55 @@ module ABC
     end
 
     node_cache[:typeset_text][start_index] = r0
+
+    r0
+  end
+
+  module TypesetTextSection0
+    def typeset_text
+      elements[0]
+    end
+
+    def end_of_line
+      elements[1]
+    end
+
+    def end_of_section
+      elements[2]
+    end
+  end
+
+  def _nt_typeset_text_section
+    start_index = index
+    if node_cache[:typeset_text_section].has_key?(index)
+      cached = node_cache[:typeset_text_section][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    r1 = _nt_typeset_text
+    s0 << r1
+    if r1
+      r2 = _nt_end_of_line
+      s0 << r2
+      if r2
+        r3 = _nt_end_of_section
+        s0 << r3
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(TypesetTextSection0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:typeset_text_section][start_index] = r0
 
     r0
   end
@@ -1694,16 +1748,21 @@ module ABC
     end
 
     i0 = index
-    r1 = _nt_special_field
+    r1 = _nt_typeset_text
     if r1
       r0 = r1
     else
-      r2 = _nt_string_field
+      r2 = _nt_special_field
       if r2
         r0 = r2
       else
-        @index = i0
-        r0 = nil
+        r3 = _nt_string_field
+        if r3
+          r0 = r3
+        else
+          @index = i0
+          r0 = nil
+        end
       end
     end
 
@@ -14504,6 +14563,392 @@ module ABC
     end
 
     node_cache[:measure_logical_directive][start_index] = r0
+
+    r0
+  end
+
+  def _nt_typeset_text_unit
+    start_index = index
+    if node_cache[:typeset_text_unit].has_key?(index)
+      cached = node_cache[:typeset_text_unit][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    r1 = _nt_typeset_text_single_line
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_typeset_text_multiline
+      if r2
+        r0 = r2
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
+
+    node_cache[:typeset_text_unit][start_index] = r0
+
+    r0
+  end
+
+  module TypesetTextSingleLine0
+  end
+
+  module TypesetTextSingleLine1
+    def directive
+      elements[1]
+    end
+
+    def space
+      elements[2]
+    end
+
+    def text
+      elements[3]
+    end
+  end
+
+  module TypesetTextSingleLine2
+    def value
+      @value ||= TypesetTextLine.new(directive.text_value, text.text_value) 
+    end
+  end
+
+  def _nt_typeset_text_single_line
+    start_index = index
+    if node_cache[:typeset_text_single_line].has_key?(index)
+      cached = node_cache[:typeset_text_single_line][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    if has_terminal?('%%', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 2))
+      @index += 2
+    else
+      terminal_parse_failure('%%')
+      r1 = nil
+    end
+    s0 << r1
+    if r1
+      i2 = index
+      if has_terminal?('text', false, index)
+        r3 = instantiate_node(SyntaxNode,input, index...(index + 4))
+        @index += 4
+      else
+        terminal_parse_failure('text')
+        r3 = nil
+      end
+      if r3
+        r2 = r3
+      else
+        if has_terminal?('center', false, index)
+          r4 = instantiate_node(SyntaxNode,input, index...(index + 6))
+          @index += 6
+        else
+          terminal_parse_failure('center')
+          r4 = nil
+        end
+        if r4
+          r2 = r4
+        else
+          @index = i2
+          r2 = nil
+        end
+      end
+      s0 << r2
+      if r2
+        r5 = _nt_space
+        s0 << r5
+        if r5
+          s6, i6 = [], index
+          loop do
+            i7, s7 = index, []
+            i8 = index
+            r9 = _nt_end_of_line
+            if r9
+              r8 = nil
+            else
+              @index = i8
+              r8 = instantiate_node(SyntaxNode,input, index...index)
+            end
+            s7 << r8
+            if r8
+              if index < input_length
+                r10 = instantiate_node(SyntaxNode,input, index...(index + 1))
+                @index += 1
+              else
+                terminal_parse_failure("any character")
+                r10 = nil
+              end
+              s7 << r10
+            end
+            if s7.last
+              r7 = instantiate_node(SyntaxNode,input, i7...index, s7)
+              r7.extend(TypesetTextSingleLine0)
+            else
+              @index = i7
+              r7 = nil
+            end
+            if r7
+              s6 << r7
+            else
+              break
+            end
+          end
+          if s6.empty?
+            @index = i6
+            r6 = nil
+          else
+            r6 = instantiate_node(SyntaxNode,input, i6...index, s6)
+          end
+          s0 << r6
+        end
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(TypesetTextSingleLine1)
+      r0.extend(TypesetTextSingleLine2)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:typeset_text_single_line][start_index] = r0
+
+    r0
+  end
+
+  module TypesetTextMultiline0
+  end
+
+  module TypesetTextMultiline1
+  end
+
+  module TypesetTextMultiline2
+    def text
+      elements[1]
+    end
+
+    def end_of_line
+      elements[2]
+    end
+  end
+
+  module TypesetTextMultiline3
+    def attr
+      elements[2]
+    end
+
+    def end_of_line
+      elements[3]
+    end
+
+    def lines
+      elements[4]
+    end
+
+  end
+
+  module TypesetTextMultiline4
+    def value
+      @value ||= lines.elements.inject([]) do |result, line|
+        result << TypesetTextLine.new(attr.text_value, line.text.text_value)
+      end
+    end
+  end
+
+  def _nt_typeset_text_multiline
+    start_index = index
+    if node_cache[:typeset_text_multiline].has_key?(index)
+      cached = node_cache[:typeset_text_multiline][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    if has_terminal?('%%begintext', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 11))
+      @index += 11
+    else
+      terminal_parse_failure('%%begintext')
+      r1 = nil
+    end
+    s0 << r1
+    if r1
+      s2, i2 = [], index
+      loop do
+        r3 = _nt_space
+        if r3
+          s2 << r3
+        else
+          break
+        end
+      end
+      r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+      s0 << r2
+      if r2
+        s4, i4 = [], index
+        loop do
+          i5, s5 = index, []
+          i6 = index
+          r7 = _nt_end_of_line
+          if r7
+            r6 = nil
+          else
+            @index = i6
+            r6 = instantiate_node(SyntaxNode,input, index...index)
+          end
+          s5 << r6
+          if r6
+            if index < input_length
+              r8 = instantiate_node(SyntaxNode,input, index...(index + 1))
+              @index += 1
+            else
+              terminal_parse_failure("any character")
+              r8 = nil
+            end
+            s5 << r8
+          end
+          if s5.last
+            r5 = instantiate_node(SyntaxNode,input, i5...index, s5)
+            r5.extend(TypesetTextMultiline0)
+          else
+            @index = i5
+            r5 = nil
+          end
+          if r5
+            s4 << r5
+          else
+            break
+          end
+        end
+        r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
+        s0 << r4
+        if r4
+          r9 = _nt_end_of_line
+          s0 << r9
+          if r9
+            s10, i10 = [], index
+            loop do
+              i11, s11 = index, []
+              if has_terminal?('%%', false, index)
+                r12 = instantiate_node(SyntaxNode,input, index...(index + 2))
+                @index += 2
+              else
+                terminal_parse_failure('%%')
+                r12 = nil
+              end
+              s11 << r12
+              if r12
+                s13, i13 = [], index
+                loop do
+                  i14, s14 = index, []
+                  i15 = index
+                  r16 = _nt_end_of_line
+                  if r16
+                    r15 = nil
+                  else
+                    @index = i15
+                    r15 = instantiate_node(SyntaxNode,input, index...index)
+                  end
+                  s14 << r15
+                  if r15
+                    if index < input_length
+                      r17 = instantiate_node(SyntaxNode,input, index...(index + 1))
+                      @index += 1
+                    else
+                      terminal_parse_failure("any character")
+                      r17 = nil
+                    end
+                    s14 << r17
+                  end
+                  if s14.last
+                    r14 = instantiate_node(SyntaxNode,input, i14...index, s14)
+                    r14.extend(TypesetTextMultiline1)
+                  else
+                    @index = i14
+                    r14 = nil
+                  end
+                  if r14
+                    s13 << r14
+                  else
+                    break
+                  end
+                end
+                r13 = instantiate_node(SyntaxNode,input, i13...index, s13)
+                s11 << r13
+                if r13
+                  r18 = _nt_end_of_line
+                  s11 << r18
+                end
+              end
+              if s11.last
+                r11 = instantiate_node(SyntaxNode,input, i11...index, s11)
+                r11.extend(TypesetTextMultiline2)
+              else
+                @index = i11
+                r11 = nil
+              end
+              if r11
+                s10 << r11
+              else
+                break
+              end
+            end
+            r10 = instantiate_node(SyntaxNode,input, i10...index, s10)
+            s0 << r10
+            if r10
+              if has_terminal?('%%endtext', false, index)
+                r19 = instantiate_node(SyntaxNode,input, index...(index + 9))
+                @index += 9
+              else
+                terminal_parse_failure('%%endtext')
+                r19 = nil
+              end
+              s0 << r19
+              if r19
+                s20, i20 = [], index
+                loop do
+                  r21 = _nt_space
+                  if r21
+                    s20 << r21
+                  else
+                    break
+                  end
+                end
+                r20 = instantiate_node(SyntaxNode,input, i20...index, s20)
+                s0 << r20
+              end
+            end
+          end
+        end
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(TypesetTextMultiline3)
+      r0.extend(TypesetTextMultiline4)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:typeset_text_multiline][start_index] = r0
 
     r0
   end

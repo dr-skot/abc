@@ -555,3 +555,63 @@ describe "a measure directive" do
     p.measure(5).should == p.bars[1]
   end
 end
+
+
+# 11.4.5 Text directives
+# VOLATILE: Text directives are due to be considered in abc 2.3 - see the section 11 disclaimer.
+# The following directives can be used for inserting typeset text within an abc file.
+# %%text             <text string>
+# %%center           <text string>
+# %%begintext
+# %%...              <text string>
+# %%endtext
+# Notes:
+# %%text prints the following text, treated as a text string.
+# %%center prints the following text, treated as a text string and centred.
+# %%begintext and %%endtext mark a section of lines, each of which start with %%, followed by some text. It is an alternative to several %%text lines. [Important note: some extensions offered by abc software programs relax the rule that each line between %%begintext and %%endtext must start with %%. Whilst this should not cause problems for typeset text between tunes, typeset text within a tune header or tune body should respect this rule and, in particular, must not introduce blank lines.]
+# See further information about directives for more details and to find out about additional parameters for these directives.
+# Recommendation for users: If you are using text directives for tune-specific information, consider instead using one of the background information fields together with a %%writefields directive (see information directives) so that the information can correctly identified by databasing software.
+
+describe "a text directive" do
+  it "can appear in the tune body" do
+    p = parse_fragment "abc\n%%text Four score and 7 years ago\ndef"
+    p.elements[4].class.should == TypesetText
+    p.elements[4].lines.count.should == 1
+    p.elements[4].lines[0].text.should == "Four score and 7 years ago"
+  end
+  it "can appear in the tune header" do
+    p = parse_fragment "M:C\n%%text Four score and 7 years ago\nK:C\nabc"
+    p.header.fields[1].type.should == :typeset_text
+    p.header.fields[1].lines.count.should == 1
+    p.header.fields[1].lines[0].text.should == 'Four score and 7 years ago'
+  end
+  it "can appear in the file header" do
+    p = parse "H:history\n%%text Four score and 7 years ago\nC:Abe Lincoln\n\nX:1\nT:T\nK:C\nabc"
+    p.header.fields[1].type.should == :typeset_text
+    p.header.fields[1].lines.count.should == 1
+    p.header.fields[1].lines[0].text.should == 'Four score and 7 years ago'
+  end
+  it "can appear in its own section" do
+    p = parse "H:history\n\n%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\nabc"
+    p.sections.count.should == 2
+    p.sections[0].class.should == TypesetText
+    p.sections[0].lines.count.should == 1
+    p.sections[0].lines[0].text.should == 'Four score and 7 years ago'
+  end
+  it "is recognized as a typeset text section when there is no file header" do
+    p = parse "%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\nabc"
+    p.sections.count.should == 2
+    p.sections[0].class.should == TypesetText
+    p.sections[0].lines.count.should == 1
+    p.sections[0].lines[0].text.should == 'Four score and 7 years ago'
+  end
+  it "is combined with adjacent ones" do
+    p = parse "%%text Four score\n%%text and 7 years\n%%text ago\n\nX:1\nT:T\nK:C\n"
+    #puts p.inspect
+    p.sections.count.should == 2
+    p.sections[0].lines.count.should == 3
+    p.sections[0].lines[0].text.should == 'Four score'
+    p.sections[0].lines[1].text.should == 'and 7 years'
+    p.sections[0].lines[2].text.should == 'ago'
+  end
+end
