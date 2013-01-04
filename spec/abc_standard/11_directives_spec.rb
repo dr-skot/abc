@@ -607,7 +607,45 @@ describe "a text directive" do
   end
   it "is combined with adjacent ones" do
     p = parse "%%text Four score\n%%text and 7 years\n%%text ago\n\nX:1\nT:T\nK:C\n"
-    #puts p.inspect
+    p.sections.count.should == 2
+    p.sections[0].lines.count.should == 3
+    p.sections[0].lines[0].text.should == 'Four score'
+    p.sections[0].lines[1].text.should == 'and 7 years'
+    p.sections[0].lines[2].text.should == 'ago'
+  end
+  it "is combined with adjacent ones" do
+    p = parse "%%text Four score\n%%text and 7 years\n%%text ago\n\nX:1\nT:T\nK:C\n"
+    p.sections.count.should == 2
+    p.sections[0].lines.count.should == 3
+    p.sections[0].lines[0].text.should == 'Four score'
+    p.sections[0].lines[1].text.should == 'and 7 years'
+    p.sections[0].lines[2].text.should == 'ago'
+  end
+  it "can center a line of text" do
+    p = parse "%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\n"
+    p.sections[0].lines[0].text.should == 'Four score and 7 years ago'
+    p.sections[0].lines[0].alignment.should == :left
+    p = parse "%%center Four score and 7 years ago\n\nX:1\nT:T\nK:C\n"
+    p.sections[0].lines[0].text.should == 'Four score and 7 years ago'
+    p.sections[0].lines[0].alignment.should == :center
+  end
+  it "can combine centered with normal text" do
+    p = parse "%%center Four score\n%%text and 7 years ago\n\nX:1\nT:T\nK:C\n"
+    p.sections[0].lines[0].text.should == 'Four score'
+    p.sections[0].lines[0].alignment.should == :center
+    p.sections[0].lines[1].text.should == 'and 7 years ago'
+    p.sections[0].lines[1].alignment.should == :left
+  end
+  it "can set several lines between %%begintext and %%endtext" do
+    p = parse "%%begintext\n%%Four score\n%%and 7 years\n%%ago\n%%endtext\n\nX:1\nT:T\nK:C"
+    p.sections.count.should == 2
+    p.sections[0].lines.count.should == 3
+    p.sections[0].lines[0].text.should == 'Four score'
+    p.sections[0].lines[1].text.should == 'and 7 years'
+    p.sections[0].lines[2].text.should == 'ago'
+  end
+  it "can combine multiline text with single line ones" do
+    p = parse "%%begintext\n%%Four score\n%%and 7 years\n%%endtext\n%%text ago\n\nX:1\nT:T\nK:C"
     p.sections.count.should == 2
     p.sections[0].lines.count.should == 3
     p.sections[0].lines[0].text.should == 'Four score'

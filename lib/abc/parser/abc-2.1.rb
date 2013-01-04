@@ -483,7 +483,7 @@ module ABC
 
   module TypesetText2
     def value
-      @value ||= TypesetText.new(item_values)
+      @value ||= TypesetText.new(item_values.flatten)
     end
   end
 
@@ -14731,12 +14731,18 @@ module ABC
   end
 
   module TypesetTextMultiline0
+    def end_of_line
+      elements[2]
+    end
   end
 
   module TypesetTextMultiline1
   end
 
   module TypesetTextMultiline2
+  end
+
+  module TypesetTextMultiline3
     def text
       elements[1]
     end
@@ -14746,7 +14752,239 @@ module ABC
     end
   end
 
-  module TypesetTextMultiline3
+  module TypesetTextMultiline4
+    def end_of_line
+      elements[2]
+    end
+
+    def lines
+      elements[3]
+    end
+
+  end
+
+  module TypesetTextMultiline5
+    def value
+      @value ||= lines.elements.inject([]) do |result, line|
+        result << TypesetTextLine.new('', line.text.text_value)
+      end
+    end
+  end
+
+  def _nt_typeset_text_multiline
+    start_index = index
+    if node_cache[:typeset_text_multiline].has_key?(index)
+      cached = node_cache[:typeset_text_multiline][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    if has_terminal?('%%begintext', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 11))
+      @index += 11
+    else
+      terminal_parse_failure('%%begintext')
+      r1 = nil
+    end
+    s0 << r1
+    if r1
+      s2, i2 = [], index
+      loop do
+        r3 = _nt_space
+        if r3
+          s2 << r3
+        else
+          break
+        end
+      end
+      r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+      s0 << r2
+      if r2
+        r4 = _nt_end_of_line
+        s0 << r4
+        if r4
+          s5, i5 = [], index
+          loop do
+            i6, s6 = index, []
+            if has_terminal?('%%', false, index)
+              r7 = instantiate_node(SyntaxNode,input, index...(index + 2))
+              @index += 2
+            else
+              terminal_parse_failure('%%')
+              r7 = nil
+            end
+            s6 << r7
+            if r7
+              i8, s8 = index, []
+              i9 = index
+              i10, s10 = index, []
+              if has_terminal?('endtext', false, index)
+                r11 = instantiate_node(SyntaxNode,input, index...(index + 7))
+                @index += 7
+              else
+                terminal_parse_failure('endtext')
+                r11 = nil
+              end
+              s10 << r11
+              if r11
+                s12, i12 = [], index
+                loop do
+                  r13 = _nt_space
+                  if r13
+                    s12 << r13
+                  else
+                    break
+                  end
+                end
+                r12 = instantiate_node(SyntaxNode,input, i12...index, s12)
+                s10 << r12
+                if r12
+                  r14 = _nt_end_of_line
+                  s10 << r14
+                end
+              end
+              if s10.last
+                r10 = instantiate_node(SyntaxNode,input, i10...index, s10)
+                r10.extend(TypesetTextMultiline0)
+              else
+                @index = i10
+                r10 = nil
+              end
+              if r10
+                r9 = nil
+              else
+                @index = i9
+                r9 = instantiate_node(SyntaxNode,input, index...index)
+              end
+              s8 << r9
+              if r9
+                s15, i15 = [], index
+                loop do
+                  i16, s16 = index, []
+                  i17 = index
+                  r18 = _nt_end_of_line
+                  if r18
+                    r17 = nil
+                  else
+                    @index = i17
+                    r17 = instantiate_node(SyntaxNode,input, index...index)
+                  end
+                  s16 << r17
+                  if r17
+                    if index < input_length
+                      r19 = instantiate_node(SyntaxNode,input, index...(index + 1))
+                      @index += 1
+                    else
+                      terminal_parse_failure("any character")
+                      r19 = nil
+                    end
+                    s16 << r19
+                  end
+                  if s16.last
+                    r16 = instantiate_node(SyntaxNode,input, i16...index, s16)
+                    r16.extend(TypesetTextMultiline1)
+                  else
+                    @index = i16
+                    r16 = nil
+                  end
+                  if r16
+                    s15 << r16
+                  else
+                    break
+                  end
+                end
+                r15 = instantiate_node(SyntaxNode,input, i15...index, s15)
+                s8 << r15
+              end
+              if s8.last
+                r8 = instantiate_node(SyntaxNode,input, i8...index, s8)
+                r8.extend(TypesetTextMultiline2)
+              else
+                @index = i8
+                r8 = nil
+              end
+              s6 << r8
+              if r8
+                r20 = _nt_end_of_line
+                s6 << r20
+              end
+            end
+            if s6.last
+              r6 = instantiate_node(SyntaxNode,input, i6...index, s6)
+              r6.extend(TypesetTextMultiline3)
+            else
+              @index = i6
+              r6 = nil
+            end
+            if r6
+              s5 << r6
+            else
+              break
+            end
+          end
+          r5 = instantiate_node(SyntaxNode,input, i5...index, s5)
+          s0 << r5
+          if r5
+            if has_terminal?('%%endtext', false, index)
+              r21 = instantiate_node(SyntaxNode,input, index...(index + 9))
+              @index += 9
+            else
+              terminal_parse_failure('%%endtext')
+              r21 = nil
+            end
+            s0 << r21
+            if r21
+              s22, i22 = [], index
+              loop do
+                r23 = _nt_space
+                if r23
+                  s22 << r23
+                else
+                  break
+                end
+              end
+              r22 = instantiate_node(SyntaxNode,input, i22...index, s22)
+              s0 << r22
+            end
+          end
+        end
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(TypesetTextMultiline4)
+      r0.extend(TypesetTextMultiline5)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:typeset_text_multiline][start_index] = r0
+
+    r0
+  end
+
+  module TypesetTextMultiline20
+  end
+
+  module TypesetTextMultiline21
+  end
+
+  module TypesetTextMultiline22
+    def text
+      elements[1]
+    end
+
+    def end_of_line
+      elements[2]
+    end
+  end
+
+  module TypesetTextMultiline23
     def attr
       elements[2]
     end
@@ -14761,7 +14999,7 @@ module ABC
 
   end
 
-  module TypesetTextMultiline4
+  module TypesetTextMultiline24
     def value
       @value ||= lines.elements.inject([]) do |result, line|
         result << TypesetTextLine.new(attr.text_value, line.text.text_value)
@@ -14769,10 +15007,10 @@ module ABC
     end
   end
 
-  def _nt_typeset_text_multiline
+  def _nt_typeset_text_multiline2
     start_index = index
-    if node_cache[:typeset_text_multiline].has_key?(index)
-      cached = node_cache[:typeset_text_multiline][index]
+    if node_cache[:typeset_text_multiline2].has_key?(index)
+      cached = node_cache[:typeset_text_multiline2][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -14826,7 +15064,7 @@ module ABC
           end
           if s5.last
             r5 = instantiate_node(SyntaxNode,input, i5...index, s5)
-            r5.extend(TypesetTextMultiline0)
+            r5.extend(TypesetTextMultiline20)
           else
             @index = i5
             r5 = nil
@@ -14879,7 +15117,7 @@ module ABC
                   end
                   if s14.last
                     r14 = instantiate_node(SyntaxNode,input, i14...index, s14)
-                    r14.extend(TypesetTextMultiline1)
+                    r14.extend(TypesetTextMultiline21)
                   else
                     @index = i14
                     r14 = nil
@@ -14899,7 +15137,7 @@ module ABC
               end
               if s11.last
                 r11 = instantiate_node(SyntaxNode,input, i11...index, s11)
-                r11.extend(TypesetTextMultiline2)
+                r11.extend(TypesetTextMultiline22)
               else
                 @index = i11
                 r11 = nil
@@ -14941,14 +15179,14 @@ module ABC
     end
     if s0.last
       r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TypesetTextMultiline3)
-      r0.extend(TypesetTextMultiline4)
+      r0.extend(TypesetTextMultiline23)
+      r0.extend(TypesetTextMultiline24)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:typeset_text_multiline][start_index] = r0
+    node_cache[:typeset_text_multiline2][start_index] = r0
 
     r0
   end

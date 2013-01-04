@@ -91,7 +91,7 @@ grammar ABC do
   rule typeset_text do
     first:typeset_text_unit rest:(end_of_line item:typeset_text_unit)* <ValueNode> {
       def value
-        @value ||= TypesetText.new(item_values)
+        @value ||= TypesetText.new(item_values.flatten)
       end
     }
   end
@@ -2707,6 +2707,18 @@ rule key_field do
   end
 
   rule typeset_text_multiline do
+    '%%begintext' space* end_of_line 
+    lines:('%%' text:(!('endtext' space* end_of_line) (!end_of_line .)*) end_of_line)*
+    '%%endtext' space* {
+      def value
+        @value ||= lines.elements.inject([]) do |result, line|
+          result << TypesetTextLine.new('', line.text.text_value)
+        end
+      end
+    }
+  end
+
+  rule typeset_text_multiline2 do
     '%%begintext' space* attr:(!end_of_line .)* end_of_line
     lines:('%%' text:(!end_of_line .)* end_of_line)*
     '%%endtext' space* {

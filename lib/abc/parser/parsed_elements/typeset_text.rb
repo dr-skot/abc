@@ -9,8 +9,11 @@ module ABC
       @attr = attr
       @text = text
     end
+    def alignment
+      # TODO refined this
+      attr == 'center' ? :center : :left
+    end
   end
-
 
   class TypesetText < Field
     attr_reader :lines
