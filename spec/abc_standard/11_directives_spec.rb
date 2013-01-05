@@ -644,7 +644,7 @@ describe "a text directive" do
     p.sections[0].lines[1].text.should == 'and 7 years'
     p.sections[0].lines[2].text.should == 'ago'
   end
-  it "can combine multiline text with single line ones" do
+  it "can combine multiline with single line text" do
     p = parse "%%begintext\n%%Four score\n%%and 7 years\n%%endtext\n%%text ago\n\nX:1\nT:T\nK:C"
     p.sections.count.should == 2
     p.sections[0].lines.count.should == 3
@@ -653,3 +653,78 @@ describe "a text directive" do
     p.sections[0].lines[2].text.should == 'ago'
   end
 end
+
+
+# 11.4.6 Information directives
+# VOLATILE: The %%writefields directive and its formatting options are likely to be enhanced when markup is considered in abc 2.3. See also the section 11 disclaimer.
+# %%writefields <list of field identifiers> [<logical>]
+# The %%writefields directive allows users to choose which string-type information fields appear in the printed score (see the information fields table for a list of string-type fields). It is followed by a list of field identifiers and, optionally, the logical value true or false. If the logical value is missing it is taken as true.
+# The %%writefields directive also applies to certain instruction fields - namely X:reference number, P:parts and Q:tempo.
+# The default is "%%writefields TCOPQwW" meaning that the title (T), composer (C), origin (O), parts (P), tempo (Q), aligned words (w) and other words (W) are printed out by default (see typesetting information fields for how these should be typeset). Each subseqent %%writefields directive combines with this list, rather than overriding it.
+# Examples:
+# %%writefields O false         % the O field is not printed out - other defaults remain
+# %%writefields X               % the X: field is printed out
+# %%writefields BCDFGHNORSTWwXZ % all string-type fields are printed out
+# Typesetting software conforming to abc 2.1 may format the information strings in any way it chooses.
+# Comment: The %%writefields directive can be used in place of a number of directives introduced in abc 2.0:
+# "%%writefields X" can be used as an alternative to "%%withxrefs"
+# "%%writefields Ww false" can be used as an alternative to"%%musiconly"
+# "%%writefields" is a partial alternative to "%%writehistory" and "%%infoname"
+# See further information about directives for more details of the 2.0 alternatives.
+
+
+# 11.4.7 Separation directives
+# VOLATILE: See the section 11 disclaimer.
+# %%sep     % draw a horizontal separator, i.e. a line
+# %%vskip   % insert some vertical space
+# %%newpage % start a new page
+# See further information about directives for more details and to find out about additional parameters for these directives.
+
+
+# 11.4.8 Miscellaneous directives
+# VOLATILE: See the section 11 disclaimer.
+# %%exprabove        <logical>
+# %%exprbelow        <logical>
+# %%graceslurs       <logical> % grace notes slur to main note
+# %%infoline         <logical> % rhythm and origin on the same line
+# %%oneperpage       <logical>
+# %%vocalabove       <logical>
+# %%freegchord       <logical> % print '#', 'b' and '=' as they are
+# %%printtempo       <logical>
+# The default value for these directives is false.
+
+describe 'any directive listed as "miscellaneous directives"' do
+  it "will have a boolean value" do
+    d = %w{exprabove exprbelow graceslurs infoline oneperpage vocalabove freegchord printtempo}
+    d.each do |name|
+      p = parse_fragment "%%#{name} true"
+      p.instructions[name].should == true
+      p = parse_fragment "%%#{name} false"
+      p.instructions[name].should == false
+    end
+  end
+end
+
+
+# 11.5 Application specific directives
+# Applications may introduce their own directives. These directives should start with the name of the application, followed a colon, folowed by the name of the directive.
+# Example:
+# %%noteedit:fontcolor blue
+
+describe "pseudo-comment support" do
+  it "accepts arbitrary app-specific directives" do
+    p = parse_fragment "%%any_app:any_directive value"
+    p.instructions['any_app:any_directive'].should == 'value'
+  end
+end
+
+
+# 11.6 Further information about directives
+# Since stylesheet directives are not formally part of the abc standard, only a subset is included here. For additional directives and further information about those listed here, see the user manuals for programs that implement them, in particular:
+# the format.txt file included with abcm2ps
+# the abcguide.txt file included with abcMIDI
+# the abctab2ps User's guide
+# Back to top
+
+
+

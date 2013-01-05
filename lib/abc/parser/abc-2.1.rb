@@ -5265,7 +5265,7 @@ module ABC
 
     s0, i0 = [], index
     loop do
-      if has_terminal?('\G[a-z\\-]', true, index)
+      if has_terminal?('\G[A-Za-z0-9\\-_:]', true, index)
         r1 = true
         @index += 1
       else
@@ -13151,8 +13151,13 @@ module ABC
         if r3
           r0 = r3
         else
-          @index = i0
-          r0 = nil
+          r4 = _nt_miscellaneous_logical_directive
+          if r4
+            r0 = r4
+          else
+            @index = i0
+            r0 = nil
+          end
         end
       end
     end
@@ -14968,49 +14973,10 @@ module ABC
     r0
   end
 
-  module TypesetTextMultiline20
-  end
-
-  module TypesetTextMultiline21
-  end
-
-  module TypesetTextMultiline22
-    def text
-      elements[1]
-    end
-
-    def end_of_line
-      elements[2]
-    end
-  end
-
-  module TypesetTextMultiline23
-    def attr
-      elements[2]
-    end
-
-    def end_of_line
-      elements[3]
-    end
-
-    def lines
-      elements[4]
-    end
-
-  end
-
-  module TypesetTextMultiline24
-    def value
-      @value ||= lines.elements.inject([]) do |result, line|
-        result << TypesetTextLine.new(attr.text_value, line.text.text_value)
-      end
-    end
-  end
-
-  def _nt_typeset_text_multiline2
+  def _nt_miscellaneous_logical_directive
     start_index = index
-    if node_cache[:typeset_text_multiline2].has_key?(index)
-      cached = node_cache[:typeset_text_multiline2][index]
+    if node_cache[:miscellaneous_logical_directive].has_key?(index)
+      cached = node_cache[:miscellaneous_logical_directive][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -15018,175 +14984,99 @@ module ABC
       return cached
     end
 
-    i0, s0 = index, []
-    if has_terminal?('%%begintext', false, index)
-      r1 = instantiate_node(SyntaxNode,input, index...(index + 11))
-      @index += 11
+    i0 = index
+    if has_terminal?('exprabove', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 9))
+      @index += 9
     else
-      terminal_parse_failure('%%begintext')
+      terminal_parse_failure('exprabove')
       r1 = nil
     end
-    s0 << r1
     if r1
-      s2, i2 = [], index
-      loop do
-        r3 = _nt_space
-        if r3
-          s2 << r3
-        else
-          break
-        end
-      end
-      r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
-      s0 << r2
-      if r2
-        s4, i4 = [], index
-        loop do
-          i5, s5 = index, []
-          i6 = index
-          r7 = _nt_end_of_line
-          if r7
-            r6 = nil
-          else
-            @index = i6
-            r6 = instantiate_node(SyntaxNode,input, index...index)
-          end
-          s5 << r6
-          if r6
-            if index < input_length
-              r8 = instantiate_node(SyntaxNode,input, index...(index + 1))
-              @index += 1
-            else
-              terminal_parse_failure("any character")
-              r8 = nil
-            end
-            s5 << r8
-          end
-          if s5.last
-            r5 = instantiate_node(SyntaxNode,input, i5...index, s5)
-            r5.extend(TypesetTextMultiline20)
-          else
-            @index = i5
-            r5 = nil
-          end
-          if r5
-            s4 << r5
-          else
-            break
-          end
-        end
-        r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
-        s0 << r4
-        if r4
-          r9 = _nt_end_of_line
-          s0 << r9
-          if r9
-            s10, i10 = [], index
-            loop do
-              i11, s11 = index, []
-              if has_terminal?('%%', false, index)
-                r12 = instantiate_node(SyntaxNode,input, index...(index + 2))
-                @index += 2
-              else
-                terminal_parse_failure('%%')
-                r12 = nil
-              end
-              s11 << r12
-              if r12
-                s13, i13 = [], index
-                loop do
-                  i14, s14 = index, []
-                  i15 = index
-                  r16 = _nt_end_of_line
-                  if r16
-                    r15 = nil
-                  else
-                    @index = i15
-                    r15 = instantiate_node(SyntaxNode,input, index...index)
-                  end
-                  s14 << r15
-                  if r15
-                    if index < input_length
-                      r17 = instantiate_node(SyntaxNode,input, index...(index + 1))
-                      @index += 1
-                    else
-                      terminal_parse_failure("any character")
-                      r17 = nil
-                    end
-                    s14 << r17
-                  end
-                  if s14.last
-                    r14 = instantiate_node(SyntaxNode,input, i14...index, s14)
-                    r14.extend(TypesetTextMultiline21)
-                  else
-                    @index = i14
-                    r14 = nil
-                  end
-                  if r14
-                    s13 << r14
-                  else
-                    break
-                  end
-                end
-                r13 = instantiate_node(SyntaxNode,input, i13...index, s13)
-                s11 << r13
-                if r13
-                  r18 = _nt_end_of_line
-                  s11 << r18
-                end
-              end
-              if s11.last
-                r11 = instantiate_node(SyntaxNode,input, i11...index, s11)
-                r11.extend(TypesetTextMultiline22)
-              else
-                @index = i11
-                r11 = nil
-              end
-              if r11
-                s10 << r11
-              else
-                break
-              end
-            end
-            r10 = instantiate_node(SyntaxNode,input, i10...index, s10)
-            s0 << r10
-            if r10
-              if has_terminal?('%%endtext', false, index)
-                r19 = instantiate_node(SyntaxNode,input, index...(index + 9))
-                @index += 9
-              else
-                terminal_parse_failure('%%endtext')
-                r19 = nil
-              end
-              s0 << r19
-              if r19
-                s20, i20 = [], index
-                loop do
-                  r21 = _nt_space
-                  if r21
-                    s20 << r21
-                  else
-                    break
-                  end
-                end
-                r20 = instantiate_node(SyntaxNode,input, i20...index, s20)
-                s0 << r20
-              end
-            end
-          end
-        end
-      end
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TypesetTextMultiline23)
-      r0.extend(TypesetTextMultiline24)
+      r0 = r1
     else
-      @index = i0
-      r0 = nil
+      if has_terminal?('exprbelow', false, index)
+        r2 = instantiate_node(SyntaxNode,input, index...(index + 9))
+        @index += 9
+      else
+        terminal_parse_failure('exprbelow')
+        r2 = nil
+      end
+      if r2
+        r0 = r2
+      else
+        if has_terminal?('graceslurs', false, index)
+          r3 = instantiate_node(SyntaxNode,input, index...(index + 10))
+          @index += 10
+        else
+          terminal_parse_failure('graceslurs')
+          r3 = nil
+        end
+        if r3
+          r0 = r3
+        else
+          if has_terminal?('infoline', false, index)
+            r4 = instantiate_node(SyntaxNode,input, index...(index + 8))
+            @index += 8
+          else
+            terminal_parse_failure('infoline')
+            r4 = nil
+          end
+          if r4
+            r0 = r4
+          else
+            if has_terminal?('oneperpage', false, index)
+              r5 = instantiate_node(SyntaxNode,input, index...(index + 10))
+              @index += 10
+            else
+              terminal_parse_failure('oneperpage')
+              r5 = nil
+            end
+            if r5
+              r0 = r5
+            else
+              if has_terminal?('vocalabove', false, index)
+                r6 = instantiate_node(SyntaxNode,input, index...(index + 10))
+                @index += 10
+              else
+                terminal_parse_failure('vocalabove')
+                r6 = nil
+              end
+              if r6
+                r0 = r6
+              else
+                if has_terminal?('freegchord', false, index)
+                  r7 = instantiate_node(SyntaxNode,input, index...(index + 10))
+                  @index += 10
+                else
+                  terminal_parse_failure('freegchord')
+                  r7 = nil
+                end
+                if r7
+                  r0 = r7
+                else
+                  if has_terminal?('printtempo', false, index)
+                    r8 = instantiate_node(SyntaxNode,input, index...(index + 10))
+                    @index += 10
+                  else
+                    terminal_parse_failure('printtempo')
+                    r8 = nil
+                  end
+                  if r8
+                    r0 = r8
+                  else
+                    @index = i0
+                    r0 = nil
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
     end
 
-    node_cache[:typeset_text_multiline2][start_index] = r0
+    node_cache[:miscellaneous_logical_directive][start_index] = r0
 
     r0
   end
