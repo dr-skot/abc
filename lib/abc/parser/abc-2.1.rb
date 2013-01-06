@@ -5123,7 +5123,7 @@ module ABC
 
   module GeneralInstructionField1
     def value
-      @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
+      @value ||= InstructionField.new(text_value[0], directive.text_value, content.value || '')
     end
     def inclusion # handles abc-include
       value.inclusion

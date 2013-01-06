@@ -746,7 +746,7 @@ rule key_field do
   rule general_instruction_field do
     instruction_field_identifier directive content:instruction_content? <FieldNode> {
       def value
-        @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
+        @value ||= InstructionField.new(text_value[0], directive.text_value, content.value || '')
       end
       def inclusion # handles abc-include
         value.inclusion

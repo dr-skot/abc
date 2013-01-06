@@ -709,6 +709,14 @@ end
 # %%newpage % start a new page
 # See further information about directives for more details and to find out about additional parameters for these directives.
 
+describe "a separation directive" do
+  it "is parsed as an instruction field with no value" do
+    p = parse_fragment "%%sep"
+    p.header.fields(:instruction).count.should == 1
+    p.instructions['sep'].should == ''
+  end
+end
+
 
 # 11.4.8 Miscellaneous directives
 # VOLATILE: See the section 11 disclaimer.
