@@ -314,6 +314,19 @@ module ABC
       end
     end
 
+    def writefields(letter)
+      letter.length == 1 && writefields_chars.include?(letter)
+    end
+
+    def writefields_chars
+      # TODO refactor this magic string value
+      @writefields_chars ||= header.fields(:instruction).select do |f| 
+        f.name == 'writefields'
+      end.inject('TCOPQwW') do |chars, f|
+        chars = f.value.apply(chars)
+      end
+    end
+
     def christen(node)
       # these parser methods must reset after each tune is parsed
       node.parser.alias_rule(:score_linebreak, :score_linebreak_default)

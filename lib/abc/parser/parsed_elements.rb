@@ -54,3 +54,4 @@ require "abc/parser/parsed_elements/text_string"
 
 require "abc/parser/parsed_elements/length"
 require "abc/parser/parsed_elements/font_specifier"
+require "abc/parser/parsed_elements/writefields"

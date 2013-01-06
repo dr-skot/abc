@@ -5091,8 +5091,13 @@ module ABC
         if r3
           r0 = r3
         else
-          @index = i0
-          r0 = nil
+          r4 = _nt_writefields_field
+          if r4
+            r0 = r4
+          else
+            @index = i0
+            r0 = nil
+          end
         end
       end
     end
@@ -14969,6 +14974,190 @@ module ABC
     end
 
     node_cache[:typeset_text_multiline][start_index] = r0
+
+    r0
+  end
+
+  module WritefieldsField0
+    def instruction_field_identifier
+      elements[0]
+    end
+
+    def writefields
+      elements[3]
+    end
+  end
+
+  module WritefieldsField1
+    def value
+      @value ||= InstructionField.new(text_value[0], 'writefields', writefields.value)
+    end
+  end
+
+  def _nt_writefields_field
+    start_index = index
+    if node_cache[:writefields_field].has_key?(index)
+      cached = node_cache[:writefields_field][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    r1 = _nt_instruction_field_identifier
+    s0 << r1
+    if r1
+      if has_terminal?('writefields', false, index)
+        r2 = instantiate_node(SyntaxNode,input, index...(index + 11))
+        @index += 11
+      else
+        terminal_parse_failure('writefields')
+        r2 = nil
+      end
+      s0 << r2
+      if r2
+        s3, i3 = [], index
+        loop do
+          r4 = _nt_space
+          if r4
+            s3 << r4
+          else
+            break
+          end
+        end
+        if s3.empty?
+          @index = i3
+          r3 = nil
+        else
+          r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
+        end
+        s0 << r3
+        if r3
+          r5 = _nt_writefields
+          s0 << r5
+        end
+      end
+    end
+    if s0.last
+      r0 = instantiate_node(FieldNode,input, i0...index, s0)
+      r0.extend(WritefieldsField0)
+      r0.extend(WritefieldsField1)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:writefields_field][start_index] = r0
+
+    r0
+  end
+
+  module Writefields0
+  end
+
+  module Writefields1
+    def chars
+      elements[0]
+    end
+
+    def remove
+      elements[1]
+    end
+  end
+
+  module Writefields2
+    def value
+      @value ||= Writefields.new(chars.text_value, remove.empty?)
+    end
+  end
+
+  def _nt_writefields
+    start_index = index
+    if node_cache[:writefields].has_key?(index)
+      cached = node_cache[:writefields][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    s1, i1 = [], index
+    loop do
+      if has_terminal?('\G[A-Za-z]', true, index)
+        r2 = true
+        @index += 1
+      else
+        r2 = nil
+      end
+      if r2
+        s1 << r2
+      else
+        break
+      end
+    end
+    if s1.empty?
+      @index = i1
+      r1 = nil
+    else
+      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+    end
+    s0 << r1
+    if r1
+      i4, s4 = index, []
+      s5, i5 = [], index
+      loop do
+        r6 = _nt_space
+        if r6
+          s5 << r6
+        else
+          break
+        end
+      end
+      if s5.empty?
+        @index = i5
+        r5 = nil
+      else
+        r5 = instantiate_node(SyntaxNode,input, i5...index, s5)
+      end
+      s4 << r5
+      if r5
+        if has_terminal?('false', false, index)
+          r7 = instantiate_node(SyntaxNode,input, index...(index + 5))
+          @index += 5
+        else
+          terminal_parse_failure('false')
+          r7 = nil
+        end
+        s4 << r7
+      end
+      if s4.last
+        r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
+        r4.extend(Writefields0)
+      else
+        @index = i4
+        r4 = nil
+      end
+      if r4
+        r3 = r4
+      else
+        r3 = instantiate_node(SyntaxNode,input, index...index)
+      end
+      s0 << r3
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(Writefields1)
+      r0.extend(Writefields2)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:writefields][start_index] = r0
 
     r0
   end

@@ -672,6 +672,35 @@ end
 # "%%writefields" is a partial alternative to "%%writehistory" and "%%infoname"
 # See further information about directives for more details of the 2.0 alternatives.
 
+describe "a writefields directive" do
+  it "if absent, implies the default writefields TCOPQwW" do
+    p = parse_fragment "abc"
+    'TCOPQwW'.each_char { |id| p.writefields(id).should == true }
+    'BDFGHNRSXZ'.each_char { |id| p.writefields(id).should == false }
+  end
+  it "can add a field" do
+    p = parse_fragment "%%writefields X\nabc"
+    'TCOPQwWX'.each_char { |id| p.writefields(id).should == true }
+    'BDFGHNRSZ'.each_char { |id| p.writefields(id).should == false }
+  end
+  it "can remove a field" do
+    p = parse_fragment "%%writefields O false\nabc"
+    'TCPQwW'.each_char { |id| p.writefields(id).should == true }
+    'BDFGHNORSXZ'.each_char { |id| p.writefields(id).should == false }
+  end
+  it "can add several fields at once" do
+    p = parse_fragment "%%writefields XBH\nabc"
+    'XBHTCOPQwW'.each_char { |id| p.writefields(id).should == true }
+    'DFGNRSZ'.each_char { |id| p.writefields(id).should == false }
+  end
+  it "can add remove fields at once" do
+    p = parse_fragment "%%writefields OwW false\nabc"
+    'TCPQ'.each_char { |id| p.writefields(id).should == true }
+    'BDFGHNORSwWXZ'.each_char { |id| p.writefields(id).should == false }
+  end
+  # TODO allow writefields in the fileheader but not in a tune body
+end
+
 
 # 11.4.7 Separation directives
 # VOLATILE: See the section 11 disclaimer.
@@ -712,6 +741,10 @@ end
 # %%noteedit:fontcolor blue
 
 describe "pseudo-comment support" do
+  it "accepts arbitrary directives" do
+    p = parse_fragment "%%any_directive value"
+    p.instructions['any_directive'].should == 'value'
+  end
   it "accepts arbitrary app-specific directives" do
     p = parse_fragment "%%any_app:any_directive value"
     p.instructions['any_app:any_directive'].should == 'value'

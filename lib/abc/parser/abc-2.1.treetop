@@ -740,7 +740,7 @@ rule key_field do
   end
 
   rule special_instruction_field do
-    staves_field / midi_field / formatting_field
+    staves_field / midi_field / formatting_field / writefields_field
   end
 
   rule general_instruction_field do
@@ -2738,6 +2738,22 @@ rule key_field do
 # "%%writefields Ww false" can be used as an alternative to"%%musiconly"
 # "%%writefields" is a partial alternative to "%%writehistory" and "%%infoname"
 # See further information about directives for more details of the 2.0 alternatives.
+  
+  rule writefields_field do
+    instruction_field_identifier 'writefields' space+ writefields <FieldNode> {
+      def value
+        @value ||= InstructionField.new(text_value[0], 'writefields', writefields.value)
+      end
+    }
+  end
+
+  rule writefields do
+    chars:[A-Za-z]+ remove:(space+ 'false')? {
+      def value
+        @value ||= Writefields.new(chars.text_value, remove.empty?)
+      end
+    }
+  end
 
 
 # 11.4.7 Separation directives
@@ -2765,7 +2781,8 @@ rule key_field do
       'freegchord' / 'printtempo'
   end
 
-   
+
+
    # TODO: deal with escaped " ? NO: use &quot;
    rule quoted_string do
     '"' value_node:(!'"' .)* '"' {
