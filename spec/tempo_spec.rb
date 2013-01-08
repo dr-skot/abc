@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift File.expand_path('../lib')
-require 'abc/parser/parsed_elements/tempo'
+require 'abc/model/tempo'
 
 include ABC
 

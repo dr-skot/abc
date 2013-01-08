@@ -1,4 +1,4 @@
-require 'abc/parser/parsed_elements/pitch'
+require 'abc/model/pitch'
 
 module ABC
 

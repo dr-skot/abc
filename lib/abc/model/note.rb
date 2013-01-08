@@ -1,4 +1,4 @@
-require 'abc/parser/parsed_elements/music_unit'
+require 'abc/model/music_unit'
 
 module ABC
   

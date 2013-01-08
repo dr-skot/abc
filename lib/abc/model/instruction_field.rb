@@ -16,9 +16,8 @@ module ABC
     end
     
     def adjust_parser(parser)
-      "instruction field adjust parser #{value}"
       if name == 'linebreak'
-        dollar, bang = value.include?('$'), value.include?('!')        
+        dollar, bang = value.include?('$'), value.include?('!')
         if dollar && bang
           rule = :score_linebreak_both
         elsif dollar
@@ -32,6 +31,9 @@ module ABC
         if bang
           parser.alias_rule(:decoration_delimiter, :decoration_delimiter_plus)
         end
+      elsif name == 'decoration'
+        rule = value == '+' ? :decoration_delimiter_plus : :decoration_delimiter_bang
+        parser.alias_rule(:decoration_delimiter, rule)
       end
     end
     

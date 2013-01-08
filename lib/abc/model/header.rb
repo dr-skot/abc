@@ -84,6 +84,8 @@ module ABC
       end
       field = fields(:instruction).select { |f| f.name == "linebreak" }.last
       field.adjust_parser(parser) if field
+      field = fields(:instruction).select { |f| f.name == "decoration" }.last
+      field.adjust_parser(parser) if field
     end
 
   end

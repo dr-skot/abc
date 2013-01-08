@@ -1,4 +1,4 @@
-require 'abc/parser/parsed_elements/music_element'
+require 'abc/model/music_element'
 
 module ABC
   class BarLine < MusicElement

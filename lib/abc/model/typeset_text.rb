@@ -1,4 +1,4 @@
-require "abc/parser/parsed_elements/field"
+require "abc/model/field"
 
 module ABC
 

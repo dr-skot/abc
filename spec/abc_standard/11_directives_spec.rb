@@ -403,27 +403,27 @@ describe "a formatting directive" do
 end
 
 
-  # 11.4.2 Font directives
-  # VOLATILE: Font directives are due to be considered in abc 2.3 - see the section 11 disclaimer.
-  # PostScript and PDF are the standard file formats for distributing printable material. For portability reasons, typesetters will use the PostScript font names. The size parameter should be an integer, but is optional.
+# 11.4.2 Font directives
+# VOLATILE: Font directives are due to be considered in abc 2.3 - see the section 11 disclaimer.
+# PostScript and PDF are the standard file formats for distributing printable material. For portability reasons, typesetters will use the PostScript font names. The size parameter should be an integer, but is optional.
 
-  # %%titlefont        <font name>  <size>
-  # %%subtitlefont     <font name>  <size>
-  # %%composerfont     <font name>  <size>
-  # %%partsfont        <font name>  <size>
-  # %%tempofont        <font name>  <size>
-  # %%gchordfont       <font name>  <size> % for chords symbols
-  # %%annotationfont   <font name>  <size> % for "^..." annotations
-  # %%infofont         <font name>  <size>
-  # %%textfont         <font name>  <size>
-  # %%vocalfont        <font name>  <size> % for w:
-  # %%wordsfont        <font name>  <size> % for W:
-  # The specifiers $1, $2, $3 and $4 can be used to change the font within a text string. The font to be used can be specified with the %%setfont-n directives. $0 resets the font to its default value. $$ gives an actual dollar sign.
+# %%titlefont        <font name>  <size>
+# %%subtitlefont     <font name>  <size>
+# %%composerfont     <font name>  <size>
+# %%partsfont        <font name>  <size>
+# %%tempofont        <font name>  <size>
+# %%gchordfont       <font name>  <size> % for chords symbols
+# %%annotationfont   <font name>  <size> % for "^..." annotations
+# %%infofont         <font name>  <size>
+# %%textfont         <font name>  <size>
+# %%vocalfont        <font name>  <size> % for w:
+# %%wordsfont        <font name>  <size> % for W:
+# The specifiers $1, $2, $3 and $4 can be used to change the font within a text string. The font to be used can be specified with the %%setfont-n directives. $0 resets the font to its default value. $$ gives an actual dollar sign.
 
-  # %%setfont-1        <font name>  <size>
-  # %%setfont-2        <font name>  <size>
-  # %%setfont-3        <font name>  <size>
-  # %%setfont-4        <font name>  <size>
+# %%setfont-1        <font name>  <size>
+# %%setfont-2        <font name>  <size>
+# %%setfont-3        <font name>  <size>
+# %%setfont-4        <font name>  <size>
 
 describe "a font directive" do  
   it "can specify a font for various elements" do
@@ -530,7 +530,9 @@ describe "a measure directive" do
     p = parse_fragment "%%measurefirst 5\n|abc|def"
     p.instructions['measurefirst'].should == 5
     p.bars[0].number.should == 5
-    # p.bar(5).should = p.bars[0]
+    p.bars[1].number.should == 6
+    p.bar(5).should == p.bars[0]
+    p.bar(6).should == p.bars[1]
   end
   it "can specify how frequently bar numbers appear" do
     p = parse_fragment "%%barnumbers 3"
@@ -730,7 +732,7 @@ end
 # %%printtempo       <logical>
 # The default value for these directives is false.
 
-describe 'any directive listed as "miscellaneous directives"' do
+describe 'any directive listed under "miscellaneous directives"' do
   it "will have a boolean value" do
     d = %w{exprabove exprbelow graceslurs infoline oneperpage vocalabove freegchord printtempo}
     d.each do |name|
@@ -757,6 +759,7 @@ describe "pseudo-comment support" do
     p = parse_fragment "%%any_app:any_directive value"
     p.instructions['any_app:any_directive'].should == 'value'
   end
+  # TODO further parsing of app-specific directives?
 end
 
 
@@ -765,7 +768,6 @@ end
 # the format.txt file included with abcm2ps
 # the abcguide.txt file included with abcMIDI
 # the abctab2ps User's guide
-# Back to top
 
 
 
