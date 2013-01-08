@@ -1,4 +1,4 @@
-require 'abc/parser/ruby_extensions/hash'
+require 'abc/ruby_extensions/hash'
 
 module ABC
 
