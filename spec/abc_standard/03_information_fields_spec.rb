@@ -14,21 +14,21 @@ require 'spec/abc_standard/spec_helper'
 
 describe "information field" do
   it "can have an unrecognized identifier in the file header" do
-    p = parse "J:unknown field\n\nX:1\nT:T\nK:C"
+    p = parse_value "J:unknown field\n\nX:1\nT:T\nK:C"
     # TODO use a string for this instead of regex
     p.header.value('J').should == 'unknown field'
   end
   it "can have an unrecognized identifier in the tune header" do
-    p = parse "X:1\nT:T\nJ:unknown field\nK:C"
+    p = parse_value "X:1\nT:T\nJ:unknown field\nK:C"
     p.tunes[0].header.value('J').should == 'unknown field'
   end
   it "can have an unrecognized identifier in the tune body" do
-    p = parse "X:1\nT:T\nK:C\nabc\nJ:unknown field\ndef"
+    p = parse_value "X:1\nT:T\nK:C\nabc\nJ:unknown field\ndef"
     p.tunes[0].items[3].is_a?(Field).should == true
     p.tunes[0].items[3].value.should == 'unknown field'
   end
   it "can have an unrecognized identifier inline in the tune" do
-    p = parse "X:1\nT:T\nK:C\nabc[J:unknown field]def"
+    p = parse_value "X:1\nT:T\nK:C\nabc[J:unknown field]def"
     p.tunes[0].items[3].is_a?(Field).should == true
     p.tunes[0].items[3].value.should == 'unknown field'
   end
@@ -48,11 +48,11 @@ end
 
 describe "information field repeating" do
   it "indicates multiple values for string fields" do
-    p = parse "C:John Lennon\nC:Paul McCartney\n\nX:1\nT:\nK:C"
+    p = parse_value "C:John Lennon\nC:Paul McCartney\n\nX:1\nT:\nK:C"
     p.composer.should == ["John Lennon", "Paul McCartney"]
   end
   it "overrides previous value for meter fields" do
-    p = parse "M:C\nM:3/4\n\nX:1\nT:\nK:C"
+    p = parse_value "M:C\nM:3/4\n\nX:1\nT:\nK:C"
     p.meter.measure_length.should == Rational(3, 4)
   end
 end
@@ -73,7 +73,7 @@ describe "X: (reference number) field" do
     # TODO error message
   end
   it "can be empty" do
-    p = parse "X:\nT:Title\nK:C"
+    p = parse_value "X:\nT:Title\nK:C"
     p.tunes[0].refnum.should == nil
   end
 end
@@ -87,15 +87,15 @@ end
 
 describe "T: (title) field" do
   it "can be empty" do
-    p = parse "X:1\nT:\nK:C"
+    p = parse_value "X:1\nT:\nK:C"
     p.tunes[0].title.should == ""
   end
   it "can be repeated" do
-    p = parse "X:1\nT:T1\nT:T2\nK:C"
+    p = parse_value "X:1\nT:T1\nT:T2\nK:C"
     p.tunes[0].title.should == ["T1", "T2"]
   end
   it "can be used within a tune" do
-    p = parse "X:1\nT:T\nK:C\nT:Part1\nabc\nT:Part2\ndef"
+    p = parse_value "X:1\nT:T\nK:C\nT:Part1\nabc\nT:Part2\ndef"
     p.tunes[0].items[0].is_a?(Field).should == true
     p.tunes[0].items[0].value.should == "Part1"
   end
@@ -107,7 +107,7 @@ end
 
 describe "C: (composer) field" do
   it "is recognized" do
-    p = parse_fragment "C:Brahms"
+    p = parse_value_fragment "C:Brahms"
     p.composer.should == "Brahms"
   end
 end
@@ -118,13 +118,13 @@ end
 # If possible, enter the data in a hierarchical way, like:
 # O:Canada; Nova Scotia; Halifax.
 # O:England; Yorkshire; Bradford and Bingley.
-# Recommendation: It is recommended to always use a ";" (semi-colon) as the separator, so that software may parse the field. However, abc 2.0 recommended the use of a comma, so legacy files may not be parse-able under abc 2.1.
+# Recommendation: It is recommended to always use a ";" (semi-colon) as the separator, so that software may parse_value the field. However, abc 2.0 recommended the use of a comma, so legacy files may not be parse_value-able under abc 2.1.
 # This field may be especially useful for traditional tunes with no known composer.
 # See typesetting information fields for details of how the origin information is included in the printed score.
 
 describe "O: (origin) field" do
   it "is recognized" do
-    p = parse_fragment "O:Canada; Nova Scotia; Halifax.\nO:England; Yorkshire; Bradford and Bingley."
+    p = parse_value_fragment "O:Canada; Nova Scotia; Halifax.\nO:England; Yorkshire; Bradford and Bingley."
     p.origin.should == ["Canada; Nova Scotia; Halifax.", "England; Yorkshire; Bradford and Bingley."]
   end
 end
@@ -135,7 +135,7 @@ end
 
 describe "A: (area) field" do
   it "is recognized" do
-    p = parse_fragment "O:Nova Scotia\nA:Halifax"
+    p = parse_value_fragment "O:Nova Scotia\nA:Halifax"
     p.area.should == "Halifax"
   end
 end
@@ -151,40 +151,40 @@ end
 
 describe "M: (meter) field" do
   it "can be a numerator and denominator" do
-    p = parse_fragment "M:6/8\nabc"
+    p = parse_value_fragment "M:6/8\nabc"
     p.meter.numerator.should == 6
     p.meter.denominator.should == 8
   end
   it "can be \"C\", meaning common time" do
-    p = parse_fragment "M:C\nabc"
+    p = parse_value_fragment "M:C\nabc"
     p.meter.numerator.should == 4
     p.meter.denominator.should == 4
     p.meter.symbol.should == :common
   end
   it "can be \"C|\", meaning cut time" do
-    p = parse_fragment "M:C|\nabc"
+    p = parse_value_fragment "M:C|\nabc"
     p.meter.numerator.should == 2
     p.meter.denominator.should == 4
     p.meter.symbol.should == :cut
   end
   it "can handle complex meter with parentheses" do
-    p = parse_fragment "M:(2+3+2)/8\nabc"
+    p = parse_value_fragment "M:(2+3+2)/8\nabc"
     p.meter.complex_numerator.should == [2,3,2]
     p.meter.numerator.should == 7
     p.meter.denominator.should == 8
   end
   it "can handle complex meter without parentheses" do
-    p = parse_fragment "M:2+3+2/8\nabc"
+    p = parse_value_fragment "M:2+3+2/8\nabc"
     p.meter.complex_numerator.should == [2,3,2]
     p.meter.numerator.should == 7
     p.meter.denominator.should == 8
   end
   it "defaults to free meter" do
-    p = parse_fragment "abc"
+    p = parse_value_fragment "abc"
     p.meter.symbol.should == :free
   end
   it "can be explicitly defined as none" do
-    p = parse_fragment "M:none\nabc"
+    p = parse_value_fragment "M:none\nabc"
     p.meter.symbol.should == :free
   end
 end
@@ -198,23 +198,23 @@ end
 
 describe "L: (unit note length) field" do
   it "knows its value" do
-    p = parse_fragment "L:1/4"
+    p = parse_value_fragment "L:1/4"
     p.unit_note_length.should == Rational(1, 4)
   end
   it "accepts whole numbers" do
-    p = parse_fragment "L:1\nabc"
+    p = parse_value_fragment "L:1\nabc"
     p.unit_note_length.should == 1
   end
   it "defaults to 1/16 if meter is less than 0.75" do
-    p = parse_fragment "M:74/100\n"
+    p = parse_value_fragment "M:74/100\n"
     p.unit_note_length.should == Rational(1, 16)
   end
   it "defaults to 1/8 if meter is 0.75 or greater" do
-    p = parse_fragment "M:3/4\n"
+    p = parse_value_fragment "M:3/4\n"
     p.unit_note_length.should == Rational(1, 8)
   end
   it "will not change note lengths when the meter changes in the tune" do
-    p = parse_fragment "M:3/4\nK:C\na\nM:2/4\nb"
+    p = parse_value_fragment "M:3/4\nK:C\na\nM:2/4\nb"
     p.notes[0].note_length.should == Rational(1, 8)
     p.notes[1].note_length.should == Rational(1, 8)
   end
@@ -234,28 +234,28 @@ end
 
 describe "Q: (tempo) field" do
   it "can be of the simple form beat=bpm" do
-    p = parse_fragment "X:1\nQ:1/4=120"
+    p = parse_value_fragment "X:1\nQ:1/4=120"
     p.tempo.beat_length.should == Rational(1, 4)
     p.tempo.beat_parts.should == [Rational(1, 4)]
     p.tempo.bpm.should == 120
   end
   it "can divide the beat into parts" do
-    p = parse_fragment "X:1\nQ:1/4 3/8 1/4 3/8=40"
+    p = parse_value_fragment "X:1\nQ:1/4 3/8 1/4 3/8=40"
     p.tempo.beat_length.should == Rational(5, 4)
     p.tempo.beat_parts.should == 
       [Rational(1, 4), Rational(3, 8), Rational(1, 4), Rational(3, 8)]
     p.tempo.bpm.should == 40
   end
   it "can take a label before the tempo indicator" do
-    p = parse_fragment "X:1\nQ:\"Allegro\" 1/4=120"
+    p = parse_value_fragment "X:1\nQ:\"Allegro\" 1/4=120"
     p.tempo.label.should == "Allegro"
   end
   it "can take a label after the tempo indicator" do
-    p = parse_fragment "X:1\nQ:3/8=50 \"Slowly\""
+    p = parse_value_fragment "X:1\nQ:3/8=50 \"Slowly\""
     p.tempo.label.should == "Slowly"
   end
   it "can take a label without an explicit tempo indication" do
-    p = parse_fragment "Q:\"Andante\""
+    p = parse_value_fragment "Q:\"Andante\""
     p.tempo.label.should == "Andante"
   end    
 end
@@ -271,43 +271,43 @@ end
 
 describe "parts header field" do
   it "can be a single part" do
-    p = parse_fragment "X:1\nP:A\nK:C\nabc"
+    p = parse_value_fragment "X:1\nP:A\nK:C\nabc"
     p.part_sequence.list.should == ['A']
   end
   it "can be two parts" do
-    p = parse_fragment "X:1\nP:AB\nK:C\nabc"
+    p = parse_value_fragment "X:1\nP:AB\nK:C\nabc"
     p.part_sequence.list.should == ['A', 'B']
   end
   it "can be one part repeating" do
-    p = parse_fragment "X:1\nP:A3\nK:C\nabc"
+    p = parse_value_fragment "X:1\nP:A3\nK:C\nabc"
     p.part_sequence.list.should == ['A', 'A', 'A']
   end
   it "can be two parts with one repeating" do
-    p = parse_fragment "X:1\nP:A2B\nK:C\nabc"
+    p = parse_value_fragment "X:1\nP:A2B\nK:C\nabc"
     p.part_sequence.list.should == ['A', 'A', 'B']
   end
   it "can be two parts repeating" do
-    p = parse_fragment "X:1\nP:(AB)3\nK:C\nabc"
+    p = parse_value_fragment "X:1\nP:(AB)3\nK:C\nabc"
     p.part_sequence.list.should == ['A', 'B', 'A', 'B', 'A', 'B']
   end
   it "can have nested repeats" do
-    p = parse_fragment "X:1\nP:(A2B)3\nK:C\nabc"
+    p = parse_value_fragment "X:1\nP:(A2B)3\nK:C\nabc"
     p.part_sequence.list.join('').should == 'AABAABAAB'
   end
   it "can contain dots anywhere" do
-    p = parse_fragment "X:1\nP:.(.A.2.B.).3.\nK:C\nabc"
+    p = parse_value_fragment "X:1\nP:.(.A.2.B.).3.\nK:C\nabc"
     p.part_sequence.list.join('').should == 'AABAABAAB'
   end
 end
 
 describe "parts body field" do
   it "separates parts" do
-    p = parse_fragment "K:C\nP:A\nabc2\nP:B\ndefg"
+    p = parse_value_fragment "K:C\nP:A\nabc2\nP:B\ndefg"
     p.parts['A'].notes.count.should == 3
     p.parts['B'].notes.count.should == 4
   end
   it "works as an inline field" do
-    p = parse_fragment "[P:A]abc2[P:B]defg"
+    p = parse_value_fragment "[P:A]abc2[P:B]defg"
     p.parts['A'].notes.count.should == 3
     p.parts['B'].notes.count.should == 4
   end
@@ -315,7 +315,7 @@ end
 
 describe "next_parts method" do
   it "works" do
-    p = parse_fragment "P:BA2\nK:C\n[P:A]abc2[P:B]defg"
+    p = parse_value_fragment "P:BA2\nK:C\n[P:A]abc2[P:B]defg"
     p.next_part.should == p.parts['B']
     p.next_part.should == p.parts['A']
     p.next_part.should == p.parts['A']
@@ -344,11 +344,11 @@ end
 
 describe "Z: (transcription) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "Z:abc-copyright &copy; John Smith"
+    p = parse_value_fragment "Z:abc-copyright &copy; John Smith"
     p.transcription.should == "abc-copyright © John Smith"
   end
   it "can appear in the file header" do
-    p = parse "Z:abc-copyright &copy; John Smith\n\nX:1\nT:\nK:C"
+    p = parse_value "Z:abc-copyright &copy; John Smith\n\nX:1\nT:\nK:C"
     p.transcription.should == "abc-copyright © John Smith"
   end
   it "can't appear in the tune body" do
@@ -364,19 +364,19 @@ end
 
 describe "N: (notes) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "N:notes are called notations"
+    p = parse_value_fragment "N:notes are called notations"
     p.notations.should == "notes are called notations"
   end
   it "can appear in the file header" do
-    p = parse "N:notes are called notations\n\nX:1\nT:\nK:C"
+    p = parse_value "N:notes are called notations\n\nX:1\nT:\nK:C"
     p.notations.should == "notes are called notations"
   end
   it "can appear in the tune body" do
-    p = parse_fragment "abc\nN:notes are called notations\ndef"
+    p = parse_value_fragment "abc\nN:notes are called notations\ndef"
     p.items[3].value.should == "notes are called notations"
   end
   it "can appear as an inline field" do
-    p = parse_fragment "abc[N:notes are called notations]def"
+    p = parse_value_fragment "abc[N:notes are called notations]def"
     p.items[3].value.should == "notes are called notations"
   end
 end
@@ -387,11 +387,11 @@ end
 
 describe "G: (group) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "G:group"
+    p = parse_value_fragment "G:group"
     p.group.should == "group"
   end
   it "can appear in the file header" do
-    p = parse "G:group\n\nX:1\nT:\nK:C"
+    p = parse_value "G:group\n\nX:1\nT:\nK:C"
     p.group.should == "group"
   end
   it "can't appear in the tune body" do
@@ -416,11 +416,11 @@ end
 
 describe "H: (history) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "H:history"
+    p = parse_value_fragment "H:history"
     p.history.should == "history"
   end
   it "can appear in the file header" do
-    p = parse "H:history\n\nX:1\nT:\nK:C"
+    p = parse_value "H:history\n\nX:1\nT:\nK:C"
     p.history.should == "history"
   end
   it "can't appear in the tune body" do
@@ -430,7 +430,7 @@ describe "H: (history) field" do
     fail_to_parse_fragment "abc[H:history]def"
   end
   it "differentiates between continuation and separate anecdotes" do 
-    p = parse_fragment "H:this is considered\n+:as a single entry\nH:this usage is considered as two entries\nH:rather than one"
+    p = parse_value_fragment "H:this is considered\n+:as a single entry\nH:this usage is considered as two entries\nH:rather than one"
     p.history.should == ["this is considered as a single entry", "this usage is considered as two entries", "rather than one"]
   end
 end
@@ -438,7 +438,7 @@ end
 
 # 3.1.14 K: - key
 # The key signature should be specified with a capital letter (A-G) which may be followed by a # or b for sharp or flat respectively. In addition the mode should be specified (when no mode is indicated, major is assumed).
-# For example, K:C major, K:A minor, K:C ionian, K:A aeolian, K:G mixolydian, K:D dorian, K:E phrygian, K:F lydian and K:B locrian would all produce a staff with no sharps or flats. The spaces can be left out, capitalisation is ignored for the modes and in fact only the first three letters of each mode are parsed so that, for example, K:F# mixolydian is the same as K:F#Mix or even K:F#MIX. As a special case, minor may be abbreviated to m.
+# For example, K:C major, K:A minor, K:C ionian, K:A aeolian, K:G mixolydian, K:D dorian, K:E phrygian, K:F lydian and K:B locrian would all produce a staff with no sharps or flats. The spaces can be left out, capitalisation is ignored for the modes and in fact only the first three letters of each mode are parse_valued so that, for example, K:F# mixolydian is the same as K:F#Mix or even K:F#MIX. As a special case, minor may be abbreviated to m.
 # This table sums up how the same key signatures can be written in different ways:
 
 # Mode	 Ionian	 Aeolian	 Mixolydian	 Dorian	 Phrygian	 Lydian	 Locrian
@@ -469,124 +469,124 @@ end
 
 describe "K: (key) field" do
   it "can be a simple letter" do
-    p = parse_fragment "K:D"
+    p = parse_value_fragment "K:D"
     p.key.tonic.should == "D"
   end
   it "can have a flat in the tonic" do
-    p = parse_fragment "K:Eb"
+    p = parse_value_fragment "K:Eb"
     p.key.tonic.should == "Eb"
   end
   it "can have a sharp in the tonic" do
-    p = parse_fragment "K:F#"
+    p = parse_value_fragment "K:F#"
     p.key.tonic.should == "F#"
   end
   it "defaults to major mode" do
-    p = parse_fragment "K:D"
+    p = parse_value_fragment "K:D"
     p.key.mode.should == "major"
   end
   it "recognizes maj as major" do
-    p = parse_fragment "K:D maj"
+    p = parse_value_fragment "K:D maj"
     p.key.mode.should == "major"
   end
   it "recognizes m as minor" do
-    p = parse_fragment "K:Dm"
+    p = parse_value_fragment "K:Dm"
     p.key.mode.should == "minor"
   end
   it "recognizes min as minor" do
-    p = parse_fragment "K:D min"
+    p = parse_value_fragment "K:D min"
     p.key.mode.should == "minor"
   end
   it "recognizes mixolydian" do
-    p = parse_fragment "K:D mix"
+    p = parse_value_fragment "K:D mix"
     p.key.mode.should == "mixolydian"
   end
   it "recognizes dorian" do
-    p = parse_fragment "K:D dor"
+    p = parse_value_fragment "K:D dor"
     p.key.mode.should == "dorian"
   end
   it "recognizes locrian" do
-    p = parse_fragment "K:D loc"
+    p = parse_value_fragment "K:D loc"
     p.key.mode.should == "locrian"
   end
   it "recognizes phrygian" do
-    p = parse_fragment "K:D phrygian"
+    p = parse_value_fragment "K:D phrygian"
     p.key.mode.should == "phrygian"
   end
   it "recognizes lydian" do
-    p = parse_fragment "K:D lydian"
+    p = parse_value_fragment "K:D lydian"
     p.key.mode.should == "lydian"
   end
   it "recognizes aeolian" do
-    p = parse_fragment "K:D loc"
+    p = parse_value_fragment "K:D loc"
     p.key.mode.should == "locrian"
   end
   it "recognizes ionian" do
-    p = parse_fragment "K:D ion"
+    p = parse_value_fragment "K:D ion"
     p.key.mode.should == "ionian"
   end
   it "ignores all but the first 3 letters of the mode" do
-    p = parse_fragment "K:D mixdkafjeaadkfafipqinv"
+    p = parse_value_fragment "K:D mixdkafjeaadkfafipqinv"
     p.key.mode.should == "mixolydian"
   end
   it "ignores capitalization of the mode" do
-    p = parse_fragment "K:D Mix"
+    p = parse_value_fragment "K:D Mix"
     p.key.mode.should == "mixolydian"
-    p = parse_fragment "K:DMIX"
+    p = parse_value_fragment "K:DMIX"
     p.key.mode.should == "mixolydian"
-    p = parse_fragment "K:DmIX"
+    p = parse_value_fragment "K:DmIX"
     p.key.mode.should == "mixolydian"
   end
   it "delivers accidentals for major key" do
-    p = parse_fragment "K:Eb"
+    p = parse_value_fragment "K:Eb"
     sig = p.key.signature
     sig.should include 'A' => -1, 'B' => -1, 'E' => -1
     sig.should_not include 'C', 'D', 'F', 'G'
   end
   it "delivers accidentals for key with mode" do
-    p = parse_fragment "K:A# Phr"
+    p = parse_value_fragment "K:A# Phr"
     sig = p.key.signature
     sig.should include 'C' => 1, 'D' => 1, 'E' => 1, 'F' => 1, 'G' => 1, 'A' => 1
     sig.should_not include 'B'
   end
   it "can take extra accidentals" do
-    p = parse_fragment "K:Ebminor=e^c"
+    p = parse_value_fragment "K:Ebminor=e^c"
     p.key.extra_accidentals.should include 'E' => 0, 'C' => 1
   end
   it "delivers accidentals for key with extra accidentals" do
-    p = parse_fragment "K:F =b ^C"
+    p = parse_value_fragment "K:F =b ^C"
     sig = p.key.signature
     sig.should include 'C' => 1
     sig.should_not include %w{D E F G A B}
   end
   it "allows explicitly defined signatures" do
-    p = parse_fragment "K:D exp _b _e ^f"
+    p = parse_value_fragment "K:D exp _b _e ^f"
     p.key.tonic.should == "D"
     p.key.mode.should == nil
     p.key.signature.should == {'B' => -1, 'E' => -1, 'F' => 1}
   end
   # TODO case of the accidental determines on which line the accidental should be drawn
   it "allows K:none" do
-    p = parse_fragment "K:none"
+    p = parse_value_fragment "K:none"
     p.key.tonic.should == nil
     p.key.mode.should == nil
     p.key.signature.should == {}
   end
   it "uses signature C#, F#, G natural for highland pipes" do
-    p = parse_fragment "K:HP"
+    p = parse_value_fragment "K:HP"
     p.key.highland_pipes?.should == true
     p.key.tonic.should == nil
     p.key.signature.should == {'C'=> 1, 'F' => 1, 'G' => 0}
-    p = parse_fragment "K:Hp"
+    p = parse_value_fragment "K:Hp"
     p.key.highland_pipes?.should == true
     p.key.tonic.should == nil
     p.key.signature.should == {'C'=> 1, 'F' => 1, 'G' => 0}
   end
   it "will not show accidentals for K:HP" do
-    p = parse_fragment "K:HP"
+    p = parse_value_fragment "K:HP"
     p.key.show_accidentals?.should == false
   end
   it "will show accidentals for K:Hp" do
-    p = parse_fragment "K:Hp"
+    p = parse_value_fragment "K:Hp"
     p.key.show_accidentals?.should == true
   end
 end
@@ -598,19 +598,19 @@ end
 
 describe "R: (rhythm) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "R:rhythm"
+    p = parse_value_fragment "R:rhythm"
     p.rhythm.should == "rhythm"
   end
   it "can appear in the file header" do
-    p = parse "R:rhythm\n\nX:1\nT:\nK:C"
+    p = parse_value "R:rhythm\n\nX:1\nT:\nK:C"
     p.rhythm.should == "rhythm"
   end
   it "can appear in the tune body" do
-    p = parse_fragment "abc\nR:rhythm\ndef"
+    p = parse_value_fragment "abc\nR:rhythm\ndef"
     p.items[3].value.should == "rhythm"
   end
   it "can appear as an inline field" do
-    p = parse_fragment "abc[R:rhythm]def"
+    p = parse_value_fragment "abc[R:rhythm]def"
     p.items[3].value.should == "rhythm"
   end
 end
@@ -623,11 +623,11 @@ end
 
 describe "B: (book) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "B:book"
+    p = parse_value_fragment "B:book"
     p.book.should == "book"
   end
   it "can appear in the file header" do
-    p = parse "B:book\n\nX:1\nT:\nK:C"
+    p = parse_value "B:book\n\nX:1\nT:\nK:C"
     p.book.should == "book"
   end
   it "can't appear in the tune body" do
@@ -640,11 +640,11 @@ end
 
 describe "D: (discography) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "D:discography"
+    p = parse_value_fragment "D:discography"
     p.discography.should == "discography"
   end
   it "can appear in the file header" do
-    p = parse "D:discography\n\nX:1\nT:\nK:C"
+    p = parse_value "D:discography\n\nX:1\nT:\nK:C"
     p.discography.should == "discography"
   end
   it "can't appear in the tune body" do
@@ -657,11 +657,11 @@ end
 
 describe "F: (file url) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "F:file url"
+    p = parse_value_fragment "F:file url"
     p.url.should == "file url"
   end
   it "can appear in the file header" do
-    p = parse "F:file url\n\nX:1\nT:\nK:C"
+    p = parse_value "F:file url\n\nX:1\nT:\nK:C"
     p.url.should == "file url"
   end
   it "can't appear in the tune body" do
@@ -674,11 +674,11 @@ end
 
 describe "S: (source) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "S:source"
+    p = parse_value_fragment "S:source"
     p.source.should == "source"
   end
   it "can appear in the file header" do
-    p = parse "S:source\n\nX:1\nT:\nK:C"
+    p = parse_value "S:source\n\nX:1\nT:\nK:C"
     p.source.should == "source"
   end
   it "can't appear in the tune body" do
@@ -710,20 +710,20 @@ end
 
 describe "I: (instruction) field" do
   it "can appear in the tune header" do
-    p = parse_fragment "I:name value"
+    p = parse_value_fragment "I:name value"
     p.instructions['name'].should == "value"
   end
   it "can appear in the file header" do
-    p = parse "I:name value\n\nX:1\nT:\nK:C"
+    p = parse_value "I:name value\n\nX:1\nT:\nK:C"
     p.instructions['name'].should == "value"
   end
   it "can appear in the tune body" do
-    p = parse_fragment "abc\nI:name value\ndef"
+    p = parse_value_fragment "abc\nI:name value\ndef"
     p.items[3].name.should == "name"
     p.items[3].value.should == "value"
   end
   it "can appear as an inline field" do
-    p = parse_fragment "abc[I:name value]def"
+    p = parse_value_fragment "abc[I:name value]def"
     p.items[3].name.should == "name"
     p.items[3].value.should == "value"
   end
@@ -743,7 +743,7 @@ describe "I:abc-charset utf-8" do
     fail_to_parse_fragment "I:abc-charset utf-8"
   end
   it "can appear in the file header" do
-    p = parse "I:abc-charset utf-8\n\nX:1\nT:\nK:C"
+    p = parse_value "I:abc-charset utf-8\n\nX:1\nT:\nK:C"
     p.instructions['abc-charset'].should == "utf-8"
   end
   it "can't appear in the tune body" do
@@ -765,11 +765,11 @@ end
 
 describe "I:abc-version instruction" do
   it "can appear in the tune header" do
-    p = parse_fragment "I:abc-version 2.0"
+    p = parse_value_fragment "I:abc-version 2.0"
     p.instructions['abc-version'].should == "2.0"
   end
   it "can appear in the file header" do
-    p = parse "I:abc-version 2.0\n\nX:1\nT:\nK:C"
+    p = parse_value "I:abc-version 2.0\n\nX:1\nT:\nK:C"
     p.instructions['abc-version'].should == "2.0"
   end
   it "can't appear in the tune body" do
@@ -800,11 +800,11 @@ describe "I:abc-include instruction" do
   end
 
   it "can appear in the tune header" do
-    p = parse_fragment "I:abc-include #{@filename}\nK:C"
+    p = parse_value_fragment "I:abc-include #{@filename}\nK:C"
     p.composer.should == 'Bach'
   end
   it "can appear in the file header" do
-    p = parse "I:abc-include #{@filename}\n\nX:1\nT:\nK:C"
+    p = parse_value "I:abc-include #{@filename}\n\nX:1\nT:\nK:C"
     p.composer.should == 'Bach'
   end
   it "can't appear in the tune body" do
@@ -815,7 +815,7 @@ describe "I:abc-include instruction" do
   end
   it "ignores whiespace at the end of the include file" do
     IO.write(@filename, "C:Bach\n\n\n   \n     ")
-    p = parse_fragment "I:abc-include #{@filename}\nK:C"
+    p = parse_value_fragment "I:abc-include #{@filename}\nK:C"
     p.composer.should == 'Bach'
   end
 end
@@ -862,31 +862,31 @@ end
 
 describe "information field continuation" do
   it "combines string-based fields with '+:'" do
-    p = parse_fragment "H:let me tell you a little\n+:about this song"
+    p = parse_value_fragment "H:let me tell you a little\n+:about this song"
     p.history.should == "let me tell you a little about this song"
   end
   it "combines lyric lines with '+:'" do
-    p = parse_fragment "GCEA\nw:my dog\n+:has fleas"
+    p = parse_value_fragment "GCEA\nw:my dog\n+:has fleas"
     p.notes[3].lyric.text.should == "fleas"
   end
   it "combines symbol lines with '+:'" do
-    p = parse_fragment "GCEA\ns:**\n+:*!f!"
+    p = parse_value_fragment "GCEA\ns:**\n+:*!f!"
     p.notes[3].decorations[0].symbol.should == "f"
   end
   it "combines more than two lines" do
-    p = parse_fragment "H:let me tell\n+:you a little\n+:about \n+:this song"
+    p = parse_value_fragment "H:let me tell\n+:you a little\n+:about \n+:this song"
     p.history.should == "let me tell you a little about this song"
   end
   it "works across end comments" do
-    p = parse_fragment "H:let me tell you a little %comment\n+:about this song"
+    p = parse_value_fragment "H:let me tell you a little %comment\n+:about this song"
     p.history.should == "let me tell you a little about this song"
   end
   it "works across comment lines" do
-    p = parse_fragment "H:let me tell you a little \n%comment\n+:about this song"
+    p = parse_value_fragment "H:let me tell you a little \n%comment\n+:about this song"
     p.history.should == "let me tell you a little about this song"
   end
   it "works across stylesheet directives" do
-    p = parse_fragment ["abcd abc",
+    p = parse_value_fragment ["abcd abc",
                         "%vocalfont Times-Roman 14",
                         "w:nor-mal",
                         "% legal, but not recommended",
@@ -894,7 +894,7 @@ describe "information field continuation" do
                         "+:i-ta-lic",
                         "%%vocalfont Times-Roman 14",
                         "+:nor-mal"].join("\n")
-    # TODO figure out how this gets parsed
+    # TODO figure out how this gets parse_valued
     # TODO make it easier to recover lyrics
   end
 end

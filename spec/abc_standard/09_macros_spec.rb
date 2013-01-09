@@ -11,11 +11,11 @@ require 'spec/abc_standard/spec_helper'
 
   describe "m: (macro) field" do
     it "can appear in the tune header" do
-      p = parse_fragment "m:~a3=a{d}a{e}a"
+      p = parse_value_fragment "m:~a3=a{d}a{e}a"
       p.macros['~a3'] = 'a{d}a{e}a'
     end
     it "can appear in the file header" do
-      p = parse "m:~a3=a{d}a{e}a\n\nX:1\nT:\nK:C"
+      p = parse_value "m:~a3=a{d}a{e}a\n\nX:1\nT:\nK:C"
       p.macros['~a3'] = 'a{d}a{e}a'
     end
     it "can't appear in the tune body" do
@@ -58,19 +58,19 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a static macro" do
     it "can replace a target string with a replacement string in a file" do
-      p = parse "X:1\nT:T\nm:~g2={a}g{f}g\nK:C\n~g2"
+      p = parse_value "X:1\nT:T\nm:~g2={a}g{f}g\nK:C\n~g2"
       p.tunes[0].notes.count.should == 2
       p.tunes[0].notes[0].grace_notes.notes[0].pitch.note.should == "A"
       p.tunes[0].notes[1].grace_notes.notes[0].pitch.note.should == "F"
     end
     it "can replace a target string with a replacement string in a fragment" do
-      p = parse_fragment "m:~g2={a}g{f}g\nK:C\n~g2"
+      p = parse_value_fragment "m:~g2={a}g{f}g\nK:C\n~g2"
       p.notes.count.should == 2
       p.notes[0].grace_notes.notes[0].pitch.note.should == "A"
       p.notes[1].grace_notes.notes[0].pitch.note.should == "F"
     end
     it "can be one of many" do
-      p = parse_fragment "m:~g2={a}g{f}g\nm:~D2={E}D{C}D\n~g2~D2"
+      p = parse_value_fragment "m:~g2={a}g{f}g\nm:~D2={E}D{C}D\n~g2~D2"
       p.notes.count.should == 4
       p.notes[0].grace_notes.notes[0].pitch.note.should == "A"
       p.notes[1].grace_notes.notes[0].pitch.note.should == "F"
@@ -78,7 +78,7 @@ require 'spec/abc_standard/spec_helper'
       p.notes[3].grace_notes.notes[0].pitch.note.should == "C"
     end
     it "overwrites any prior macros having the same target" do
-      p = parse_fragment "m:~g2={a}g{f}g\nm:~g2={f}g{a}g\n~g2"
+      p = parse_value_fragment "m:~g2={a}g{f}g\nm:~g2={f}g{a}g\n~g2"
       p.notes.count.should == 2
       p.notes[0].grace_notes.notes[0].pitch.note.should == "F"
       p.notes[1].grace_notes.notes[0].pitch.note.should == "A"
@@ -86,23 +86,23 @@ require 'spec/abc_standard/spec_helper'
     # TODO limit target to 31 chars
     # TODO limit replacement string to 200 characters
     it "strips off leading and trailing spaces on the target" do
-      p = parse_fragment "m:    ~g2   ={a}g{f}g\nK:C\n~g2"
+      p = parse_value_fragment "m:    ~g2   ={a}g{f}g\nK:C\n~g2"
       p.notes.count.should == 2
     end
     it "strips off leading and trailing spaces on the replacement string" do
-      p = parse_fragment "m:~g2=   {a}g{f}g  \nK:C\na~g2b"
+      p = parse_value_fragment "m:~g2=   {a}g{f}g  \nK:C\na~g2b"
       p.notes.count.should == 4
       p.notes[0].beam.should == :start
       p.notes[3].beam.should == :end
     end
     it "can replace a target string with a replacement string in a fragment" do
-      p = parse_fragment "m:~g2={a}g{f}g\nK:C\n~g2"
+      p = parse_value_fragment "m:~g2={a}g{f}g\nK:C\n~g2"
       p.notes.count.should == 2
       p.notes[0].grace_notes.notes[0].pitch.note.should == "A"
       p.notes[1].grace_notes.notes[0].pitch.note.should == "F"
     end
     it "is applied to all tunes if it appears in the file header" do
-      p = parse "m:~g2={a}g{f}g\n\nX:1\nT:T\nK:C\n~g2\n\nX:2\nT:T2\nK:D\n~g2"
+      p = parse_value "m:~g2={a}g{f}g\n\nX:1\nT:T\nK:C\n~g2\n\nX:2\nT:T2\nK:D\n~g2"
       p.tunes[0].notes.count.should == 2
       p.tunes[1].notes.count.should == 2
     end
@@ -139,26 +139,26 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a transposing macro" do
     it "can replace a target string with a replacement string in a file" do
-      p = parse "X:1\nT:T\nm:~n3=n{o}n{m}n\nK:C\n~g3"
+      p = parse_value "X:1\nT:T\nm:~n3=n{o}n{m}n\nK:C\n~g3"
       p.tunes[0].notes.count.should == 3
       p.tunes[0].notes[0].grace_notes.should == nil
       p.tunes[0].notes[1].grace_notes.notes[0].pitch.note.should == "A"
       p.tunes[0].notes[2].grace_notes.notes[0].pitch.note.should == "F"
     end
     it "can replace a target string with a replacement string in a fragment" do
-      p = parse_fragment "m:~n3=n{o}n{m}n\n~g3"
+      p = parse_value_fragment "m:~n3=n{o}n{m}n\n~g3"
       p.notes.count.should == 3
       p.notes[0].grace_notes.should == nil
       p.notes[1].grace_notes.notes[0].pitch.note.should == "A"
       p.notes[2].grace_notes.notes[0].pitch.note.should == "F"
     end
     it "is applied to all tunes if it appears in the file header" do
-      p = parse "m:~n2={o}n{m}n\n\nX:1\nT:T\nK:C\n~g2\n\nX:2\nT:T2\nK:D\n~a2"
+      p = parse_value "m:~n2={o}n{m}n\n\nX:1\nT:T\nK:C\n~g2\n\nX:2\nT:T2\nK:D\n~a2"
       p.tunes[0].notes.count.should == 2
       p.tunes[1].notes.count.should == 2
     end
     it "transposes letters h-z" do
-      p = parse_fragment "m:~n19=hijklmnopqrstuvwxyz\n~A19"
+      p = parse_value_fragment "m:~n19=hijklmnopqrstuvwxyz\n~A19"
       p.notes.count.should == 19
       (0..18).each do |i|
         p.notes[i].pitch.note.should == 'BCDEFGA'[i % 7]
@@ -167,7 +167,7 @@ require 'spec/abc_standard/spec_helper'
       p.notes[18].pitch.octave.should == 2
     end
     it "doesn't transpose A-Z or a-g" do
-      p = parse_fragment "m:~n19=HIJKLMNOPQRSTUVWabcdefgABCDEFGXZ\n~A19"
+      p = parse_value_fragment "m:~n19=HIJKLMNOPQRSTUVWabcdefgABCDEFGXZ\n~A19"
       p.notes.count.should == 16
       p.notes[0].embellishments.count.should == 16 # H-W parsed as embellisments on 1st note 'a'
       (0..13).each do |i|

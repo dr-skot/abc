@@ -57,7 +57,7 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a voice field in the tune body" do
     it "divides the tune into several voices" do
-      p = parse_fragment "V:A\nV:B\n[V:A]abc\n[V:B]def"
+      p = parse_value_fragment "V:A\nV:B\n[V:A]abc\n[V:B]def"
       a = p.voices['A']
       b = p.voices['B']
       a.notes[0].pitch.note.should == "A"
@@ -68,7 +68,7 @@ require 'spec/abc_standard/spec_helper'
       b.notes[2].pitch.note.should == "F"
     end
     it "works even if you don't declare voices in header" do
-      p = parse_fragment "K:C\nV:A\nabc\nV:B\ndef"
+      p = parse_value_fragment "K:C\nV:A\nabc\nV:B\ndef"
       a = p.voices['A']
       b = p.voices['B']
       a.notes[0].pitch.note.should == "A"
@@ -79,7 +79,7 @@ require 'spec/abc_standard/spec_helper'
       b.notes[2].pitch.note.should == "F"
     end
     it "only pays attention to the 1st 20 characters of the id" do
-      p = parse_fragment "V:1234567890123456789012345"
+      p = parse_value_fragment "V:1234567890123456789012345"
       p.voices['1234567890123456789012345'].should == nil
       p.voices['12345678901234567890'].should_not == nil
     end
@@ -100,25 +100,25 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a V: (voice) field in the tune header" do
     it "can include a name and subname" do
-      p = parse_fragment 'V:Ma tenor name="Mama" subname="M"'
+      p = parse_value_fragment 'V:Ma tenor name="Mama" subname="M"'
       p.voices['Ma'].name.should == 'Mama'
       p.voices['Ma'].subname.should == 'M'
     end
     it "can abbreviate name and subname with nm and snm" do
-      p = parse_fragment 'V:Da snm="D" nm="Daddy" bass'
+      p = parse_value_fragment 'V:Da snm="D" nm="Daddy" bass'
       p.voices['Da'].name.should == 'Daddy'
       p.voices['Da'].subname.should == 'D'
     end
     it "can specify the stem direction" do
-      p = parse_fragment 'V:T1'
+      p = parse_value_fragment 'V:T1'
       p.voices['T1'].stem.should == nil
-      p = parse_fragment 'V:T1 stem=up'
+      p = parse_value_fragment 'V:T1 stem=up'
       p.voices['T1'].stem.should == :up
-      p = parse_fragment 'V:T1 stem=down'
+      p = parse_value_fragment 'V:T1 stem=down'
       p.voices['T1'].stem.should == :down
     end
     it "can include clef specifiers" do
-      p = parse_fragment 'V:T1 nm="Tenore I" snm="T.I" middle=d stafflines=3 bass4+8 t=-3'
+      p = parse_value_fragment 'V:T1 nm="Tenore I" snm="T.I" middle=d stafflines=3 bass4+8 t=-3'
       clef = p.voices['T1'].clef
       clef.name.should == 'bass'
       clef.middle.note.should == 'D'
@@ -149,13 +149,13 @@ require 'spec/abc_standard/spec_helper'
 
   describe "voice support" do
     it "reports when there is more than one voice" do
-      p = parse_fragment "abc"
+      p = parse_value_fragment "abc"
       p.many_voices?.should == false
-      p = parse_fragment "V:1\nV:2\n[V:1]abc"
+      p = parse_value_fragment "V:1\nV:2\n[V:1]abc"
       p.many_voices?.should == true
     end
     it "resets key when new voice starts" do
-      p = parse_fragment "[V:1]b[K:F]b[V:2]b[K:F]b"
+      p = parse_value_fragment "[V:1]b[K:F]b[V:2]b[K:F]b"
       v1 = p.voices['1']
       v2 = p.voices['2']
       v1.notes[0].pitch.height.should == 23 # B
@@ -164,13 +164,13 @@ require 'spec/abc_standard/spec_helper'
       v2.notes[1].pitch.height.should == 22
     end
     it "retains key change when voice comes back" do
-      p = parse_fragment "[V:1]b[K:F]b[V:2]b[K:F]b[V:1]b[K:C]b"
+      p = parse_value_fragment "[V:1]b[K:F]b[V:2]b[K:F]b[V:1]b[K:C]b"
       v1 = p.voices['1']
       v1.notes[2].pitch.height.should == 22 # B flat
       v1.notes[3].pitch.height.should == 23 # B
     end
     it "resets meter when new voice starts" do
-      p = parse_fragment "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4"
+      p = parse_value_fragment "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4"
       v1 = p.voices['1']
       v2 = p.voices['2']
       v1.notes[0].note_length.should == 4
@@ -179,13 +179,13 @@ require 'spec/abc_standard/spec_helper'
       v2.notes[1].note_length.should == 3
     end
     it "retains meter change when voice comes back" do
-      p = parse_fragment "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4[V:1]Z4[M:C]Z4"
+      p = parse_value_fragment "M:C\n[V:1]Z4[M:3/4]Z4[V:2]Z4[M:3/4]Z4[V:1]Z4[M:C]Z4"
       v1 = p.voices['1']
       v1.notes[2].note_length.should == 3
       v1.notes[3].note_length.should == 4
     end
     it "resets unit note length when new voice starts" do
-      p = parse_fragment "[V:1]a[L:1/4]b[V:2]a[L:1/4]b"
+      p = parse_value_fragment "[V:1]a[L:1/4]b[V:2]a[L:1/4]b"
       v1 = p.voices['1']
       v2 = p.voices['2']
       v1.notes[0].note_length.should == Rational(1, 8)
@@ -194,29 +194,29 @@ require 'spec/abc_standard/spec_helper'
       v2.notes[1].note_length.should == Rational(1, 4)
     end
     it "retains unit note length change when voice comes back" do
-      p = parse_fragment "[V:1]a[L:1/4]b[V:2]a[L:1/4]b[V:1]a[L:1/16]b"
+      p = parse_value_fragment "[V:1]a[L:1/4]b[V:2]a[L:1/4]b[V:1]a[L:1/16]b"
       v1 = p.voices['1']
       v1.notes[2].note_length.should == Rational(1, 4)
       v1.notes[3].note_length.should == Rational(1, 16)
     end
     it "applies the voice's clef to notes" do
-      p = parse_fragment "V:1 bass\nK:C\n[V:1]a"
+      p = parse_value_fragment "V:1 bass\nK:C\n[V:1]a"
       p.notes[0].pitch.clef.name.should == "bass"
     end
     it "overrides the tune's clef with the voice's" do
-      p = parse_fragment "V:1 bass\nK:C alto\n[V:1]a"
+      p = parse_value_fragment "V:1 bass\nK:C alto\n[V:1]a"
       p.notes[0].pitch.clef.name.should == "bass"
     end
     it "uses the tune's clef if the voice doesn't have one" do
-      p = parse_fragment "V:1\nK:C alto\n[V:1]a"
+      p = parse_value_fragment "V:1\nK:C alto\n[V:1]a"
       p.notes[0].pitch.clef.name.should == "alto"
     end
     it "uses first voice if you don't specify which voice" do
-      p = parse_fragment "[V:1]a[V:2]b[V:1]a[V:2]b"
+      p = parse_value_fragment "[V:1]a[V:2]b[V:1]a[V:2]b"
       p.notes.should == p.voices["1"].notes
     end
     it "uses a default voice if no voices are specified in the music code" do
-      p = parse_fragment "abc"
+      p = parse_value_fragment "abc"
       p.voices[""].items.should == p.items
     end
   end
@@ -239,14 +239,14 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a voice overlay" do
     it "can be created with the & operator" do
-      p = parse_fragment "|a b c & A B C|"
+      p = parse_value_fragment "|a b c & A B C|"
       p.measures[0].overlays?.should == true
       p.measures[0].overlays.count.should == 1
       p.measures[0].notes[0].pitch.height.should == 21
       p.measures[0].overlays[0].notes[0].pitch.height.should == 9
     end
     it "can overlay multiple bars with multiple &s" do
-      p = parse_fragment "|a b | c2 | && | A B | C2 |"
+      p = parse_value_fragment "|a b | c2 | && | A B | C2 |"
       p.measures.count.should == 2
       p.measures[0].overlays?.should == true
       p.measures[0].overlays.count.should == 1
@@ -258,7 +258,7 @@ require 'spec/abc_standard/spec_helper'
       p.measures[1].overlays[0].notes[0].pitch.height.should == 0
     end
     it "is aligns notes with lyrics in whatever sequence they occur in the music code" do
-      p = parse_fragment "g4 f4|e6 e2| && (d8|c6)c2|\nw:ha-la-|lu-yoh \n+: lu-   |   -yoh"
+      p = parse_value_fragment "g4 f4|e6 e2| && (d8|c6)c2|\nw:ha-la-|lu-yoh \n+: lu-   |   -yoh"
       p.measures[0].notes[0].lyric.text.should == "ha"
       p.measures[0].notes[1].lyric.text.should == "la"
       p.measures[1].notes[0].lyric.text.should == "lu"
@@ -271,7 +271,7 @@ require 'spec/abc_standard/spec_helper'
 
   describe "measure support" do
     it "allows bars[] as a synonym for measures[]" do
-      p = parse_fragment "|a b c & A B C|"
+      p = parse_value_fragment "|a b c & A B C|"
       p.bars.should == p.measures
       p.voices[""].bars.should == p.voices[""].measures
     end

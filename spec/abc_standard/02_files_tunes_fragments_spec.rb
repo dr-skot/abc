@@ -13,30 +13,30 @@ describe "file structure" do
     fail_to_parse "%%text typeset text"
   end
   it "can consist of a single tune with no body" do
-    p = parse "X:1\nT:Title\nK:C"
+    p = parse_value "X:1\nT:Title\nK:C"
     p.is_a?(ABC::Tunebook).should == true
     p.tunes.count.should == 1
   end
   it "can consist of a single tune with a body" do
-    p = parse "X:1\nT:Title\nK:C\nabc"
+    p = parse_value "X:1\nT:Title\nK:C\nabc"
     p.tunes.count.should == 1
   end
   it "can consist of several tunes with or without bodies" do
-    p = parse "X:1\nT:Title\nK:C\nabc\n\nX:2\nT:T2\nK:D\n\nX:3\nT:T3\nK:none\ncba"
+    p = parse_value "X:1\nT:Title\nK:C\nabc\n\nX:2\nT:T2\nK:D\n\nX:3\nT:T3\nK:none\ncba"
     p.tunes.count.should == 3
   end
   it "can include a file header" do
-    p = parse "C:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
+    p = parse_value "C:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
     p.composer.should == "Madonna"
     p.transcription.should == "me"
   end
   it "can include free text" do
-    p = parse "free text\n\nX:1\nT:T\nK:C"
+    p = parse_value "free text\n\nX:1\nT:T\nK:C"
     p.sections.count.should == 2
     p.sections[0].is_a?(FreeText).should == true
   end
   it "can include typeset text annotations" do
-    p = parse "N:fileheader\n\n%%text blah\n\nX:1\nT:T\nK:C"
+    p = parse_value "N:fileheader\n\n%%text blah\n\nX:1\nT:T\nK:C"
     p.sections.count.should == 2
     p.sections[0].is_a?(TypesetText).should == true
   end
@@ -56,28 +56,28 @@ end
 
 describe "tune" do
   it "can contain comment lines in the header" do
-    p = parse "X:1\nT:T\n% comment\nK:D\nabc\ndef"
+    p = parse_value "X:1\nT:T\n% comment\nK:D\nabc\ndef"
     p.tunes.count.should == 1
     p.tunes[0].key.tonic.should == "D"
   end
   it "can contain comment lines in the tune" do
-    p = parse "X:1\nT:T\nK:D\nabc\n% more comments\ndef"
+    p = parse_value "X:1\nT:T\nK:D\nabc\n% more comments\ndef"
     p.tunes.count.should == 1
     p.tunes[0].items[3].pitch.note.should == "D"
   end
   it "can start with comment lines" do
-    p = parse "%comment\n%comment\nX:1\nT:T\nK:D\nabc\ndef"
+    p = parse_value "%comment\n%comment\nX:1\nT:T\nK:D\nabc\ndef"
     p.tunes.count.should == 1
     p.tunes[0].key.tonic.should == "D"
   end
   it "can end with comment lines" do
-    p = parse "X:1\nT:T\nK:D\nabc\ndef\n%comment\n%comment"
+    p = parse_value "X:1\nT:T\nK:D\nabc\ndef\n%comment\n%comment"
     p.tunes.count.should == 1
     p.tunes[0].key.tonic.should == "D"
   end
   # TODO should we allow tunes to *start* with comments?
   it "can appear with no body" do
-    p = parse "X:1\nT:T\nK:C\n"
+    p = parse_value "X:1\nT:T\nK:C\n"
   end
 end
 
@@ -94,17 +94,17 @@ describe "file header" do
     # TODO generate a legible warning in this case
   end
   it "can contain comment lines" do
-    p = parse "C:Madonna\n%comment\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
+    p = parse_value "C:Madonna\n%comment\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
     p.composer.should == "Madonna"
     p.transcription.should == "me"
   end
   it "can start with comment lines" do
-    p = parse "%comment\n%comment\nC:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
+    p = parse_value "%comment\n%comment\nC:Madonna\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
     p.composer.should == "Madonna"
     p.transcription.should == "me"
   end
   it "can end with comment lines" do
-    p = parse "C:Madonna\nZ:me\n%comment\n%comment\n\nX:1\nT:Like a Prayer\nK:Dm"
+    p = parse_value "C:Madonna\nZ:me\n%comment\n%comment\n\nX:1\nT:Like a Prayer\nK:Dm"
     p.composer.should == "Madonna"
     p.transcription.should == "me"
   end
@@ -115,17 +115,17 @@ describe "file header" do
     fail_to_parse "C:Madonna\nZ:me\nabc\n\nX:1\nT:Like a Prayer\nK:Dm" 
   end
   it "passes its settings to all tunes" do
-    p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nK:Dm\nabc" 
+    p = parse_value "C:Madonna\nZ:me\n\nX:1\nT:T\nK:Dm\nabc" 
     p.composer.should == "Madonna"
     p.tunes[0].composer.should == "Madonna"
   end    
   it "can be overridden by the tune header" do
-    p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nC:Cher\nK:Eb\nabc" 
+    p = parse_value "C:Madonna\nZ:me\n\nX:1\nT:T\nC:Cher\nK:Eb\nabc" 
     p.composer.should == "Madonna"
     p.tunes[0].composer.should == "Cher"
   end
   it "resets overridden values with each new tune" do
-    p = parse "C:Madonna\nZ:me\n\nX:1\nT:T\nC:Cher\nK:Eb\nabc\n\nX:2\nT:T2\nK:C\ndef" 
+    p = parse_value "C:Madonna\nZ:me\n\nX:1\nT:T\nC:Cher\nK:Eb\nabc\n\nX:2\nT:T2\nK:C\ndef" 
     p.composer.should == "Madonna"
     p.tunes[0].composer.should == "Cher"
     p.tunes[1].composer.should == "Madonna"
@@ -153,19 +153,19 @@ end
 
 describe "empty line" do
   it "breaks sections" do
-    p = parse "free_text\n\nX:1\nT:T\nK:C\nabc"
+    p = parse_value "free_text\n\nX:1\nT:T\nK:C\nabc"
     p.sections.count.should == 2
   end
   it "can contain whitespace" do
-    p = parse "free_text\n  \t \nX:1\nT:T\nK:C\nabc"
+    p = parse_value "free_text\n  \t \nX:1\nT:T\nK:C\nabc"
     p.sections.count.should == 2
   end
   it "can contain whitespace after a tune" do
-    p = parse "X:1\nT:T\nK:C\nabc\n     \nX:2\nT:T2\nK:D\ndef"
+    p = parse_value "X:1\nT:T\nK:C\nabc\n     \nX:2\nT:T2\nK:D\ndef"
     p.tunes.count.should == 2
   end
   it "can contain whitespace after a tune with no body" do
-    p = parse "X:1\nT:T\nK:C\n     \nX:2\nT:T2\nK:D\ndef"
+    p = parse_value "X:1\nT:T\nK:C\n     \nX:2\nT:T2\nK:D\ndef"
     p.tunes.count.should == 2
   end
 end
@@ -183,12 +183,12 @@ end
 
 describe "a comment" do
   it "can appear at the end of an abc line" do
-    p = parse_fragment "abc % comment\ndef"
+    p = parse_value_fragment "abc % comment\ndef"
     p.lines.count.should == 2
     p.items[3].pitch.note.should == "D"
   end
   it "can appear as a line in its own right" do
-    p = parse_fragment "abc\n   % comment\ndef"
+    p = parse_value_fragment "abc\n   % comment\ndef"
     p.lines.count.should == 2
     p.items[3].pitch.note.should == "D"
   end
@@ -199,23 +199,23 @@ end
 
 describe "a remark" do
   it "is ignored in the file header" do
-    p = parse "C:Bach\nr:remarks\n\nX:1\nT:T\nK:C\nabc"
+    p = parse_value "C:Bach\nr:remarks\n\nX:1\nT:T\nK:C\nabc"
     p.header.value('C').should == "Bach"
     p.header.value('r').should == nil
   end
   it "is ignored in the tune header" do
-    p = parse "C:Bach\n\nX:1\nT:T\nr:remarks\nK:C\nabc"
+    p = parse_value "C:Bach\n\nX:1\nT:T\nr:remarks\nK:C\nabc"
     p.tunes[0].header.value('X').should == 1
     p.tunes[0].header.value('r').should == nil
   end
   it "is ignored as a field line in the tune body" do
-    p = parse_fragment "def\nr: remarks\nabc"
+    p = parse_value_fragment "def\nr: remarks\nabc"
     p.elements[2].pitch.height.should == 17 # f
     p.elements[3].type.should == :code_linebreak
     p.elements[4].pitch.height.should == 21 # a
   end
   it "is ignored as an inline field" do
-    p = parse_fragment "def[r: remarks]abc"
+    p = parse_value_fragment "def[r: remarks]abc"
     p.elements[2].pitch.height.should == 17 # f
     p.elements[3].pitch.height.should == 21 # a
   end
@@ -231,39 +231,39 @@ end
 #   information fields can be continued using +: at the start of the following line - see field continuation;
 #   comments can easily be continued by adding a % symbol at the start of the following line - since they are ignored by abc software it doesn't matter how many lines they are split into;
 #   most stylesheet directives are too short to require a continuation syntax, but if one is required then use the I:<directive> form (see I:instruction), in place of %%<directive> and continue the line as a field - see field continuation.
-# Comment for developers: Unlike other languages, and because of the way in which both information fields and music code can be continued through comments, stylesheet directives and (in the case of music code) information fields, it is generally not possible to parse abc files by pre-processing continuations into single lines.
+# Comment for developers: Unlike other languages, and because of the way in which both information fields and music code can be continued through comments, stylesheet directives and (in the case of music code) information fields, it is generally not possible to parse_value abc files by pre-processing continuations into single lines.
 # Note that, with the exception of abc music code, continuations are unlikely to be needed often. Indeed in most cases it should be possible, although not necessarily desirable, to write very long input lines, since most abc editing software will display them as wrapped within the text editor window.
 # Recommendation: Despite there being no limit on line length in abc files, it is recommended that users avoid writing abc code with very long lines. In particular, judiciously applied line-breaks can aid the (human) readability of abc code. More importantly, users who send abc tunes with long lines should be aware that email software sometimes introduces additional line-breaks into lines with more than 72 characters and these may even cause errors when the resulting tune is processed.
 
 describe "music line continuation" do
   it "combines two lines with a backslash" do
-    p = parse_fragment "abc\ndef"
+    p = parse_value_fragment "abc\ndef"
     p.lines.count.should == 2
     p.lines[0].items.count.should == 3
-    p = parse_fragment "abc\\\ndef"
+    p = parse_value_fragment "abc\\\ndef"
     p.lines.count.should == 1
     p.lines[0].items.count.should == 6
   end
   it "can combine more than two lines" do
-    p = parse_fragment "abc\\\ndef\\\nabc\\\ndef"
+    p = parse_value_fragment "abc\\\ndef\\\nabc\\\ndef"
     p.lines.count.should == 1
     p.notes.count.should == 12
   end
   it "allows space and comments after the backslash" do
-    p = parse_fragment "abc \\ % remark \n def"
+    p = parse_value_fragment "abc \\ % remark \n def"
     p.lines.count.should == 1
   end
   it "works across information fields" do
-    p = parse_fragment "abc \\ \nM:3/4\ndef"
+    p = parse_value_fragment "abc \\ \nM:3/4\ndef"
     p.lines.count.should == 1
   end
   # TODO works across stylesheet directives
   it "works across comment lines" do
-    p = parse_fragment "abc \\ \n % remark \n def"
+    p = parse_value_fragment "abc \\ \n % remark \n def"
     p.lines.count.should == 1
   end
   it "puts information field with following music line" do
-    p = parse_fragment "abc\nM:3/4\ndef"
+    p = parse_value_fragment "abc\nM:3/4\ndef"
     p.lines.count.should == 2
     p.lines[1].items[0].is_a?(Field).should == true
   end
@@ -287,15 +287,15 @@ end
 
 describe "a fragment" do
   it "can contain a partial tune header with no body" do
-    tune = parse_fragment "K:D"
+    tune = parse_value_fragment "K:D"
     tune.key.tonic.should == "D"
-    tune = parse_fragment "T:Love Stinks"
+    tune = parse_value_fragment "T:Love Stinks"
     tune.title.should == "Love Stinks"
-    tune = parse_fragment "X:2"
+    tune = parse_value_fragment "X:2"
     tune.refnum.should == 2
   end
     it "can contain a partial tune header with a body" do
-    tune = parse_fragment "K:D\nabc"
+    tune = parse_value_fragment "K:D\nabc"
     tune.key.tonic.should == "D"
   end
 end

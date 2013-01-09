@@ -30,7 +30,9 @@ module ABC
           if input != input_with_macros
             parse(input_with_macros, options)
           else
+            # puts "warnings #{p.warnings}"
             p.value.postprocess
+            p
           end
         end
       end

@@ -44,18 +44,18 @@ require 'spec/abc_standard/spec_helper'
 
 describe 'the "I:decoration" instruction' do
   it 'can change the decoration delimiter to +' do
-    p = parse_fragment "I:decoration +\n+trill+abc"
+    p = parse_value_fragment "I:decoration +\n+trill+abc"
     p.notes[0].decorations[0].symbol.should == 'trill'
   end
   it 'can change the decoration delimiter back to !' do
-    p = parse_fragment "I:decoration +\nI:decoration !\n!trill!abc"
+    p = parse_value_fragment "I:decoration +\nI:decoration !\n!trill!abc"
     p.notes[0].decorations[0].symbol.should == 'trill'
   end
   it 'allows !+! but not +++' do
-    p = parse_fragment "!+!abc"
+    p = parse_value_fragment "!+!abc"
     p.notes[0].decorations[0].symbol.should == '+'
     fail_to_parse_fragment "I:decoration +\n+++abc"
-    p = parse_fragment "I:decoration +\n+plus+abc"
+    p = parse_value_fragment "I:decoration +\n+plus+abc"
     p.notes[0].decorations[0].symbol.should == 'plus'
   end
   # TODO appear in fileheader

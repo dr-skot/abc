@@ -5869,16 +5869,9 @@ module ABC
 
   module Pitch1
     def value
-      @value ||= Pitch.new(note, :octave => octave, :accidental => accidental)
-    end
-    def accidental
-      super.value if !super.empty?
-    end
-    def octave
-      note_letter.octave + octave_shift.value
-    end
-    def note
-      note_letter.text_value.upcase
+      @value ||= Pitch.new(note_letter.text_value.upcase, 
+                           :octave => note_letter.octave + octave_shift.value, 
+                           :accidental => accidental.value)
     end
   end
 
@@ -8315,25 +8308,11 @@ module ABC
     r1 = _nt_decoration_delimiter
     s0 << r1
     if r1
-      s2, i2 = [], index
-      loop do
-        r3 = _nt_legal_decoration_char
-        if r3
-          s2 << r3
-        else
-          break
-        end
-      end
-      if s2.empty?
-        @index = i2
-        r2 = nil
-      else
-        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
-      end
+      r2 = _nt_legal_decoration_chars
       s0 << r2
       if r2
-        r4 = _nt_decoration_delimiter
-        s0 << r4
+        r3 = _nt_decoration_delimiter
+        s0 << r3
       end
     end
     if s0.last
@@ -8374,13 +8353,13 @@ module ABC
     r0
   end
 
-  module LegalDecorationChar0
+  module LegalDecorationChars0
   end
 
-  def _nt_legal_decoration_char
+  def _nt_legal_decoration_chars
     start_index = index
-    if node_cache[:legal_decoration_char].has_key?(index)
-      cached = node_cache[:legal_decoration_char][index]
+    if node_cache[:legal_decoration_chars].has_key?(index)
+      cached = node_cache[:legal_decoration_chars][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -8388,91 +8367,105 @@ module ABC
       return cached
     end
 
-    i0, s0 = index, []
-    i1 = index
-    i2 = index
-    r3 = _nt_space
-    if r3
-      r2 = r3
-    else
-      if has_terminal?('[', false, index)
-        r4 = instantiate_node(SyntaxNode,input, index...(index + 1))
-        @index += 1
-      else
-        terminal_parse_failure('[')
-        r4 = nil
-      end
+    s0, i0 = [], index
+    loop do
+      i1, s1 = index, []
+      i2 = index
+      i3 = index
+      r4 = _nt_space
       if r4
-        r2 = r4
+        r3 = r4
       else
-        if has_terminal?(']', false, index)
+        if has_terminal?('[', false, index)
           r5 = instantiate_node(SyntaxNode,input, index...(index + 1))
           @index += 1
         else
-          terminal_parse_failure(']')
+          terminal_parse_failure('[')
           r5 = nil
         end
         if r5
-          r2 = r5
+          r3 = r5
         else
-          if has_terminal?('|', false, index)
+          if has_terminal?(']', false, index)
             r6 = instantiate_node(SyntaxNode,input, index...(index + 1))
             @index += 1
           else
-            terminal_parse_failure('|')
+            terminal_parse_failure(']')
             r6 = nil
           end
           if r6
-            r2 = r6
+            r3 = r6
           else
-            if has_terminal?(':', false, index)
+            if has_terminal?('|', false, index)
               r7 = instantiate_node(SyntaxNode,input, index...(index + 1))
               @index += 1
             else
-              terminal_parse_failure(':')
+              terminal_parse_failure('|')
               r7 = nil
             end
             if r7
-              r2 = r7
+              r3 = r7
             else
-              r8 = _nt_decoration_delimiter
-              if r8
-                r2 = r8
+              if has_terminal?(':', false, index)
+                r8 = instantiate_node(SyntaxNode,input, index...(index + 1))
+                @index += 1
               else
-                @index = i2
-                r2 = nil
+                terminal_parse_failure(':')
+                r8 = nil
+              end
+              if r8
+                r3 = r8
+              else
+                r9 = _nt_decoration_delimiter
+                if r9
+                  r3 = r9
+                else
+                  @index = i3
+                  r3 = nil
+                end
               end
             end
           end
         end
       end
-    end
-    if r2
-      r1 = nil
-    else
-      @index = i1
-      r1 = instantiate_node(SyntaxNode,input, index...index)
-    end
-    s0 << r1
-    if r1
-      if index < input_length
-        r9 = instantiate_node(SyntaxNode,input, index...(index + 1))
-        @index += 1
+      if r3
+        r2 = nil
       else
-        terminal_parse_failure("any character")
-        r9 = nil
+        @index = i2
+        r2 = instantiate_node(SyntaxNode,input, index...index)
       end
-      s0 << r9
+      s1 << r2
+      if r2
+        if index < input_length
+          r10 = instantiate_node(SyntaxNode,input, index...(index + 1))
+          @index += 1
+        else
+          terminal_parse_failure("any character")
+          r10 = nil
+        end
+        s1 << r10
+      end
+      if s1.last
+        r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+        r1.extend(LegalDecorationChars0)
+      else
+        @index = i1
+        r1 = nil
+      end
+      if r1
+        s0 << r1
+      else
+        break
+      end
     end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(LegalDecorationChar0)
-    else
+    if s0.empty?
       @index = i0
       r0 = nil
+    else
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
     end
 
-    node_cache[:legal_decoration_char][start_index] = r0
+    node_cache[:legal_decoration_chars][start_index] = r0
 
     r0
   end
@@ -11140,6 +11133,13 @@ module ABC
     r0
   end
 
+  module IgnoredChar0
+    # TODO: issue warning
+         def warning
+           "ignored char: #{text_value}"
+         end
+  end
+
   def _nt_ignored_char
     start_index = index
     if node_cache[:ignored_char].has_key?(index)
@@ -11161,6 +11161,7 @@ module ABC
     end
     if r1
       r0 = r1
+      r0.extend(IgnoredChar0)
     else
       if has_terminal?("*", false, index)
         r2 = instantiate_node(SyntaxNode,input, index...(index + 1))
@@ -11171,6 +11172,7 @@ module ABC
       end
       if r2
         r0 = r2
+        r0.extend(IgnoredChar0)
       else
         if has_terminal?(";", false, index)
           r3 = instantiate_node(SyntaxNode,input, index...(index + 1))
@@ -11181,6 +11183,7 @@ module ABC
         end
         if r3
           r0 = r3
+          r0.extend(IgnoredChar0)
         else
           if has_terminal?("?", false, index)
             r4 = instantiate_node(SyntaxNode,input, index...(index + 1))
@@ -11191,6 +11194,7 @@ module ABC
           end
           if r4
             r0 = r4
+            r0.extend(IgnoredChar0)
           else
             if has_terminal?("@", false, index)
               r5 = instantiate_node(SyntaxNode,input, index...(index + 1))
@@ -11201,6 +11205,7 @@ module ABC
             end
             if r5
               r0 = r5
+              r0.extend(IgnoredChar0)
             else
               @index = i0
               r0 = nil
@@ -15270,6 +15275,108 @@ module ABC
     r0
   end
 
+  def _nt_decoration_delimiter_bang
+    start_index = index
+    if node_cache[:decoration_delimiter_bang].has_key?(index)
+      cached = node_cache[:decoration_delimiter_bang][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    if has_terminal?('!', false, index)
+      r0 = instantiate_node(SyntaxNode,input, index...(index + 1))
+      @index += 1
+    else
+      terminal_parse_failure('!')
+      r0 = nil
+    end
+
+    node_cache[:decoration_delimiter_bang][start_index] = r0
+
+    r0
+  end
+
+  def _nt_decoration_delimiter_plus
+    start_index = index
+    if node_cache[:decoration_delimiter_plus].has_key?(index)
+      cached = node_cache[:decoration_delimiter_plus][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    if has_terminal?('+', false, index)
+      r0 = instantiate_node(SyntaxNode,input, index...(index + 1))
+      @index += 1
+    else
+      terminal_parse_failure('+')
+      r0 = nil
+    end
+
+    node_cache[:decoration_delimiter_plus][start_index] = r0
+
+    r0
+  end
+
+  def _nt_decoration_delimiter_both
+    start_index = index
+    if node_cache[:decoration_delimiter_both].has_key?(index)
+      cached = node_cache[:decoration_delimiter_both][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    r1 = _nt_decoration_delimiter_bang
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_decoration_delimiter_plus
+      if r2
+        r0 = r2
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
+
+    node_cache[:decoration_delimiter_both][start_index] = r0
+
+    r0
+  end
+
+  def _nt_decoration_delimiter_default
+    start_index = index
+    if node_cache[:decoration_delimiter_default].has_key?(index)
+      cached = node_cache[:decoration_delimiter_default][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    if has_terminal?('!', false, index)
+      r0 = instantiate_node(SyntaxNode,input, index...(index + 1))
+      @index += 1
+    else
+      terminal_parse_failure('!')
+      r0 = nil
+    end
+
+    node_cache[:decoration_delimiter_default][start_index] = r0
+
+    r0
+  end
+
   module QuotedString0
   end
 
@@ -16210,78 +16317,6 @@ module ABC
     end
 
     node_cache[:tune_element][start_index] = r0
-
-    r0
-  end
-
-  def _nt_decoration_delimiter_bang
-    start_index = index
-    if node_cache[:decoration_delimiter_bang].has_key?(index)
-      cached = node_cache[:decoration_delimiter_bang][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    if has_terminal?('!', false, index)
-      r0 = instantiate_node(SyntaxNode,input, index...(index + 1))
-      @index += 1
-    else
-      terminal_parse_failure('!')
-      r0 = nil
-    end
-
-    node_cache[:decoration_delimiter_bang][start_index] = r0
-
-    r0
-  end
-
-  def _nt_decoration_delimiter_plus
-    start_index = index
-    if node_cache[:decoration_delimiter_plus].has_key?(index)
-      cached = node_cache[:decoration_delimiter_plus][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    if has_terminal?('+', false, index)
-      r0 = instantiate_node(SyntaxNode,input, index...(index + 1))
-      @index += 1
-    else
-      terminal_parse_failure('+')
-      r0 = nil
-    end
-
-    node_cache[:decoration_delimiter_plus][start_index] = r0
-
-    r0
-  end
-
-  def _nt_decoration_delimiter_default
-    start_index = index
-    if node_cache[:decoration_delimiter_default].has_key?(index)
-      cached = node_cache[:decoration_delimiter_default][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    if has_terminal?('!', false, index)
-      r0 = instantiate_node(SyntaxNode,input, index...(index + 1))
-      @index += 1
-    else
-      terminal_parse_failure('!')
-      r0 = nil
-    end
-
-    node_cache[:decoration_delimiter_default][start_index] = r0
 
     r0
   end

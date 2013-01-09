@@ -34,7 +34,7 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a pitch specifier" do
     it "indicates the middle-c octave with capital letters" do
-      p = parse_fragment "CDEFGAB"
+      p = parse_value_fragment "CDEFGAB"
       p.notes.each do |note| 
         note.pitch.octave.should == 0
         note.pitch.height.should == note.pitch.height_in_octave
@@ -48,7 +48,7 @@ require 'spec/abc_standard/spec_helper'
       p.notes[6].pitch.height.should == 11
     end
     it "indicates octave 1 with lowercase letters" do
-      p = parse_fragment "cdefgab"
+      p = parse_value_fragment "cdefgab"
       p.notes.each do |note| 
         note.pitch.octave.should == 1
         note.pitch.height.should == note.pitch.height_in_octave + 12
@@ -62,44 +62,44 @@ require 'spec/abc_standard/spec_helper'
       p.notes[6].pitch.height.should == 23
     end
     it "indicates higher octaves with apostrophes" do
-      p = parse_fragment "C'c'''"
+      p = parse_value_fragment "C'c'''"
       p.notes[0].pitch.octave.should == 1
       p.notes[1].pitch.octave.should == 4
     end
     it "indicates lower octave down with commas" do
-      p = parse_fragment "C,,,,c,,"
+      p = parse_value_fragment "C,,,,c,,"
       p.notes[0].pitch.octave.should == -4
       p.notes[1].pitch.octave.should == -1
     end
     it "can use any combination of commas and apostrophes" do
-      p = parse_fragment "C,',',,c,,'''',"
+      p = parse_value_fragment "C,',',,c,,'''',"
       p.notes[0].pitch.octave.should == -2
       p.notes[1].pitch.octave.should == 2
     end
     # TODO make this work when we get to clef
     it "can be octave-shifted by the K: field" do
-       p = parse_fragment "[K:treble-8]C"
+       p = parse_value_fragment "[K:treble-8]C"
        p.notes[0].pitch.octave.should == -1
     end
     it "can be octave-shifted by the K: field in the header" do
-       p = parse_fragment "K:treble-8\nC"
+       p = parse_value_fragment "K:treble-8\nC"
        p.notes[0].pitch.octave.should == -1
     end
     it "can be octave-shifted by the K: field inline" do
-       p = parse_fragment "[K:treble-8]C"
+       p = parse_value_fragment "[K:treble-8]C"
        p.notes[0].pitch.octave.should == -1
     end
     it "can be octave-shifted by the V: field" do
-       p = parse_fragment "V:1 treble+8\nK:C\n[V:1]C"
+       p = parse_value_fragment "V:1 treble+8\nK:C\n[V:1]C"
        p.voices['1'].notes[0].pitch.octave.should == 1
     end
     it "will not have its octave-shift canceled by a K: field with no clef" do
-       p = parse_fragment "V:1 treble+8\nK:C\n[V:1][K:D]C"
+       p = parse_value_fragment "V:1 treble+8\nK:C\n[V:1][K:D]C"
        p.voices['1'].notes[0].pitch.clef.should == p.voices['1'].clef
        p.voices['1'].notes[0].pitch.octave.should == 1
     end
     it "will use the tune's clef if the voice doesn't specify one" do
-       p = parse_fragment "K:treble+8\n[V:1]C"
+       p = parse_value_fragment "K:treble+8\n[V:1]C"
        p.voices['1'].notes[0].pitch.clef.should == p.clef
        p.voices['1'].notes[0].pitch.octave.should == 1
     end
@@ -122,7 +122,7 @@ require 'spec/abc_standard/spec_helper'
       fail_to_parse_fragment "=_A"
     end
     it "is valued accurately" do
-      p = parse_fragment "^A^^a2_b/__C=DF"
+      p = parse_value_fragment "^A^^a2_b/__C=DF"
       p.notes[0].pitch.accidental.should == 1
       p.notes[1].pitch.accidental.should == 2
       p.notes[2].pitch.accidental.should == -1
@@ -131,7 +131,7 @@ require 'spec/abc_standard/spec_helper'
       p.notes[5].pitch.accidental.should == nil
     end
     it "changes the height of the corresponding note" do
-      p = parse_fragment "^C^^C2_C/__C=CC"
+      p = parse_value_fragment "^C^^C2_C/__C=CC"
       p.notes[0].pitch.height.should == 1
       p.notes[1].pitch.height.should == 2
       p.notes[2].pitch.height.should == -1
@@ -158,23 +158,23 @@ require 'spec/abc_standard/spec_helper'
       fail_to_parse_fragment "a3//4"
     end
     it "defaults to 1" do
-      p = parse_fragment "L:1\na"
+      p = parse_value_fragment "L:1\na"
       p.notes[0].note_length.should == 1
     end
     it "can be an integer multiplier" do
-      p = parse_fragment "L:1\na3"
+      p = parse_value_fragment "L:1\na3"
       p.notes[0].note_length.should == 3
     end
     it "can be a simple fraction" do
-      p = parse_fragment "L:1\na3/2"
+      p = parse_value_fragment "L:1\na3/2"
       p.notes[0].note_length.should == Rational(3,2)
     end
     it "can be slashes" do
-      p = parse_fragment "L:1\na///"
+      p = parse_value_fragment "L:1\na///"
       p.notes[0].note_length.should == Rational(1, 8)
     end
     it "is relative to the default unit note length" do
-      p = parse_fragment "ab2c3/2d3/e/" # default unit note length 1/8
+      p = parse_value_fragment "ab2c3/2d3/e/" # default unit note length 1/8
       p.notes[0].note_length.should == Rational(1, 8)
       p.notes[1].note_length.should == Rational(1, 4)
       p.notes[2].note_length.should == Rational(3, 16)
@@ -182,7 +182,7 @@ require 'spec/abc_standard/spec_helper'
       p.notes[4].note_length.should == Rational(1, 16)
     end
     it "is relative to an explicit unit note length" do
-      p = parse_fragment "L:1/2\nab2c3/2d3/e/"
+      p = parse_value_fragment "L:1/2\nab2c3/2d3/e/"
       tune = p
       tune.notes[0].note_length.should == Rational(1, 2)
       tune.notes[1].note_length.should == 1
@@ -191,13 +191,13 @@ require 'spec/abc_standard/spec_helper'
       tune.notes[4].note_length.should == Rational(1, 4)
     end
      it "is relative to a new unit note length after an L: field in the tune body" do
-      p = parse_fragment "L:1/2\na4\nL:1/4\na4"
+      p = parse_value_fragment "L:1/2\na4\nL:1/4\na4"
       tune = p
       tune.notes[0].note_length.should == 2
       tune.notes[1].note_length.should == 1
     end
     it "is relative to a new unit note length after an inline L: field" do
-      p = parse_fragment "L:1/2\na4[L:1/4]a4"
+      p = parse_value_fragment "L:1/2\na4[L:1/4]a4"
       tune = p
       tune.notes[0].note_length.should == 2
       tune.notes[1].note_length.should == 1
@@ -226,12 +226,12 @@ require 'spec/abc_standard/spec_helper'
       fail_to_parse_fragment "a><b"
     end
     it "appears as an attribute of the following note" do
-      p = parse_fragment "a>b"
+      p = parse_value_fragment "a>b"
       p.items[0].broken_rhythm_marker.should == nil
       p.items[1].broken_rhythm_marker.change('>').should == Rational(1, 2)
     end
     it "alters note lengths appropriately" do
-      tune = parse_fragment "L:1\na>b c<d e<<f g>>>a"
+      tune = parse_value_fragment "L:1\na>b c<d e<<f g>>>a"
       tune.items[0].note_length.should == Rational(3, 2)
       tune.items[1].note_length.should == Rational(1, 2)
       tune.items[2].note_length.should == Rational(1, 2)
@@ -242,12 +242,12 @@ require 'spec/abc_standard/spec_helper'
       tune.items[7].note_length.should == Rational(1, 8)
     end
     it "works with the default unit note length" do
-      p = parse_fragment "a>b"
+      p = parse_value_fragment "a>b"
       p.items[0].note_length.should == Rational(3, 16)
       p.items[1].note_length.should == Rational(1, 16)
     end
     it "works with note length specifiers" do
-      p = parse_fragment "a2>b2"
+      p = parse_value_fragment "a2>b2"
       p.items[0].note_length.should == Rational(3, 8)
       p.items[1].note_length.should == Rational(1, 8)
     end
@@ -266,7 +266,7 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a visible rest (z)" do
     it "can appear with a length specifier" do
-      p = parse_fragment "L:1\n z3/2 z//"
+      p = parse_value_fragment "L:1\n z3/2 z//"
       p.items[0].length.should == Rational(3, 2)
       p.items[1].length.should == Rational(1, 4)
     end
@@ -274,14 +274,14 @@ require 'spec/abc_standard/spec_helper'
       fail_to_parse_fragment "z3//4"
     end
     it "knows it's visible" do
-      p = parse_fragment "z"
+      p = parse_value_fragment "z"
       p.items[0].invisible?.should == false
     end
   end
   
   describe "an invisible rest (x)" do
     it "can appear with a length specifier" do
-      p = parse_fragment "L:1\n x3/2 x//"
+      p = parse_value_fragment "L:1\n x3/2 x//"
       p.items[0].length.should == Rational(3, 2)
       p.items[1].length.should == Rational(1, 4)
     end
@@ -289,47 +289,47 @@ require 'spec/abc_standard/spec_helper'
       fail_to_parse_fragment "x3//4"
     end
     it "knows it's invisible" do
-      p = parse_fragment "x"
+      p = parse_value_fragment "x"
       p.items[0].invisible?.should == true
     end
   end
 
   describe "a visible measure rest (Z)" do
     it "knows its measure count" do
-      p = parse_fragment "Z4"
+      p = parse_value_fragment "Z4"
       p.items[0].measure_count.should == 4
     end
     it "can calculate its note length based on the meter" do
-      p = parse_fragment "M:C\nZ4[M:3/4]Z2\n"
+      p = parse_value_fragment "M:C\nZ4[M:3/4]Z2\n"
       p.items[0].length.should == 4
       p.items[2].length.should == Rational(6, 4)
     end
     it "defaults to one measure" do
-      p = parse_fragment "Z"
+      p = parse_value_fragment "Z"
       p.items[0].measure_count.should == 1
     end
     it "knows it's visible" do
-      p = parse_fragment "Z"
+      p = parse_value_fragment "Z"
       p.items[0].invisible?.should == false
     end
   end
 
   describe "an invisible measure rest (X)" do
     it "knows its measure count" do
-      p = parse_fragment "X4"
+      p = parse_value_fragment "X4"
       p.items[0].measure_count.should == 4
     end
     it "can calculate its note length based on the meter" do
-      p = parse_fragment "M:C\nX4[M:3/4]X2\n"
+      p = parse_value_fragment "M:C\nX4[M:3/4]X2\n"
       p.items[0].length.should == 4
       p.items[2].length.should == Rational(6, 4)
     end
     it "defaults to one measure" do
-      p = parse_fragment "X"
+      p = parse_value_fragment "X"
       p.items[0].measure_count.should == 1
     end
     it "knows it's invisible" do
-      p = parse_fragment "X"
+      p = parse_value_fragment "X"
       p.items[0].invisible?.should == true
     end
   end
@@ -378,118 +378,118 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a clef specifier" do
     it "can appear in a K: field" do
-      p = parse_fragment "K:Am clef=bass"
+      p = parse_value_fragment "K:Am clef=bass"
       p.clef.name.should == "bass"
     end
     it "can appear in a V: field" do
-      p = parse_fragment "V:Bass clef=bass"
+      p = parse_value_fragment "V:Bass clef=bass"
       p.voices["Bass"].clef.name.should == "bass"
     end
     it "can appear without 'clef='" do
-      p = parse_fragment "K:bass"
+      p = parse_value_fragment "K:bass"
       p.clef.name.should == "bass"
     end
     it "can have names treble, alto, tenor, bass, perc or none" do
-      p = parse_fragment "K:treble"
+      p = parse_value_fragment "K:treble"
       p.key.clef.name.should == "treble"
-      p = parse_fragment "K:alto"
+      p = parse_value_fragment "K:alto"
       p.key.clef.name.should == "alto"
-      p = parse_fragment "K:tenor"
+      p = parse_value_fragment "K:tenor"
       p.key.clef.name.should == "tenor"
-      p = parse_fragment "K:bass"
+      p = parse_value_fragment "K:bass"
       p.key.clef.name.should == "bass"
-      p = parse_fragment "K:perc"
+      p = parse_value_fragment "K:perc"
       p.key.clef.name.should == "perc"
-      p = parse_fragment "K:clef=none"
+      p = parse_value_fragment "K:clef=none"
       p.key.clef.name.should == "none"
     end
     it "can specify the line on which to draw the clef" do
-      p = parse_fragment "K:Am clef=bass4"
+      p = parse_value_fragment "K:Am clef=bass4"
       p.key.clef.line.should == 4
     end
     it "has default lines for the basic clefs" do
-      p = parse_fragment "K:C clef=treble"
+      p = parse_value_fragment "K:C clef=treble"
       p.key.clef.line.should == 2
-      p = parse_fragment "K:C clef=alto"
+      p = parse_value_fragment "K:C clef=alto"
       p.key.clef.line.should == 3
-      p = parse_fragment "K:C clef=tenor"
+      p = parse_value_fragment "K:C clef=tenor"
       p.key.clef.line.should == 4
-      p = parse_fragment "K:C clef=bass"
+      p = parse_value_fragment "K:C clef=bass"
       p.key.clef.line.should == 4
     end
     it "can include a 1-octave shift up or down using +8 or -8" do
-      p = parse_fragment "K:Am clef=bass"
+      p = parse_value_fragment "K:Am clef=bass"
       p.key.clef.octave_shift.should == 0
-      p = parse_fragment "K:Am clef=alto+8"
+      p = parse_value_fragment "K:Am clef=alto+8"
       p.key.clef.octave_shift.should == 1
-      p = parse_fragment "K:Am clef=treble-8"
+      p = parse_value_fragment "K:Am clef=treble-8"
       p.key.clef.octave_shift.should == -1
     end    
     it "can specify a middle pitch" do
-      p = parse_fragment "K:C clef=treble middle=d"
+      p = parse_value_fragment "K:C clef=treble middle=d"
       p.key.clef.middle.height.should == 14
-      p = parse_fragment "K:C treble middle=d"
+      p = parse_value_fragment "K:C treble middle=d"
       p.key.clef.middle.height.should == 14
-      p = parse_fragment "K:C middle=d"
+      p = parse_value_fragment "K:C middle=d"
       p.key.clef.middle.height.should == 14
     end
     it "has default middle pitch for the basic clefs" do
-      p = parse_fragment "K:C clef=treble"
+      p = parse_value_fragment "K:C clef=treble"
       p.key.clef.middle.height.should == 11
-      p = parse_fragment "K:C clef=alto"
+      p = parse_value_fragment "K:C clef=alto"
       p.key.clef.middle.height.should == 0
-      p = parse_fragment "K:C clef=tenor"
+      p = parse_value_fragment "K:C clef=tenor"
       p.key.clef.middle.height.should == -3
-      p = parse_fragment "K:C clef=bass"
+      p = parse_value_fragment "K:C clef=bass"
       p.key.clef.middle.height.should == -10
-      p = parse_fragment "K:C clef=none"
+      p = parse_value_fragment "K:C clef=none"
       p.key.clef.middle.height.should == 11
     end
     it "can specify a transposition" do
-      p = parse_fragment "K:C clef=treble transpose=-2"
+      p = parse_value_fragment "K:C clef=treble transpose=-2"
       p.key.clef.transpose.should == -2
-      p = parse_fragment "K:C clef=treble t=4"
+      p = parse_value_fragment "K:C clef=treble t=4"
       p.key.clef.transpose.should == 4
     end
     it "has a default transposition of 0" do
-      p = parse_fragment "K:C clef=treble"
+      p = parse_value_fragment "K:C clef=treble"
       p.key.clef.transpose.should == 0
     end
     it "can specify an octave shift with 'octave='" do
-      p = parse_fragment "K:C clef=treble octave=-2\nc"
+      p = parse_value_fragment "K:C clef=treble octave=-2\nc"
       p.key.clef.octave_shift.should == -2
       p.notes[0].pitch.height.should == -12
     end
     it "has a default octave shift of 0" do
-      p = parse_fragment "K:C clef=treble"
+      p = parse_value_fragment "K:C clef=treble"
       p.key.clef.octave_shift.should == 0
     end
     it "can specify the number of stafflines" do
-      p = parse_fragment "K:C clef=treble stafflines=4"
+      p = parse_value_fragment "K:C clef=treble stafflines=4"
       p.key.clef.stafflines.should == 4
     end
     it "has a default of 5 stafflines" do
-      p = parse_fragment "K:C clef=treble"
+      p = parse_value_fragment "K:C clef=treble"
       p.key.clef.stafflines.should == 5
     end
     it "is allowed to use unknown clef names" do
-      p = parse_fragment "K:C baritone"
+      p = parse_value_fragment "K:C baritone"
       p.key.clef.name.should == 'baritone' 
     end
     it "matches treble clef's line and middle pitch if clef name is unknown" do
-      p = parse_fragment "K:C baritone"
+      p = parse_value_fragment "K:C baritone"
       p.key.clef.line.should == 2
       p.key.clef.middle.height.should == 11
     end
     it "defaults to treble" do
-      p = parse_fragment "K:C"
+      p = parse_value_fragment "K:C"
       p.key.clef.name.should == 'treble'
     end
     it "is allowed to use app-specific specifiers" do
-      p = parse_fragment "K:C clef=perc mozart:noteC=snare-drum"
+      p = parse_value_fragment "K:C clef=perc mozart:noteC=snare-drum"
     end
     it "can place its specifiers in any order" do
-      p = parse_fragment "K:C middle=d stafflines=3 bass4+8 t=-3"
+      p = parse_value_fragment "K:C middle=d stafflines=3 bass4+8 t=-3"
       p.clef.name.should == 'bass'
       p.clef.middle.note.should == 'D'
       p.clef.stafflines.should == 3
@@ -497,7 +497,7 @@ require 'spec/abc_standard/spec_helper'
       p.clef.octave_shift.should == 1
     end
     it "can combine octave shifts with octave= and +/-8" do
-      p = parse_fragment "K: bass+8 octave=-1"
+      p = parse_value_fragment "K: bass+8 octave=-1"
       p.clef.octave_shift.should == 0
     end
   end
@@ -510,57 +510,57 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a beam" do
     it "connects adjacent notes" do
-      p = parse_fragment "abc"
+      p = parse_value_fragment "abc"
       p.items[0].beam.should == :start
       p.items[1].beam.should == :middle
       p.items[2].beam.should == :end
     end
     it "connects notes separated by backticks" do
-      p = parse_fragment "a``b"
+      p = parse_value_fragment "a``b"
       p.items[0].beam.should == :start
       p.items[1].beam.should == :end
     end
     it "does not connect notes separated by space" do
-      p = parse_fragment "ab c"
+      p = parse_value_fragment "ab c"
       p.notes[1].beam.should == :end
       p.notes[2].beam.should == nil
     end
     it "does not connect notes separated by bar lines" do
-      p = parse_fragment "ab|c"
+      p = parse_value_fragment "ab|c"
       p.notes[1].beam.should == :end
       p.notes[2].beam.should == nil
     end
     it "does not connect notes separated by fields" do
-      p = parse_fragment "ab[L:1/16]c"
+      p = parse_value_fragment "ab[L:1/16]c"
       p.notes[1].beam.should == :end
     end
     it "connects notes separated by line continuation" do
-      p = parse_fragment "ab\\\nc"
+      p = parse_value_fragment "ab\\\nc"
       p.notes[1].beam.should == :middle
       p.notes[2].beam.should == :end
     end
     it "does not connect notes separated by space plus line continuation" do
-      p = parse_fragment "ab \\\nc"
+      p = parse_value_fragment "ab \\\nc"
       p.notes[1].beam.should == :end
       p.notes[2].beam.should == nil
     end
     it "does not connect notes separated by line continuation plus space" do
-      p = parse_fragment "ab\\\n c"
+      p = parse_value_fragment "ab\\\n c"
       p.notes[1].beam.should == :end
       p.notes[2].beam.should == nil
     end
     it "does not connect notes that are unbeamable" do
-      p = parse_fragment "ab2"
+      p = parse_value_fragment "ab2"
       p.notes[0].beam.should == nil
       p.notes[1].beam.should == nil
     end
     it "does not connect notes separated by overlay symbols" do
-      p = parse_fragment "a&b"
+      p = parse_value_fragment "a&b"
       p.notes[0].beam.should == nil
       p.notes[1].beam.should == nil
     end
     it "does not connect notes separated by rests" do
-      p = parse_fragment "axb"
+      p = parse_value_fragment "axb"
       p.notes[0].beam.should == nil
       p.notes[1].beam.should == nil
     end
@@ -586,72 +586,72 @@ require 'spec/abc_standard/spec_helper'
   describe "a bar line" do
     
     it "can be thin" do
-      p = parse_fragment "a|b"
+      p = parse_value_fragment "a|b"
       bar = p.items[1]
       bar.is_a?(BarLine).should == true
       bar.type.should == :thin
     end
     it "can be double" do
-      p = parse_fragment "a||b"
+      p = parse_value_fragment "a||b"
       p.items.count.should == 3
       bar = p.items[1]
       bar.is_a?(BarLine).should == true
       bar.type.should == :double
     end
     it "can be thin-thick" do
-      p = parse_fragment "a|]"
+      p = parse_value_fragment "a|]"
       p.items.count.should == 2
       bar = p.items.last
       bar.is_a?(BarLine).should == true
       bar.type.should == :thin_thick
     end
     it "can be thick-thin" do
-      p = parse_fragment "[|C"
+      p = parse_value_fragment "[|C"
       p.items.count.should == 2
       bar = p.items[0]
       bar.is_a?(BarLine).should == true
       bar.type.should == :thick_thin
     end
     it "can be dotted" do
-      p = parse_fragment "a.|b"
+      p = parse_value_fragment "a.|b"
       p.items.count.should == 3
       bar = p.items[1]
       bar.is_a?(BarLine).should == true
       bar.dotted?.should == true
     end
     it "can be invisible" do
-      p = parse_fragment "a[|]b"
+      p = parse_value_fragment "a[|]b"
       p.items.count.should == 3
       bar = p.items[1]
       bar.is_a?(BarLine).should == true
       bar.type.should == :invisible
     end
     it "can repeat to the left" do
-      p = parse_fragment "|:"
+      p = parse_value_fragment "|:"
       p.items[0].type.should == :thin
       p.items[0].repeat_before.should == 0
       p.items[0].repeat_after.should == 1
     end
     it "can repeat to the right" do
-      p = parse_fragment ":|"
+      p = parse_value_fragment ":|"
       p.items[0].type.should == :thin
       p.items[0].repeat_before.should == 1
       p.items[0].repeat_after.should == 0
     end    
     it "can repeat to the right if it's thin-thick" do
-      p = parse_fragment ":|]"
+      p = parse_value_fragment ":|]"
       p.items[0].type.should == :thin_thick
       p.items[0].repeat_before.should == 1
       p.items[0].repeat_after.should == 0
     end
     it "can repeat to the left if it's thin-thick" do
-      p = parse_fragment "[|:"
+      p = parse_value_fragment "[|:"
       p.items[0].type.should == :thick_thin
       p.items[0].repeat_before.should == 0
       p.items[0].repeat_after.should == 1
     end
     it "can indicate multiple repeats" do
-      p = parse_fragment "::|"
+      p = parse_value_fragment "::|"
       p.items[0].repeat_before.should == 2
       p.items[0].repeat_after.should == 0
     end
@@ -672,21 +672,21 @@ require 'spec/abc_standard/spec_helper'
 
   describe "first and second ending" do
     it "can be notated with [1 and [2" do
-      p = parse_fragment "abc|[1 abc :|[2 def |]"
+      p = parse_value_fragment "abc|[1 abc :|[2 def |]"
       p.items[4].is_a?(VariantEnding).should == true
       p.items[4].range_list.should == [1]
       p.items[9].is_a?(VariantEnding).should == true
       p.items[9].range_list.should == [2]
     end
     it "can be notated with |1 and |2" do 
-      p = parse_fragment "abc|1 abc:|2 def ||"
+      p = parse_value_fragment "abc|1 abc:|2 def ||"
       p.items[4].is_a?(VariantEnding).should == true
       p.items[4].range_list.should == [1]
       p.items[9].is_a?(VariantEnding).should == true
       p.items[9].range_list.should == [2]
     end
     it "can be notated with | [1" do
-      p = parse_fragment "abc| [1 abc :| [2 def |]"
+      p = parse_value_fragment "abc| [1 abc :| [2 def |]"
       p.items[4].is_a?(VariantEnding).should == true
       p.items[4].range_list.should == [1]
       p.items[9].is_a?(VariantEnding).should == true
@@ -712,7 +712,7 @@ require 'spec/abc_standard/spec_helper'
   
   describe "a variant ending" do
     it "can involve a range list" do
-      p = parse_fragment "[1,3,5-7 abc || [2,4,8 def ||"
+      p = parse_value_fragment "[1,3,5-7 abc || [2,4,8 def ||"
       p.items[0].range_list.should == [1, 3, 5..7]
       p.items[5].range_list.should == [2, 4, 8]
     end
@@ -731,38 +731,38 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a tie" do
     it "does not appear by default" do
-      p = parse_fragment "a a"
+      p = parse_value_fragment "a a"
       p.items[0].tied_right.should == false
       p.items[1].tied_left.should == false
     end
     it "is indicated by a hyphen" do
-      p = parse_fragment "a-a"
+      p = parse_value_fragment "a-a"
       p.items[0].tied_right.should == true
       p.items[1].tied_left.should == true
     end
     # TODO convert this to slur
     it "can be used to mark a slur" do
-      p = parse_fragment "a-b"
+      p = parse_value_fragment "a-b"
       p.items[0].tied_right.should == true
       p.items[1].tied_left.should == true
     end
     it "can operate across spaces" do
-      p = parse_fragment "a- b"
+      p = parse_value_fragment "a- b"
       p.items[0].tied_right.should == true
       p.items[1].tied_left.should == true
     end
     it "can operate across bar lines" do
-      p = parse_fragment "a-|b"
+      p = parse_value_fragment "a-|b"
       p.items[0].tied_right.should == true
       p.items[2].tied_left.should == true
     end
     it "can operate across fields" do
-      p = parse_fragment "a-[M:6/8]b"
+      p = parse_value_fragment "a-[M:6/8]b"
       p.items[0].tied_right.should == true
       p.items[2].tied_left.should == true
     end
     it "can be dotted" do
-      p = parse_fragment "a.-b"
+      p = parse_value_fragment "a.-b"
       p.items[0].tied_right.should == false
       p.items[0].tied_right_dotted.should == true
       p.items[1].tied_left.should == true
@@ -771,43 +771,43 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a slur" do
     it "is indicated with parenthesis" do
-      p = parse_fragment "d(ab^c)d"
+      p = parse_value_fragment "d(ab^c)d"
       p.items[1].start_slur.should == 1
       p.items[3].end_slur.should == 1
     end
     it "can be nested" do
-      p = parse_fragment "d(a(b^c))"
+      p = parse_value_fragment "d(a(b^c))"
       p.items[1].start_slur.should == 1
       p.items[2].start_slur.should == 1
       p.items[3].end_slur.should == 2
     end
     it "can exist on a single note" do
-      p = parse_fragment "d(a)b^c"
+      p = parse_value_fragment "d(a)b^c"
       p.items[1].start_slur.should == 1
       p.items[1].end_slur.should == 1
     end
     it "can operate across spaces" do
-      p = parse_fragment "(a b c)"
+      p = parse_value_fragment "(a b c)"
       p.items[0].start_slur.should == 1
       p.items[2].end_slur.should == 1
     end
     it "can operate across bar lines" do
-      p = parse_fragment "(ab|c)"
+      p = parse_value_fragment "(ab|c)"
       p.items[0].start_slur.should == 1
       p.items[3].end_slur.should == 1
     end
     it "can operate across fields" do
-      p = parse_fragment "(ab[M:6/8]c)"
+      p = parse_value_fragment "(ab[M:6/8]c)"
       p.items[0].start_slur.should == 1
       p.items[3].end_slur.should == 1
     end
     it "can slur a single note" do
-      p = parse_fragment "(a)"
+      p = parse_value_fragment "(a)"
       p.items[0].start_slur.should == 1
       p.items[0].end_slur.should == 1
     end
     it "can be dotted" do
-      p = parse_fragment "(a.(bc))"
+      p = parse_value_fragment "(a.(bc))"
       p.notes[0].start_slur.should == 1
       p.notes[0].start_dotted_slur.should == 0
       p.notes[1].start_slur.should == 0
@@ -824,38 +824,38 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a grace note marker" do
     it "can indicate an appogiatura" do
-      p = parse_fragment "{gege}B"
+      p = parse_value_fragment "{gege}B"
       p.notes[0].grace_notes.type.should == :appoggiatura
     end
     it "can indicate an acciaccatura" do
-      p = parse_fragment "{/ge4d}B"
+      p = parse_value_fragment "{/ge4d}B"
       p.notes[0].grace_notes.type.should == :acciaccatura
     end
     it "has notes" do
-      p = parse_fragment "{gege}B"
+      p = parse_value_fragment "{gege}B"
       p.notes[0].grace_notes.notes.count.should == 4
       p.notes[0].grace_notes.notes[0].pitch.note.should == "G"
     end
     it "applies the current key to the notes" do
-      p = parse_fragment "[K:HP]{gf}B"
+      p = parse_value_fragment "[K:HP]{gf}B"
       p.notes[0].grace_notes.notes[1].pitch.height.should == 18 # F sharp
     end
     it "can include note length markers" do
-      p = parse_fragment "{a3/2b/}B"
+      p = parse_value_fragment "{a3/2b/}B"
     end
     it "is independent of the unit note length" do
-      p = parse_fragment "{a3/2b/}B"
+      p = parse_value_fragment "{a3/2b/}B"
       p.notes[0].length.should == Rational(1, 8)
       p.notes[0].grace_notes.notes[0].length.should == Rational(3, 2)
       p.notes[0].grace_notes.notes[1].length.should == Rational(1, 2)
     end
     it "can include broken rhythm markers" do
-      p = parse_fragment "{a>b}B"
+      p = parse_value_fragment "{a>b}B"
       p.notes[0].grace_notes.notes[0].length.should == Rational(3, 2)
       p.notes[0].grace_notes.notes[1].length.should == Rational(1, 2)
     end
     it "is transparent to the broken rhythm construct" do
-      p = parse_fragment "B{ab}>A"
+      p = parse_value_fragment "B{ab}>A"
       p.notes[0].length.should == Rational(3, 16)
       p.notes[1].length.should == Rational(1, 16)
       p.notes[0].grace_notes.should == nil
@@ -883,7 +883,7 @@ require 'spec/abc_standard/spec_helper'
   
   describe "a tuplet marker" do
     it "uses (2 to mean 2 notes in the time of 3, regardless of meter" do
-      p = parse_fragment "[L:1] [M:C] (2abc [M:3/4] (2abc"
+      p = parse_value_fragment "[L:1] [M:C] (2abc [M:3/4] (2abc"
       p.notes[0].tuplet_ratio.should == Rational(3, 2)
       p.notes[0].length.should == Rational(3, 2)
       p.notes[1].length.should == Rational(3, 2)
@@ -894,7 +894,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "can be inspected" do
-      p = parse_fragment "[L:1] [M:C] (2abc [M:3/4] (2abc"
+      p = parse_value_fragment "[L:1] [M:C] (2abc [M:3/4] (2abc"
       marker = p.notes[0].tuplet_marker
       marker.compound_meter?.should be_false
       marker.ratio.should == Rational(3, 2)
@@ -909,7 +909,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "conspires with the unit note length to determine note length" do
-      p = parse_fragment "[L:1/8] (2abc [L:1/4] (2abc"
+      p = parse_value_fragment "[L:1/8] (2abc [L:1/4] (2abc"
       p.notes[0].tuplet_ratio.should == Rational(3, 2)
       p.notes[0].length.should == Rational(3, 16)
       p.notes[1].length.should == Rational(3, 16)
@@ -921,7 +921,7 @@ require 'spec/abc_standard/spec_helper'
     end
       
     it "uses (3 to mean 3 notes in the time of 2, regardless of meter" do
-      p = parse_fragment "[L:1] [M:C] (3abcd [M:3/4] (3abcd"
+      p = parse_value_fragment "[L:1] [M:C] (3abcd [M:3/4] (3abcd"
       p.notes[0].length.should == Rational(2, 3)
       p.notes[1].length.should == Rational(2, 3)
       p.notes[2].length.should == Rational(2, 3)
@@ -933,7 +933,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "uses (4 to mean 4 notes in the time of 3, regardless of meter" do
-      p = parse_fragment "[L:1] [M:C] (4abcde [M:3/4] (4abcde"
+      p = parse_value_fragment "[L:1] [M:C] (4abcde [M:3/4] (4abcde"
       p.notes[0].length.should == Rational(3, 4)
       p.notes[1].length.should == Rational(3, 4)
       p.notes[2].length.should == Rational(3, 4)
@@ -947,7 +947,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "uses (5 to mean 5 notes in the time of 2, if meter is simple" do
-      p = parse_fragment "[L:1] [M:C] (5abcdef"
+      p = parse_value_fragment "[L:1] [M:C] (5abcdef"
       p.notes[0].length.should == Rational(2, 5)
       p.notes[1].length.should == Rational(2, 5)
       p.notes[2].length.should == Rational(2, 5)
@@ -957,7 +957,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "uses (5 to mean 5 notes in the time of 3, if meter is compound" do
-      p = parse_fragment "[L:1] [M:6/8] (5abcdef"
+      p = parse_value_fragment "[L:1] [M:6/8] (5abcdef"
       p.notes[0].length.should == Rational(3, 5)
       p.notes[1].length.should == Rational(3, 5)
       p.notes[2].length.should == Rational(3, 5)
@@ -967,7 +967,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "uses (6 to mean 6 notes in the time of 2" do
-      p = parse_fragment "[L:1] [M:C] (6 abc abc d [M:6/8] (6 abc abc d"
+      p = parse_value_fragment "[L:1] [M:C] (6 abc abc d [M:6/8] (6 abc abc d"
       p.notes[5].length.should == Rational(2, 6)
       p.notes[6].length.should == 1
       p.notes[12].length.should == Rational(2, 6)
@@ -975,7 +975,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "uses (6 to mean 6 notes in the time of 2" do
-      p = parse_fragment "[L:1] [M:C] (6 abc abc d [M:6/8] (6 abc abc d"
+      p = parse_value_fragment "[L:1] [M:C] (6 abc abc d [M:6/8] (6 abc abc d"
       p.notes[5].length.should == Rational(2, 6)
       p.notes[6].length.should == 1
       p.notes[12].length.should == Rational(2, 6)
@@ -983,7 +983,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "uses (7 to mean 7 notes in the time of 2 (or 3 for compound meter)" do
-      p = parse_fragment "[L:1] [M:C] (7 abcd abc d [M:6/8] (7 abcd abc d"
+      p = parse_value_fragment "[L:1] [M:C] (7 abcd abc d [M:6/8] (7 abcd abc d"
       p.notes[6].length.should == Rational(2, 7)
       p.notes[7].length.should == 1
       p.notes[14].length.should == Rational(3, 7)
@@ -991,7 +991,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "uses (8 to mean 8 notes in the time of 3" do
-      p = parse_fragment "[L:1] [M:C] (8 abcd abcd e [M:6/8] (8 abcd abcd e"
+      p = parse_value_fragment "[L:1] [M:C] (8 abcd abcd e [M:6/8] (8 abcd abcd e"
       p.notes[7].length.should == Rational(3, 8)
       p.notes[8].length.should == 1
       p.notes[16].length.should == Rational(3, 8)
@@ -999,7 +999,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "uses (9 to mean 9 notes in the time of 2 (or 3 for compound meter)" do
-      p = parse_fragment "[L:1] [M:C] (9 abcde abcd e [M:6/8] (9 abcde abcd e"
+      p = parse_value_fragment "[L:1] [M:C] (9 abcde abcd e [M:6/8] (9 abcde abcd e"
       p.notes[8].length.should == Rational(2, 9)
       p.notes[9].length.should == 1
       p.notes[18].length.should == Rational(3, 9)
@@ -1007,37 +1007,37 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "uses the form (p:q:r to mean p notes in the time of q for r notes" do
-      p = parse_fragment "[L:1] (3:4:6 abc abc d"
+      p = parse_value_fragment "[L:1] (3:4:6 abc abc d"
       p.notes[5].length.should == Rational(4, 3)
       p.notes[6].length.should == 1
     end
 
     it "uses the form (p:q to mean p notes in the time of q for p notes" do
-      p = parse_fragment "[L:1] (3:4 abc d"
+      p = parse_value_fragment "[L:1] (3:4 abc d"
       p.notes[2].length.should == Rational(4, 3)
       p.notes[3].length.should == 1
     end
 
     it "treats the form (p:q: as a synonym for (p:q" do
-      p = parse_fragment "[L:1] (3:4: abc d"
+      p = parse_value_fragment "[L:1] (3:4: abc d"
       p.notes[2].length.should == Rational(4, 3)
       p.notes[3].length.should == 1
     end
 
     it "uses the form (p::r to mean p notes in the time of 2 for r notes with simple meter" do
-      p = parse_fragment "[L:1] [M:C] (3::4 abcd e"
+      p = parse_value_fragment "[L:1] [M:C] (3::4 abcd e"
       p.notes[3].length.should == Rational(2, 3)
       p.notes[4].length.should == 1
     end
 
     it "uses the form (p::r to mean p notes in the time of 2 for r notes with compound meter" do
-      p = parse_fragment "[L:1] [M:6/8] (2::4 abcd e"
+      p = parse_value_fragment "[L:1] [M:6/8] (2::4 abcd e"
       p.notes[3].length.should == Rational(3, 2)
       p.notes[4].length.should == 1
     end
 
     it "treats the form (p:: as a synonym for (p" do
-      p = parse_fragment "[L:1] [M:C] (5:: abcde f [M:6/8] (5:: abcde f"
+      p = parse_value_fragment "[L:1] [M:C] (5:: abcde f [M:6/8] (5:: abcde f"
       p.notes[4].length.should == Rational(2, 5)
       p.notes[5].length.should == 1
       p.notes[10].length.should == Rational(3, 5)
@@ -1045,7 +1045,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "treats the form (p: as a synonym for (p" do
-      p = parse_fragment "[L:1] [M:C] (5: abcde f [M:6/8] (5: abcde f"
+      p = parse_value_fragment "[L:1] [M:C] (5: abcde f [M:6/8] (5: abcde f"
       p.notes[4].length.should == Rational(2, 5)
       p.notes[5].length.should == 1
       p.notes[10].length.should == Rational(3, 5)
@@ -1053,7 +1053,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "can operate on notes of different lengths" do
-      p = parse_fragment "[L:1] [M:C] (3 D3EF2"
+      p = parse_value_fragment "[L:1] [M:C] (3 D3EF2"
       p.notes[0].length.should == 2
       p.notes[1].length.should == Rational(2, 3)
       p.notes[2].length.should == Rational(4, 3)
@@ -1147,7 +1147,7 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a decoration" do
     it "can be one of the default redefinable symbols" do
-      p = parse_fragment ".a ~b Hc Ld Me Of Pg Sa Tb uC vD"
+      p = parse_value_fragment ".a ~b Hc Ld Me Of Pg Sa Tb uC vD"
       p.notes[0].decorations[0].shortcut.should == "."
       p.notes[0].decorations[0].symbol.should == "staccato"
       p.notes[1].decorations[0].shortcut.should == "~"
@@ -1172,23 +1172,23 @@ require 'spec/abc_standard/spec_helper'
       p.notes[10].decorations[0].symbol.should == "downbow"
     end
     it "can be of the form !symbol!" do
-      p = parse_fragment "!trill! A"
+      p = parse_value_fragment "!trill! A"
       p.notes[0].decorations[0].symbol.should == "trill"
     end
     it "can be applied to chords" do
-      p = parse_fragment "!f! [CGE]"
+      p = parse_value_fragment "!f! [CGE]"
       p.notes[0].decorations[0].symbol.should == "f"
     end
     it "can be applied to bar lines" do
-      p = parse_fragment "abc !fermata! |"
+      p = parse_value_fragment "abc !fermata! |"
       p.items[3].decorations[0].symbol.should == "fermata"
     end
     it "can be applied to spacers" do
-      p = parse_fragment "abc !fermata! y"
+      p = parse_value_fragment "abc !fermata! y"
       p.items[3].decorations[0].symbol.should == "fermata"
     end
     it "can be one of several applied to the same note" do
-      p = parse_fragment "!p! !trill! .a"
+      p = parse_value_fragment "!p! !trill! .a"
       p.notes[0].decorations.count.should == 3
       p.notes[0].decorations[0].symbol.should == "p"
       p.notes[0].decorations[1].symbol.should == "trill"
@@ -1225,7 +1225,7 @@ require 'spec/abc_standard/spec_helper'
   describe "a symbol line" do
 
     it "aligns symbols to notes" do
-      p = parse_fragment(['   CDEF    | G```AB`c     c',
+      p = parse_value_fragment(['   CDEF    | G```AB`c     c',
                           's: "^slow" | u   ** !fff! "Gm"'].join("\n"))
       p.notes[0].annotations[0].placement.should == :above
       p.notes[0].annotations[0].text.should == "slow"
@@ -1241,7 +1241,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "aligns from the first note of the voice if there is no previous s: field" do
-      p = parse_fragment "[V:1]G,G,G,A,[V:2]GCEA\ns:.Tuv"
+      p = parse_value_fragment "[V:1]G,G,G,A,[V:2]GCEA\ns:.Tuv"
       p.notes[0].decorations.should == []
       p.notes[1].decorations.should == []
       p.notes[2].decorations.should == []
@@ -1253,18 +1253,18 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "aligns from the first note after the notes aligned to the previous w: field" do
-      p = parse_fragment "G \ns:. u v \nA\ns: T"
+      p = parse_value_fragment "G \ns:. u v \nA\ns: T"
       p.notes[1].decorations[0].symbol.should == "trill"
     end
 
     it "reaches back across linebreaks" do
-      p = parse_fragment "C D E F|\nG A B c|\ns: u . . . . . . v"
+      p = parse_value_fragment "C D E F|\nG A B c|\ns: u . . . . . . v"
       p.notes[0].decorations[0].symbol.should == "upbow"
       p.notes[7].decorations[0].symbol.should == "downbow"
     end
 
     it "ignores excess syllables" do
-      p = parse_fragment "GC\ns:T u v .\nEA2"
+      p = parse_value_fragment "GC\ns:T u v .\nEA2"
       p.notes[0].decorations[0].symbol.should == "trill"
       p.notes[1].decorations[0].symbol.should == "upbow"
       p.notes[2].decorations.should == []
@@ -1272,7 +1272,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "can explicitly blank symbols from notes" do
-      p = parse_fragment "C D E F|\ns: . . . u\nG G G G|\ns:\nF E F C|\ns: v . . ."
+      p = parse_value_fragment "C D E F|\ns: . . . u\nG G G G|\ns:\nF E F C|\ns: v . . ."
       p.notes[3].decorations[0].symbol.should == "upbow"
       p.notes[4].decorations.should == []
       p.notes[7].decorations.should == []
@@ -1280,25 +1280,25 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "does not match symbols to grace notes" do
-      p = parse_fragment "{gege}GCAE\ns:T u v ."
+      p = parse_value_fragment "{gege}GCAE\ns:T u v ."
       p.notes[0].grace_notes.notes[0].decorations.should == []
       p.notes[0].decorations[0].symbol.should == "trill"
     end
 
     it "does not match symbols to rests" do
-      p = parse_fragment "GCEz4A4\ns: Tuv."
+      p = parse_value_fragment "GCEz4A4\ns: Tuv."
       p.notes[3].decorations.should == []
       p.notes[4].decorations[0].symbol.should == "staccato"
     end
 
     it "does not match symbols to spacers" do
-      p = parse_fragment "GCEyA4\ns: Tuv."
+      p = parse_value_fragment "GCEyA4\ns: Tuv."
       p.items[3].decorations.should == []
       p.items[4].decorations[0].symbol.should == "staccato"
     end
 
     it "aligns symbols separately to tied notes" do
-      p = parse_fragment "GCE-EA\ns: Tuv."
+      p = parse_value_fragment "GCE-EA\ns: Tuv."
       p.notes[3].tied_left.should == true
       p.notes[3].pitch.note.should == "E"
       p.notes[3].decorations[0].symbol.should == "staccato"
@@ -1306,7 +1306,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "aligns symbols separately to slurred notes" do
-      p = parse_fragment "GC(EA)g\ns: Tuv."
+      p = parse_value_fragment "GC(EA)g\ns: Tuv."
       p.notes[3].end_slur.should > 0
       p.notes[3].pitch.note.should == "A"
       p.notes[3].decorations[0].symbol.should == "staccato"
@@ -1314,7 +1314,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "stacks symbols with consecutive s: lines" do
-      p = parse_fragment "GCEA\ns: Tu \ns: v."
+      p = parse_value_fragment "GCEA\ns: Tu \ns: v."
       p.notes[0].decorations[0].symbol.should == "trill"
       p.notes[1].decorations[0].symbol.should == "upbow"
       p.notes[0].decorations[1].symbol.should == "downbow"
@@ -1324,7 +1324,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "stacks symbols starting just after the previous s: line" do
-      p = parse_fragment "ABC\ns:...\nGCEA\ns: Tu \ns: v."
+      p = parse_value_fragment "ABC\ns:...\nGCEA\ns: Tu \ns: v."
       p.notes[0].decorations[0].symbol.should == "staccato"
       p.notes[0].decorations.count.should == 1
       p.notes[3].decorations[0].symbol.should == "trill"
@@ -1332,7 +1332,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "does not stack symbols when continuing the s: line with +:" do
-      p = parse_fragment "GCEA\ns: Tu \n+: v."
+      p = parse_value_fragment "GCEA\ns: Tu \n+: v."
       p.notes[0].decorations[0].symbol.should == "trill"
       p.notes[1].decorations[0].symbol.should == "upbow"
       p.notes[2].decorations[0].symbol.should == "downbow"
@@ -1340,7 +1340,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "skips notes with *" do
-      p = parse_fragment "acddc\ns:*u ** v"
+      p = parse_value_fragment "acddc\ns:*u ** v"
       p.notes[0].decorations.should == []
       p.notes[1].decorations[0].symbol.should == "upbow"
       p.notes[2].decorations.should == []
@@ -1349,7 +1349,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "advances to the next bar with |" do
-      p = parse_fragment "abc|def\ns:u|v"
+      p = parse_value_fragment "abc|def\ns:u|v"
       p.notes[0].decorations[0].symbol.should == "upbow"
       p.notes[1].decorations.should == []
       p.notes[2].decorations.should == []
@@ -1387,39 +1387,39 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a redefinable symbol" do
     it "can define a new decoration shortcut" do
-      p = parse_fragment("[U:t=!halftrill!] ta")
+      p = parse_value_fragment("[U:t=!halftrill!] ta")
       p.notes[0].decorations[0].symbol.should == 'halftrill'
     end
     it "can redefine one of the predefined shortcuts" do
-      p = parse_fragment("[U:T=!halftrill!] Ta")
+      p = parse_value_fragment("[U:T=!halftrill!] Ta")
       p.notes[0].decorations[0].symbol.should == 'halftrill'
     end
     it "can define a shortcut in the tune header" do
-      p = parse_fragment("U:t=!halftrill!\nK:C\nta")
+      p = parse_value_fragment("U:t=!halftrill!\nK:C\nta")
       p.notes[0].decorations[0].symbol.should == 'halftrill'
     end
     it "can define a shortcut in the file header" do
-      p = parse("U:t=!halftrill!\n\nX:1\nT:T\nK:C\nta")
+      p = parse_value("U:t=!halftrill!\n\nX:1\nT:T\nK:C\nta")
       p.tunes[0].notes[0].decorations[0].symbol.should == 'halftrill'
     end
     it "can be redefined after being defined once" do
-      p = parse("U:t=!halftrill!\n\nX:1\nT:T\nK:C\n[U:t=!headbutt!]ta")
+      p = parse_value("U:t=!halftrill!\n\nX:1\nT:T\nK:C\n[U:t=!headbutt!]ta")
       p.tunes[0].notes[0].decorations[0].symbol.should == 'headbutt'
-      p = parse("U:t=!halftrill!\n\nX:1\nT:T\nU:t=!headbutt!\nK:C\nta")
+      p = parse_value("U:t=!halftrill!\n\nX:1\nT:T\nU:t=!headbutt!\nK:C\nta")
       p.tunes[0].notes[0].decorations[0].symbol.should == 'headbutt'
     end
     it "can define annotations as well as decorations" do
-      p = parse("U:t=\"^look up here\"\n\nX:1\nT:T\nK:C\nta")
+      p = parse_value("U:t=\"^look up here\"\n\nX:1\nT:T\nK:C\nta")
       p.tunes[0].notes[0].annotations[0].text.should == 'look up here'
       p.tunes[0].notes[0].annotations[0].placement.should == :above
     end
     it "can have the same value as another" do
-      p = parse("U:T=!thrill!  X:1 T:T U:U=!thrill! K:C TaUb".gsub(' ', "\n"))
+      p = parse_value("U:T=!thrill!  X:1 T:T U:U=!thrill! K:C TaUb".gsub(' ', "\n"))
       p.tunes[0].notes[0].decorations[0].symbol.should == 'thrill'
       p.tunes[0].notes[1].decorations[0].symbol.should == 'thrill'
     end
     it "can be de-assigned with !nil! or !none!" do
-      p = parse_fragment(".a[U:.=!nil!].b ua[U:u=!none!]ub")
+      p = parse_value_fragment(".a[U:.=!nil!].b ua[U:u=!none!]ub")
       p.notes[0].decorations[0].symbol.should == 'staccato'
       p.notes[1].decorations[0].symbol.should == nil
       p.notes[2].decorations[0].symbol.should == 'upbow'
@@ -1447,7 +1447,7 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a chord" do
     it "is grouped together with square brackets" do
-      p = parse_fragment "[CEG]"
+      p = parse_value_fragment "[CEG]"
       p.notes[0].is_a?(Chord).should == true
       p.notes[0].notes.count.should == 3
       p.notes[0].notes[0].pitch.height.should == 0
@@ -1455,14 +1455,14 @@ require 'spec/abc_standard/spec_helper'
       p.notes[0].notes[2].pitch.height.should == 7
     end
     it "can be beamed" do
-      p = parse_fragment "[d2f2][ce][df] [ce]"
+      p = parse_value_fragment "[d2f2][ce][df] [ce]"
       p.notes[0].beam.should == nil
       p.notes[1].beam.should == :start
       p.notes[2].beam.should == :end
       p.notes[3].beam.should == nil
     end
     it "has its duration determined by the first note if notes have inconsistent lengths" do
-      p = parse_fragment "[d2ag/]"
+      p = parse_value_fragment "[d2ag/]"
       p.notes[0].length.should == Rational(1, 4)
     end
     it "cannot take an accidental" do
@@ -1471,26 +1471,26 @@ require 'spec/abc_standard/spec_helper'
       parse_fragment "[C_EG]"
     end
     it "can have decorations on the inside notes" do
-      p = parse_fragment "[.CuE!hoohah!G]"
+      p = parse_value_fragment "[.CuE!hoohah!G]"
       p.items[0].notes[0].annotations[0] == 'staccato'
       p.items[0].notes[1].annotations[0] == 'upbow'
       p.items[0].notes[2].annotations[0] == 'hoohah'
     end
     it "multiplies inner length modifiers by outer" do
-      p = parse_fragment "L:1\n[C2E2G2]3/"
+      p = parse_value_fragment "L:1\n[C2E2G2]3/"
       p.items[0].notes[0].length.should == 3
     end
     it "obeys key signatures" do
-      p = parse_fragment "K:D\n[DFA]"
+      p = parse_value_fragment "K:D\n[DFA]"
       p.items[0].notes[1].pitch.height.should == 6      
     end
     it "obeys measure accidentals" do
-      p = parse_fragment "^F[DFA]|[DFA]"
+      p = parse_value_fragment "^F[DFA]|[DFA]"
       p.items[1].notes[1].pitch.height.should == 6      
       p.items[3].notes[1].pitch.height.should == 5      
     end
     it "creates measure accidentals" do
-      p = parse_fragment "[D^FA]F|F"
+      p = parse_value_fragment "[D^FA]F|F"
       p.items[1].pitch.height.should == 6      
       p.items[3].pitch.height.should == 5
     end
@@ -1514,15 +1514,15 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a chord symbol" do
     it "can be attached to a note" do
-      p = parse_fragment '"Am7"A2D2'
+      p = parse_value_fragment '"Am7"A2D2'
       p.items[0].chord_symbol.text.should == "Am7"
     end
     it "can include a bass note" do
-      p = parse_fragment '"C/E"G'
+      p = parse_value_fragment '"C/E"G'
       p.items[0].chord_symbol.text.should == "C/E"
     end
     it "can include an alternate chord" do
-      p = parse_fragment '"G(Em/G)"G'
+      p = parse_value_fragment '"G(Em/G)"G'
       p.items[0].chord_symbol.text.should == "G(Em/G)"
     end
     # TODO parse the chord symbols for note, type, bassnote etc
@@ -1537,24 +1537,24 @@ require 'spec/abc_standard/spec_helper'
 
   describe "an annotation" do
     it "can be placed above a note" do
-      p = parse_fragment '"^above"c'
+      p = parse_value_fragment '"^above"c'
       p.items[0].annotations[0].placement.should == :above
       p.items[0].annotations[0].text.should == "above"
     end
     it "can be placed below a note" do
-      p = parse_fragment '"_below"c'
+      p = parse_value_fragment '"_below"c'
       p.items[0].annotations[0].placement.should == :below
       p.items[0].annotations[0].text.should == "below"
     end
     it "can be placed to the left and right of a note" do
-      p = parse_fragment '"<(" ">)" c'
+      p = parse_value_fragment '"<(" ">)" c'
       p.items[0].annotations[0].placement.should == :left
       p.items[0].annotations[0].text.should == "("
       p.items[0].annotations[1].placement.should == :right
       p.items[0].annotations[1].text.should == ")"
     end
     it "can have unspecified placement" do
-      p = parse_fragment '"@wherever" c'
+      p = parse_value_fragment '"@wherever" c'
       p.items[0].annotations[0].placement.should == :unspecified
       p.items[0].annotations[0].text.should == "wherever"
     end

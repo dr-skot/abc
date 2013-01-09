@@ -7,32 +7,32 @@ require 'spec/abc_standard/spec_helper'
 
   describe "whitespace" do
     it "is ignored at the end of a header line" do
-      p = parse_fragment "T:Adeste Fideles     "
+      p = parse_value_fragment "T:Adeste Fideles     "
       p.title.should == "Adeste Fideles"
     end
     it "is ignored at the end of a music line" do
-      p = parse_fragment "abc\\     \nd"
+      p = parse_value_fragment "abc\\     \nd"
       p.notes[2].beam.should == :middle
     end
     it "can be spaces or tabs" do
-      p = parse_fragment "T:Adeste Fideles\t\t\t"
+      p = parse_value_fragment "T:Adeste Fideles\t\t\t"
       p.title.should == "Adeste Fideles"
     end
   end
 
   describe "a line ending" do
     it "can be unix-style (<LF>)" do
-      p = parse_fragment "T:Respect\nC:Otis Redding"
+      p = parse_value_fragment "T:Respect\nC:Otis Redding"
       p.title.should == "Respect"
       p.composer.should == "Otis Redding"
     end
     it "can be windows-style (<CR><LF>)" do
-      p = parse_fragment "T:Respect\r\nC:Otis Redding"
+      p = parse_value_fragment "T:Respect\r\nC:Otis Redding"
       p.title.should == "Respect"
       p.composer.should == "Otis Redding"
     end
     it "can be mac-style (<CR>)" do
-      p = parse_fragment "T:Respect\rC:Otis Redding"
+      p = parse_value_fragment "T:Respect\rC:Otis Redding"
       p.title.should == "Respect"
       p.composer.should == "Otis Redding"
     end
@@ -56,7 +56,7 @@ require 'spec/abc_standard/spec_helper'
   describe "a reserved character (# * ; ? @)" do
     it "is ignored as a note embellishment" do
       '#*;?@'.each_char do |char|
-        p = parse_fragment "#{char}a"
+        p = parse_value_fragment "#{char}a"
         p.elements.count.should == 2
         p.elements[0].is_a?(Note).should == true
         p.elements[0].pitch.note.should == "A"
@@ -69,7 +69,7 @@ require 'spec/abc_standard/spec_helper'
     end
     it "is ignored between note groups" do
       '#*;?@'.each_char do |char|
-        p = parse_fragment "a#{char}[ceg]"
+        p = parse_value_fragment "a#{char}[ceg]"
         p.elements.count.should == 3
         p.elements[0].is_a?(Note).should == true
         p.elements[1].is_a?(Chord).should == true
@@ -78,7 +78,7 @@ require 'spec/abc_standard/spec_helper'
     end
     it "is ignored between note embellishments" do
       '#*;?@'.each_char do |char|
-        p = parse_fragment('A {gege}#<#"Gm"#!p!#!trill!#u#"^annoted"#B'.gsub('#', char))
+        p = parse_value_fragment('A {gege}#<#"Gm"#!p!#!trill!#u#"^annoted"#B'.gsub('#', char))
         p.elements.count.should == 4
         (a = p.elements[0]).is_a?(Note).should == true
         p.elements[1].type.should == :beam_break
@@ -141,24 +141,24 @@ require 'spec/abc_standard/spec_helper'
 
   describe "a text string" do
     it "is what the value of a string field is" do
-      p = parse_fragment "T:Title"
+      p = parse_value_fragment "T:Title"
       p.title.is_a?(ABC::TextString).should == true
     end
     it "is what the value of an inline string field is" do
-      p = parse_fragment "[N:notation]abc"
+      p = parse_value_fragment "[N:notation]abc"
       p.items[0].value.is_a?(ABC::TextString).should == true
     end
     it "is what an annotation is" do
-      p = parse_fragment '"^an annotation"C'
+      p = parse_value_fragment '"^an annotation"C'
       p.notes[0].annotations[0].text.is_a?(ABC::TextString).should == true
     end
     it "is what free text is" do
-      p = parse "free text\n\nX:1\nT:T\nK:C"
+      p = parse_value "free text\n\nX:1\nT:T\nK:C"
       p.sections[0].text.is_a?(ABC::TextString).should == true
     end
     # TODO uh oh typeset text isn't working
     # it "is what typeset text is" do
-    #   p = parse '%%text typeset text\n\nX:1\nT:T\nK:C'
+    #   p = parse_value '%%text typeset text\n\nX:1\nT:T\nK:C'
     #   p.sections[0].text.is_a?(ABC::TextString).should == true
     # end
     it "interprets mnemonics" do

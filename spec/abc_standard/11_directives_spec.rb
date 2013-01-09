@@ -34,16 +34,16 @@ require 'spec/abc_standard/spec_helper'
 
 describe "a stylesheet directive" do
   it "is processed the same as an instruction field" do
-    p = parse_fragment "%%papersize A4"
+    p = parse_value_fragment "%%papersize A4"
     p.instructions['papersize'].should == 'A4'
   end
   it "is differentiated from instruction fields by the identifier '%'" do
-    p = parse_fragment "%%papersize A4"
+    p = parse_value_fragment "%%papersize A4"
     p.header.fields[0].type.should == :instruction
     p.header.fields[0].identifier.should == "%"
   end
   it "can appear inside a tune" do
-    p = parse_fragment "abc\n%%newpage\ndef"
+    p = parse_value_fragment "abc\n%%newpage\ndef"
     p.items[3].type.should == :instruction
     p.items[3].directive.should == "newpage"
   end
@@ -51,7 +51,7 @@ describe "a stylesheet directive" do
     fail_to_parse_fragment "abc %%newpage\ndef"
   end
   it "can be expressed in I: notation for inline use" do
-    p = parse_fragment "abc[I:newpage]def"
+    p = parse_value_fragment "abc[I:newpage]def"
     p.items[3].type.should == :instruction
     p.items[3].directive.should == "newpage"
   end
@@ -85,19 +85,19 @@ end
 
 describe "a score directive" do
   it "specifies which voices should be printed" do
-    p = parse_fragment "%%score V1 V3\n[V:V1]abc[V:V2]def[V:V3]gfe"
+    p = parse_value_fragment "%%score V1 V3\n[V:V1]abc[V:V2]def[V:V3]gfe"
     p.staves.count.should == 2
     p.staves[0].voices.should == ['V1']
     p.staves[1].voices.should == ['V3']
   end
   it "puts two voices on one staff with ()" do
-    p = parse_fragment "%%score (V1 V2) V3\n[V:V1]abc[V:V2]def[V:V3]gfe"
+    p = parse_value_fragment "%%score (V1 V2) V3\n[V:V1]abc[V:V2]def[V:V3]gfe"
     p.staves.count.should == 2
     p.staves[0].voices.should == ['V1', 'V2']
     p.staves[1].voices.should == ['V3']
   end
   it "can connect staves with curly braces {}" do
-    p = parse_fragment "%%score {RH LH}"
+    p = parse_value_fragment "%%score {RH LH}"
     p.staves.count.should == 2
     p.staves[0].start_brace.should == 1
     p.staves[0].end_brace.should == 0
@@ -105,7 +105,7 @@ describe "a score directive" do
     p.staves[1].end_brace.should == 1
   end
   it "can nest () inside {}" do
-    p = parse_fragment "%%score {RH (LH1 LH2)}"
+    p = parse_value_fragment "%%score {RH (LH1 LH2)}"
     p.staves.count.should == 2
     p.staves[0].voices.count.should == 1
     p.staves[1].voices.count.should == 2
@@ -115,7 +115,7 @@ describe "a score directive" do
     p.staves[1].end_brace.should == 1
   end
   it "can connect staves with brackets []" do
-    p = parse_fragment "%%score [S B]"
+    p = parse_value_fragment "%%score [S B]"
     p.staves.count.should == 2
     p.staves[0].start_bracket.should == 1
     p.staves[0].end_bracket.should == 0
@@ -123,7 +123,7 @@ describe "a score directive" do
     p.staves[1].end_bracket.should == 1
   end
   it "can nest curly braces inside brackets" do
-    p = parse_fragment "%%score [Solo {RH LH}]"
+    p = parse_value_fragment "%%score [Solo {RH LH}]"
     p.staves.count.should == 3
     p.staves[0].start_bracket.should == 1
     p.staves[0].end_bracket.should == 0
@@ -135,27 +135,27 @@ describe "a score directive" do
     p.staves[2].end_brace.should == 1
   end
   it "specifies continued bar lines with |" do
-    p = parse_fragment "%%score {RH LH}"
+    p = parse_value_fragment "%%score {RH LH}"
     p.staves[0].continue_bar_lines?.should == false
-    p = parse_fragment "%%score {RH | LH}"
+    p = parse_value_fragment "%%score {RH | LH}"
     p.staves[0].continue_bar_lines?.should == true
   end
   it "does not require spaces around |" do
-    p = parse_fragment "%%score RH|LH"
+    p = parse_value_fragment "%%score RH|LH"
     p.staves.count.should == 2
     p.staves[0].voices.should == ["RH"]
     p.staves[0].continue_bar_lines?.should == true
     p.staves[1].voices.should == ["LH"]
   end
   it "can specify floating voices" do
-    p = parse_fragment "%%score {RH | LH}"
+    p = parse_value_fragment "%%score {RH | LH}"
     p.staves[0].floaters.should == []
-    p = parse_fragment "%%score {RH *M| LH}"
+    p = parse_value_fragment "%%score {RH *M| LH}"
     p.staves[0].floaters.count.should == 1
     p.staves[0].floaters.should == ["M"]
   end
   it "can appear in the tune body as %%score" do
-    p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n%%score T B\n[V:T]def[V:B]def"
+    p = parse_value_fragment "%%score S A\n[V:S]abc[V:A]abc\n%%score T B\n[V:T]def[V:B]def"
     p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
     f = p.all_elements[9]
     f.is_a?(InstructionField).should == true
@@ -165,7 +165,7 @@ describe "a score directive" do
     f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
   end
   it "can appear in the tune body as %%staves" do
-    p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n%%staves T B\n[V:T]def[V:B]def"
+    p = parse_value_fragment "%%score S A\n[V:S]abc[V:A]abc\n%%staves T B\n[V:T]def[V:B]def"
     p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
     f = p.all_elements[9]
     f.is_a?(InstructionField).should == true
@@ -175,7 +175,7 @@ describe "a score directive" do
     f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
   end
   it "can appear in the tune body as I:score" do
-    p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\nI:score T B\n[V:T]def[V:B]def"
+    p = parse_value_fragment "%%score S A\n[V:S]abc[V:A]abc\nI:score T B\n[V:T]def[V:B]def"
     p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
     f = p.all_elements[9]
     f.is_a?(InstructionField).should == true
@@ -185,7 +185,7 @@ describe "a score directive" do
     f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
   end
   it "can appear in the tune body as I:staves" do
-    p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\nI:staves T B\n[V:T]def[V:B]def"
+    p = parse_value_fragment "%%score S A\n[V:S]abc[V:A]abc\nI:staves T B\n[V:T]def[V:B]def"
     p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
     f = p.all_elements[9]
     f.is_a?(InstructionField).should == true
@@ -195,7 +195,7 @@ describe "a score directive" do
     f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
   end
   it "can appear in an inline field as I:score" do
-    p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n[I:score T B]\n[V:T]def[V:B]def"
+    p = parse_value_fragment "%%score S A\n[V:S]abc[V:A]abc\n[I:score T B]\n[V:T]def[V:B]def"
     p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
     f = p.all_elements[9]
     f.is_a?(InstructionField).should == true
@@ -205,7 +205,7 @@ describe "a score directive" do
     f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
   end
   it "can appear in an inline field as I:staves" do
-    p = parse_fragment "%%score S A\n[V:S]abc[V:A]abc\n[I:staves T B]\n[V:T]def[V:B]def"
+    p = parse_value_fragment "%%score S A\n[V:S]abc[V:A]abc\n[I:staves T B]\n[V:T]def[V:B]def"
     p.staves.map { |s| s.voices }.flatten.join(' ').should == "S A"
     f = p.all_elements[9]
     f.is_a?(InstructionField).should == true
@@ -215,14 +215,14 @@ describe "a score directive" do
     f.value.map { |s| s.voices }.flatten.join(' ').should == "T B"
   end
   it "can be omitted, in which case each voice has its own staff" do
-    p = parse_fragment "[V:V1]abc[V:V2]abc[V:V3]ABC"
+    p = parse_value_fragment "[V:V1]abc[V:V2]abc[V:V3]ABC"
     p.staves.count.should == 3
     p.staves[0].voices.should == ["V1"]
     p.staves[1].voices.should == ["V2"]
     p.staves[2].voices.should == ["V3"]      
   end
   it "uses reverse bar line notation when the directive is 'staves'" do
-    p = parse_fragment "%%staves S A | T B"
+    p = parse_value_fragment "%%staves S A | T B"
     p.staves[0].continue_bar_lines?.should == true
     p.staves[1].continue_bar_lines?.should == false
     p.staves[2].continue_bar_lines?.should == true
@@ -256,25 +256,25 @@ end
 
 describe "an instrumentation (%%MIDI) directive" do
   it "can specify which instrument to use for a voice" do
-    p = parse_fragment "%%MIDI voice Tb instrument=59 bank=2 mute"
+    p = parse_value_fragment "%%MIDI voice Tb instrument=59 bank=2 mute"
     p.midi.voices['Tb'].instrument.should == 59
     p.midi.voices['Tb'].bank.should == 2
     p.midi.voices['Tb'].mute?.should == true
   end
   it "defaults to not mute" do
-    p = parse_fragment "%%MIDI voice Tb instrument=59 bank=2"
+    p = parse_value_fragment "%%MIDI voice Tb instrument=59 bank=2"
     p.midi.voices['Tb'].instrument.should == 59
     p.midi.voices['Tb'].bank.should == 2
     p.midi.voices['Tb'].mute?.should == false
   end
   it "defaults to bank 1" do
-    p = parse_fragment "%%MIDI voice Tb instrument=59"
+    p = parse_value_fragment "%%MIDI voice Tb instrument=59"
     p.midi.voices['Tb'].instrument.should == 59
     p.midi.voices['Tb'].bank.should == 1
     p.midi.voices['Tb'].mute?.should == false
   end
   it "can specify a voice instrument in the tune body" do
-    p = parse_fragment "K:C\nV:Rueckpos\n%%MIDI voice Rueckpos instrument=53 bank=2\nA3B"
+    p = parse_value_fragment "K:C\nV:Rueckpos\n%%MIDI voice Rueckpos instrument=53 bank=2\nA3B"
     p.items[1].is_a?(InstructionField).should == true
     p.items[1].directive.should == 'MIDI'
     p.items[1].subdirective.should == 'voice'
@@ -286,22 +286,22 @@ describe "an instrumentation (%%MIDI) directive" do
     midi.mute?.should == false
   end
   it "defaults to current voice if voice id omitted" do
-    p = parse_fragment "K:C\nV:Rueckpos\n%%MIDI voice instrument=53 bank=2\nA3B"
+    p = parse_value_fragment "K:C\nV:Rueckpos\n%%MIDI voice instrument=53 bank=2\nA3B"
     p.items[1].value.voice.should == "Rueckpos"
   end
   it "can appear without an instrument specifier, to mute or unmute the current voice" do
-    p = parse_fragment "K:C\nV:Rueckpos\n%%MIDI voice mute\nabc[I:MIDI voice]\n"
+    p = parse_value_fragment "K:C\nV:Rueckpos\n%%MIDI voice mute\nabc[I:MIDI voice]\n"
     p.items[1].value.voice.should == "Rueckpos"
     p.items[1].value.mute?.should == true
     p.items[5].value.voice.should == "Rueckpos"
     p.items[5].value.mute?.should == false
   end
   it "can specify an instrument to play the chord progression" do
-    p = parse_fragment "%%MIDI chordprog 20"
+    p = parse_value_fragment "%%MIDI chordprog 20"
     p.midi.chordprog.should == 20
   end
   it "can specify a chord progression instrument in the tune body" do
-    p = parse_fragment "K:C\n%%MIDI chordprog 20\nabc"
+    p = parse_value_fragment "K:C\n%%MIDI chordprog 20\nabc"
     p.items[0].is_a?(InstructionField).should == true
     p.items[0].directive.should == 'MIDI'
     p.items[0].subdirective.should == 'chordprog'
@@ -321,7 +321,7 @@ end
 
 describe "the propagate-accidentals directive" do
   it "can specify no propagation at all" do
-    p = parse_fragment "%%propagate-accidentals not\n_CCc|Cc"
+    p = parse_value_fragment "%%propagate-accidentals not\n_CCc|Cc"
     p.notes[0].pitch.height.should == -1
     p.notes[1].pitch.height.should == 0
     p.notes[2].pitch.height.should == 12
@@ -329,7 +329,7 @@ describe "the propagate-accidentals directive" do
     p.notes[4].pitch.height.should == 12
   end
   it "can specify propagation within octave only" do
-    p = parse_fragment "%%propagate-accidentals octave\n_CCc|Cc"
+    p = parse_value_fragment "%%propagate-accidentals octave\n_CCc|Cc"
     p.notes[0].pitch.height.should == -1
     p.notes[1].pitch.height.should == -1
     p.notes[2].pitch.height.should == 12
@@ -337,7 +337,7 @@ describe "the propagate-accidentals directive" do
     p.notes[4].pitch.height.should == 12
   end
   it "can specify propagation for all pitches" do
-    p = parse_fragment "%%propagate-accidentals pitch\n_CCc|Cc"
+    p = parse_value_fragment "%%propagate-accidentals pitch\n_CCc|Cc"
     p.notes[0].pitch.height.should == -1
     p.notes[1].pitch.height.should == -1
     p.notes[2].pitch.height.should == 11
@@ -366,38 +366,38 @@ end
 
 describe "a formatting directive" do
   it "can specify page height in points" do
-    p = parse_fragment "%%pageheight 792pt"
+    p = parse_value_fragment "%%pageheight 792pt"
     p.instructions['pageheight'].measure.should == 792
     p.instructions['pageheight'].unit.should == 'pt'
   end
   it "can specify page width in inches" do
-    p = parse_fragment "%%pagewidth 8.5 in"
+    p = parse_value_fragment "%%pagewidth 8.5 in"
     p.instructions['pagewidth'].measure.should == 8.5
     p.instructions['pagewidth'].unit.should == 'in'
   end
   it "can specify all four margins in various units" do
-    p = parse_fragment "%%topmargin 18pt"
+    p = parse_value_fragment "%%topmargin 18pt"
     p.instructions['topmargin'].measure.should == 18
     p.instructions['topmargin'].unit.should == 'pt'
-    p = parse_fragment "%%leftmargin 2. cm"
+    p = parse_value_fragment "%%leftmargin 2. cm"
     p.instructions['leftmargin'].measure.should == 2
     p.instructions['leftmargin'].unit.should == 'cm'
-    p = parse_fragment "%%rightmargin .6 in"
+    p = parse_value_fragment "%%rightmargin .6 in"
     p.instructions['rightmargin'].measure.should == 0.6
     p.instructions['rightmargin'].unit.should == 'in'
-    p = parse_fragment "%%botmargin 0.8 in"
+    p = parse_value_fragment "%%botmargin 0.8 in"
     p.instructions['botmargin'].measure.should == 0.8
     p.instructions['botmargin'].unit.should == 'in'
   end
   it "can specify indent" do
-    p = parse_fragment "%%indent 0.5in"
+    p = parse_value_fragment "%%indent 0.5in"
     p.instructions['indent'].measure.should == 0.5
     p.instructions['indent'].unit.should == 'in'
   end
   it "can specify landscape or portrait" do
-    p = parse_fragment "%%landscape true"
+    p = parse_value_fragment "%%landscape true"
     p.instructions['landscape'].should == true
-    p = parse_fragment "%%landscape false"
+    p = parse_value_fragment "%%landscape false"
     p.instructions['landscape'].should == false
   end
 end
@@ -428,20 +428,20 @@ end
 describe "a font directive" do  
   it "can specify a font for various elements" do
     %w{title subtitle composer parts tempo gchord annotation info text vocal words}.each do |name|
-      p = parse_fragment("%%#{name}font Bodoni 5")
+      p = parse_value_fragment("%%#{name}font Bodoni 5")
       p.instructions["#{name}font"].name.should == "Bodoni"
       p.instructions["#{name}font"].size.should == 5      
     end
   end
   it "can appear without a size parameter" do
-    p = parse_fragment "%%titlefont Garamond" do
+    p = parse_value_fragment "%%titlefont Garamond" do
       p.instructions["titlefont"].name.should == "Garamond"
       p.instructions["titlefont"].size.should == nil
     end
   end
   it 'can specify fonts for $1 $2 $3 $4' do
     (1..4).each do |i|
-      p = parse_fragment "%%setfont-#{i} GillSans 12"
+      p = parse_value_fragment "%%setfont-#{i} GillSans 12"
       p.instructions["setfont-#{i}"].name.should == "GillSans"
       p.instructions["setfont-#{i}"].size.should == 12
     end
@@ -475,43 +475,43 @@ end
 describe "a space directive" do
   it "can specify space measurements in various units" do
     %w{top title subtitle composer music parts vocal words text info}.each do |name|
-      p = parse_fragment "%%#{name}space 1.5in"
+      p = parse_value_fragment "%%#{name}space 1.5in"
       p.instructions["#{name}space"].measure.should == 1.5
       p.instructions["#{name}space"].unit.should == 'in'
     end
   end
   it "can specify staff sep measurements" do
     %w{staff syststaff}.each do |name|
-      p = parse_fragment "%%#{name}sep 3 cm"
+      p = parse_value_fragment "%%#{name}sep 3 cm"
       p.instructions["#{name}sep"].measure.should == 3
       p.instructions["#{name}sep"].unit.should == 'cm'
     end
   end
   it "can specify bars per staff as an integer" do
-    p = parse_fragment "%%barsperstaff 5"
+    p = parse_value_fragment "%%barsperstaff 5"
     p.instructions["barsperstaff"].should == 5
     fail_to_parse_fragment "%%barsperstaff 5.1"
   end
   it "can specify skip factors as floats" do
-    p = parse_fragment "%%parskipfac .5"
+    p = parse_value_fragment "%%parskipfac .5"
     p.instructions["parskipfac"].should == 0.5
-    p = parse_fragment "%%lineskipfac 0.5"
+    p = parse_value_fragment "%%lineskipfac 0.5"
     p.instructions["lineskipfac"].should == 0.5
   end
   it "can set the stretchstaff and stretchlast flags" do
-    p = parse_fragment "%%stretchstaff true"
+    p = parse_value_fragment "%%stretchstaff true"
     p.instructions["stretchstaff"].should == true
-    p = parse_fragment "%%stretchstaff false"
+    p = parse_value_fragment "%%stretchstaff false"
     p.instructions["stretchstaff"].should == false
-    p = parse_fragment "%%stretchlast true"
+    p = parse_value_fragment "%%stretchlast true"
     p.instructions["stretchlast"].should == true
-    p = parse_fragment "%%stretchlast false"
+    p = parse_value_fragment "%%stretchlast false"
     p.instructions["stretchlast"].should == false
   end
   it "can specify maxshrink and scale as floats" do
-    p = parse_fragment "%%maxshrink .8"
+    p = parse_value_fragment "%%maxshrink .8"
     p.instructions["maxshrink"].should == 0.8
-    p = parse_fragment "%%scale 0.75"
+    p = parse_value_fragment "%%scale 0.75"
     p.instructions["scale"].should == 0.75
   end
 end
@@ -527,7 +527,7 @@ end
 
 describe "a measure directive" do
   it "can specify the number of the first measure" do
-    p = parse_fragment "%%measurefirst 5\n|abc|def"
+    p = parse_value_fragment "%%measurefirst 5\n|abc|def"
     p.instructions['measurefirst'].should == 5
     p.bars[0].number.should == 5
     p.bars[1].number.should == 6
@@ -535,13 +535,13 @@ describe "a measure directive" do
     p.bar(6).should == p.bars[1]
   end
   it "can specify how frequently bar numbers appear" do
-    p = parse_fragment "%%barnumbers 3"
+    p = parse_value_fragment "%%barnumbers 3"
     p.instructions['barnumbers'].should == 3
-    p = parse_fragment "%%measurenb 3"
+    p = parse_value_fragment "%%measurenb 3"
     p.instructions['measurenb'].should == 3
   end
   it "can set the number of the current bar" do
-    p = parse_fragment "abc|\n%%setbarnb 5\ndef"
+    p = parse_value_fragment "abc|\n%%setbarnb 5\ndef"
     p.measures[0].number.should == 1
     p.measures[1].number.should == 5
     p.bar(1).should == p.bars[0]
@@ -549,7 +549,7 @@ describe "a measure directive" do
     p.bar(5).should == p.bars[1]
   end
   it "can set the number using an inline field" do
-    p = parse_fragment "abc|[I:setbarnb 5]def"
+    p = parse_value_fragment "abc|[I:setbarnb 5]def"
     p.bars[0].number.should == 1
     p.bars[1].number.should == 5
     p.measure(1).should == p.bars[0]
@@ -576,39 +576,39 @@ end
 
 describe "a text directive" do
   it "can appear in the tune body" do
-    p = parse_fragment "abc\n%%text Four score and 7 years ago\ndef"
+    p = parse_value_fragment "abc\n%%text Four score and 7 years ago\ndef"
     p.elements[4].class.should == TypesetText
     p.elements[4].lines.count.should == 1
     p.elements[4].lines[0].text.should == "Four score and 7 years ago"
   end
   it "can appear in the tune header" do
-    p = parse_fragment "M:C\n%%text Four score and 7 years ago\nK:C\nabc"
+    p = parse_value_fragment "M:C\n%%text Four score and 7 years ago\nK:C\nabc"
     p.header.fields[1].type.should == :typeset_text
     p.header.fields[1].lines.count.should == 1
     p.header.fields[1].lines[0].text.should == 'Four score and 7 years ago'
   end
   it "can appear in the file header" do
-    p = parse "H:history\n%%text Four score and 7 years ago\nC:Abe Lincoln\n\nX:1\nT:T\nK:C\nabc"
+    p = parse_value "H:history\n%%text Four score and 7 years ago\nC:Abe Lincoln\n\nX:1\nT:T\nK:C\nabc"
     p.header.fields[1].type.should == :typeset_text
     p.header.fields[1].lines.count.should == 1
     p.header.fields[1].lines[0].text.should == 'Four score and 7 years ago'
   end
   it "can appear in its own section" do
-    p = parse "H:history\n\n%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\nabc"
+    p = parse_value "H:history\n\n%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\nabc"
     p.sections.count.should == 2
     p.sections[0].class.should == TypesetText
     p.sections[0].lines.count.should == 1
     p.sections[0].lines[0].text.should == 'Four score and 7 years ago'
   end
   it "is recognized as a typeset text section when there is no file header" do
-    p = parse "%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\nabc"
+    p = parse_value "%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\nabc"
     p.sections.count.should == 2
     p.sections[0].class.should == TypesetText
     p.sections[0].lines.count.should == 1
     p.sections[0].lines[0].text.should == 'Four score and 7 years ago'
   end
   it "is combined with adjacent ones" do
-    p = parse "%%text Four score\n%%text and 7 years\n%%text ago\n\nX:1\nT:T\nK:C\n"
+    p = parse_value "%%text Four score\n%%text and 7 years\n%%text ago\n\nX:1\nT:T\nK:C\n"
     p.sections.count.should == 2
     p.sections[0].lines.count.should == 3
     p.sections[0].lines[0].text.should == 'Four score'
@@ -616,7 +616,7 @@ describe "a text directive" do
     p.sections[0].lines[2].text.should == 'ago'
   end
   it "is combined with adjacent ones" do
-    p = parse "%%text Four score\n%%text and 7 years\n%%text ago\n\nX:1\nT:T\nK:C\n"
+    p = parse_value "%%text Four score\n%%text and 7 years\n%%text ago\n\nX:1\nT:T\nK:C\n"
     p.sections.count.should == 2
     p.sections[0].lines.count.should == 3
     p.sections[0].lines[0].text.should == 'Four score'
@@ -624,22 +624,22 @@ describe "a text directive" do
     p.sections[0].lines[2].text.should == 'ago'
   end
   it "can center a line of text" do
-    p = parse "%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\n"
+    p = parse_value "%%text Four score and 7 years ago\n\nX:1\nT:T\nK:C\n"
     p.sections[0].lines[0].text.should == 'Four score and 7 years ago'
     p.sections[0].lines[0].alignment.should == :left
-    p = parse "%%center Four score and 7 years ago\n\nX:1\nT:T\nK:C\n"
+    p = parse_value "%%center Four score and 7 years ago\n\nX:1\nT:T\nK:C\n"
     p.sections[0].lines[0].text.should == 'Four score and 7 years ago'
     p.sections[0].lines[0].alignment.should == :center
   end
   it "can combine centered with normal text" do
-    p = parse "%%center Four score\n%%text and 7 years ago\n\nX:1\nT:T\nK:C\n"
+    p = parse_value "%%center Four score\n%%text and 7 years ago\n\nX:1\nT:T\nK:C\n"
     p.sections[0].lines[0].text.should == 'Four score'
     p.sections[0].lines[0].alignment.should == :center
     p.sections[0].lines[1].text.should == 'and 7 years ago'
     p.sections[0].lines[1].alignment.should == :left
   end
   it "can set several lines between %%begintext and %%endtext" do
-    p = parse "%%begintext\n%%Four score\n%%and 7 years\n%%ago\n%%endtext\n\nX:1\nT:T\nK:C"
+    p = parse_value "%%begintext\n%%Four score\n%%and 7 years\n%%ago\n%%endtext\n\nX:1\nT:T\nK:C"
     p.sections.count.should == 2
     p.sections[0].lines.count.should == 3
     p.sections[0].lines[0].text.should == 'Four score'
@@ -647,7 +647,7 @@ describe "a text directive" do
     p.sections[0].lines[2].text.should == 'ago'
   end
   it "can combine multiline with single line text" do
-    p = parse "%%begintext\n%%Four score\n%%and 7 years\n%%endtext\n%%text ago\n\nX:1\nT:T\nK:C"
+    p = parse_value "%%begintext\n%%Four score\n%%and 7 years\n%%endtext\n%%text ago\n\nX:1\nT:T\nK:C"
     p.sections.count.should == 2
     p.sections[0].lines.count.should == 3
     p.sections[0].lines[0].text.should == 'Four score'
@@ -676,27 +676,27 @@ end
 
 describe "a writefields directive" do
   it "if absent, implies the default writefields TCOPQwW" do
-    p = parse_fragment "abc"
+    p = parse_value_fragment "abc"
     'TCOPQwW'.each_char { |id| p.writefields(id).should == true }
     'BDFGHNRSXZ'.each_char { |id| p.writefields(id).should == false }
   end
   it "can add a field" do
-    p = parse_fragment "%%writefields X\nabc"
+    p = parse_value_fragment "%%writefields X\nabc"
     'TCOPQwWX'.each_char { |id| p.writefields(id).should == true }
     'BDFGHNRSZ'.each_char { |id| p.writefields(id).should == false }
   end
   it "can remove a field" do
-    p = parse_fragment "%%writefields O false\nabc"
+    p = parse_value_fragment "%%writefields O false\nabc"
     'TCPQwW'.each_char { |id| p.writefields(id).should == true }
     'BDFGHNORSXZ'.each_char { |id| p.writefields(id).should == false }
   end
   it "can add several fields at once" do
-    p = parse_fragment "%%writefields XBH\nabc"
+    p = parse_value_fragment "%%writefields XBH\nabc"
     'XBHTCOPQwW'.each_char { |id| p.writefields(id).should == true }
     'DFGNRSZ'.each_char { |id| p.writefields(id).should == false }
   end
   it "can add remove fields at once" do
-    p = parse_fragment "%%writefields OwW false\nabc"
+    p = parse_value_fragment "%%writefields OwW false\nabc"
     'TCPQ'.each_char { |id| p.writefields(id).should == true }
     'BDFGHNORSwWXZ'.each_char { |id| p.writefields(id).should == false }
   end
@@ -713,7 +713,7 @@ end
 
 describe "a separation directive" do
   it "is parsed as an instruction field with no value" do
-    p = parse_fragment "%%sep"
+    p = parse_value_fragment "%%sep"
     p.header.fields(:instruction).count.should == 1
     p.instructions['sep'].should == ''
   end
@@ -736,9 +736,9 @@ describe 'any directive listed under "miscellaneous directives"' do
   it "will have a boolean value" do
     d = %w{exprabove exprbelow graceslurs infoline oneperpage vocalabove freegchord printtempo}
     d.each do |name|
-      p = parse_fragment "%%#{name} true"
+      p = parse_value_fragment "%%#{name} true"
       p.instructions[name].should == true
-      p = parse_fragment "%%#{name} false"
+      p = parse_value_fragment "%%#{name} false"
       p.instructions[name].should == false
     end
   end
@@ -752,11 +752,11 @@ end
 
 describe "pseudo-comment support" do
   it "accepts arbitrary directives" do
-    p = parse_fragment "%%any_directive value"
+    p = parse_value_fragment "%%any_directive value"
     p.instructions['any_directive'].should == 'value'
   end
   it "accepts arbitrary app-specific directives" do
-    p = parse_fragment "%%any_app:any_directive value"
+    p = parse_value_fragment "%%any_app:any_directive value"
     p.instructions['any_app:any_directive'].should == 'value'
   end
   # TODO further parsing of app-specific directives?

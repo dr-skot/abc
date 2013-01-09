@@ -9,7 +9,7 @@ require 'spec/abc_standard/spec_helper'
 
   describe "W: (words, unaligned) field" do
     it "can appear in the tune header" do
-      p = parse_fragment "W: Da doo run run run"
+      p = parse_value_fragment "W: Da doo run run run"
       p.unaligned_lyrics.should == "Da doo run run run"
       p.words.should == "Da doo run run run"
     end
@@ -17,7 +17,7 @@ require 'spec/abc_standard/spec_helper'
       fail_to_parse "W:doo wop she bop\n\nX:1\nT:\nK:C"
     end
     it "can appear in the tune body" do
-      p = parse_fragment "abc\nW:doo wop she bop\ndef"
+      p = parse_value_fragment "abc\nW:doo wop she bop\ndef"
       p.items[3].value.should == "doo wop she bop"
     end
     it "can't appear as an inline field" do
@@ -77,7 +77,7 @@ require 'spec/abc_standard/spec_helper'
   describe "lyric alignment" do
 
     it "matches syllables to notes" do
-      p = parse_fragment "GCEA\nw:My dog has fleas"
+      p = parse_value_fragment "GCEA\nw:My dog has fleas"
       p.notes[0].lyric.text.should == "My"
       p.notes[1].lyric.text.should == "dog"
       p.notes[2].lyric.text.should == "has"
@@ -85,7 +85,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "starts at the first note of the voice if there is no previous w: field" do
-      p = parse_fragment "[V:1]G,G,G,A,[V:2]GCEA\nw:My dog has fleas"
+      p = parse_value_fragment "[V:1]G,G,G,A,[V:2]GCEA\nw:My dog has fleas"
       p.notes[0].lyric.should == nil
       p.notes[1].lyric.should == nil
       p.notes[2].lyric.should == nil
@@ -97,19 +97,19 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "starts at the first note after the notes aligned to the previous w: field" do
-      p = parse_fragment "G \nw:My dog has \nA\nw: fleas"
+      p = parse_value_fragment "G \nw:My dog has \nA\nw: fleas"
       p.notes[1].lyric.text.should == "fleas"
     end
 
     it "reaches back across linebreaks" do
-      p = parse_fragment "C D E F|\nG A B c|\nw: doh re mi fa sol la ti doh"
+      p = parse_value_fragment "C D E F|\nG A B c|\nw: doh re mi fa sol la ti doh"
       p.notes[0].lyric.text.should == "doh"
       p.notes[6].lyric.text.should == "ti"
       p.notes[7].lyric.text.should == "doh"
     end
 
     it "ignores excess syllables" do
-      p = parse_fragment "GC\nw:My dog has fleas\nEA2"
+      p = parse_value_fragment "GC\nw:My dog has fleas\nEA2"
       p.notes[0].lyric.text.should == "My"
       p.notes[1].lyric.text.should == "dog"
       p.notes[2].lyric.should == nil
@@ -117,7 +117,7 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "can explicitly blank lyrics from notes" do
-      p = parse_fragment "C D E F|\nw: doh re mi fa\nG G G G|\nw:\nF E F C|\nw: fa mi re doh"
+      p = parse_value_fragment "C D E F|\nw: doh re mi fa\nG G G G|\nw:\nF E F C|\nw: fa mi re doh"
       p.notes[3].lyric.text.should == "fa"
       p.notes[4].lyric.should == nil
       p.notes[7].lyric.should == nil
@@ -125,25 +125,25 @@ require 'spec/abc_standard/spec_helper'
     end
     
     it "does not match syllables to grace notes" do
-      p = parse_fragment "{gege}GCAE\nw:My dog has fleas"
+      p = parse_value_fragment "{gege}GCAE\nw:My dog has fleas"
       p.notes[0].grace_notes.notes[0].lyric.should == nil
       p.notes[0].lyric.text.should == "My"
     end
 
     it "does not match syllables to rests" do
-      p = parse_fragment "GCEz4A4\nw:My dog has fleas"
+      p = parse_value_fragment "GCEz4A4\nw:My dog has fleas"
       p.notes[3].lyric.should == nil
       p.notes[4].lyric.text.should == "fleas"
     end
 
     it "does not match syllables to spacers" do
-      p = parse_fragment "GCEyA4\nw:My dog has fleas"
+      p = parse_value_fragment "GCEyA4\nw:My dog has fleas"
       p.items[3].respond_to?(:lyric).should be_false
       p.items[4].lyric.text.should == "fleas"
     end
 
     it "aligns syllables separately to tied notes" do
-      p = parse_fragment "GCE-EA\nw:My dog has fleas"
+      p = parse_value_fragment "GCE-EA\nw:My dog has fleas"
       p.notes[3].tied_left.should == true
       p.notes[3].pitch.note.should == "E"
       p.notes[3].lyric.text.should == "fleas"
@@ -151,14 +151,14 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "aligns syllables separately to slurred notes" do
-      p = parse_fragment "GC(EA)g\nw:My dog has fleas"
+      p = parse_value_fragment "GC(EA)g\nw:My dog has fleas"
       p.notes[3].end_slur.should > 0
       p.notes[3].pitch.note.should == "A"
       p.notes[3].lyric.text.should == "fleas"
       p.notes[4].lyric.should == nil
     end
     it "can set one syllable to 2 notes" do
-      p = parse_fragment "FDB\nw:O_ say can you see"
+      p = parse_value_fragment "FDB\nw:O_ say can you see"
       p.notes[0].lyric.text.should == "O"
       p.notes[0].lyric.note_count.should == 2
       p.notes[1].lyric.should == nil
@@ -167,7 +167,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "can set one syllable to 3 notes" do
-      p = parse_fragment "FDdB\nw:O__ say can you see"
+      p = parse_value_fragment "FDdB\nw:O__ say can you see"
       p.notes[0].lyric.text.should == "O"
       p.notes[0].lyric.note_count.should == 3
       p.notes[1].lyric.should == nil
@@ -177,7 +177,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "splits syllables with a hyphen" do
-      p = parse_fragment "ccGEB\nw:gal-lant-ly stream-ing"
+      p = parse_value_fragment "ccGEB\nw:gal-lant-ly stream-ing"
       p.notes[0].lyric.text.should == "gal"
       p.notes[0].lyric.hyphen?.should == true
       p.notes[1].lyric.text.should == "lant"
@@ -187,7 +187,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "suppports hyphen and underscore together" do
-      p = parse_fragment "d2fedcb4\nw:ban-_ner yet_ wave"
+      p = parse_value_fragment "d2fedcb4\nw:ban-_ner yet_ wave"
       p.notes[0].lyric.text.should == "ban"
       p.notes[0].lyric.hyphen?.should == true
       p.notes[0].lyric.note_count.should == 2
@@ -196,7 +196,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "stretches syllables with double hyphen" do
-      p = parse_fragment "d2fedcb4\nw:ban--ner yet_ wave"
+      p = parse_value_fragment "d2fedcb4\nw:ban--ner yet_ wave"
       p.notes[0].lyric.text.should == "ban"
       p.notes[0].lyric.hyphen?.should == true
       p.notes[0].lyric.note_count.should == 2
@@ -205,7 +205,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "stretches syllables with space+hyphen" do
-      p = parse_fragment "d2fedcb4\nw:ban -ner yet_ wave"
+      p = parse_value_fragment "d2fedcb4\nw:ban -ner yet_ wave"
       p.notes[0].lyric.text.should == "ban"
       p.notes[0].lyric.hyphen?.should == true
       p.notes[0].lyric.note_count.should == 2
@@ -214,7 +214,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "skips notes with *" do
-      p = parse_fragment "acddc\nw:*see ** see"
+      p = parse_value_fragment "acddc\nw:*see ** see"
       p.notes[0].lyric.should == nil
       p.notes[1].lyric.text.should == "see"
       p.notes[1].lyric.note_count.should == 1
@@ -225,18 +225,18 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "preserves spaces with ~" do
-      p = parse_fragment "abc\nw:go~on get jiggy with it"
+      p = parse_value_fragment "abc\nw:go~on get jiggy with it"
       p.notes[0].lyric.text.should == "go on"
       p.notes[1].lyric.text.should == "get"
     end
 
     it "escapes hyphens with backslash" do
-      p = parse_fragment "abc\nw:x\\-ray"
+      p = parse_value_fragment "abc\nw:x\\-ray"
       p.notes[0].lyric.text.should == "x-ray"
     end
 
     it "advances to the next bar with |" do
-      p = parse_fragment "abc|def\nw:yeah|yeah"
+      p = parse_value_fragment "abc|def\nw:yeah|yeah"
       p.notes[0].lyric.text.should == "yeah"
       p.notes[0].lyric.note_count.should == 1
       p.notes[1].lyric.should == nil
@@ -245,7 +245,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "ignores dotted bar lines when skipping to next bar" do
-      p = parse_fragment("abc.|de|f\nw:hey|jude")
+      p = parse_value_fragment("abc.|de|f\nw:hey|jude")
       p.notes[0].lyric.text.should == "hey"
       p.notes[3].lyric.should == nil
       p.notes[5].lyric.text.should == "jude"
@@ -269,7 +269,7 @@ require 'spec/abc_standard/spec_helper'
   describe "lyric alignment" do
 
     it "sets different verses with consecutive w: lines" do
-      p = parse_fragment "GCEA\nw:My dog\nw:has fleas"
+      p = parse_value_fragment "GCEA\nw:My dog\nw:has fleas"
       p.notes[0].lyric.text.should == "My"
       p.notes[1].lyric.text.should == "dog"
       p.notes[0].lyrics[1].text.should == "has"
@@ -279,7 +279,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "verses reset to just after last w: line" do
-      p = parse_fragment "ABC\nw:A B C\nGCEA\nw:My dog\nw:has fleas"
+      p = parse_value_fragment "ABC\nw:A B C\nGCEA\nw:My dog\nw:has fleas"
       p.notes[0].lyric.text.should == "A"
       p.notes[0].lyrics.count.should == 1
       p.notes[3].lyric.text.should == "My"
@@ -287,7 +287,7 @@ require 'spec/abc_standard/spec_helper'
     end
 
     it "does not change verses when continuing the w: line with +:" do
-      p = parse_fragment "GCEA\nw:My dog\n+:has fleas"
+      p = parse_value_fragment "GCEA\nw:My dog\n+:has fleas"
       p.notes[0].lyric.text.should == "My"
       p.notes[1].lyric.text.should == "dog"
       p.notes[2].lyric.text.should == "has"

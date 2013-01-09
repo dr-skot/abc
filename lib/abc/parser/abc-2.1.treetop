@@ -868,16 +868,9 @@ rule key_field do
    rule pitch do
      accidental:accidental? note_letter octave_shift {
        def value
-         @value ||= Pitch.new(note, :octave => octave, :accidental => accidental)
-       end
-       def accidental
-         super.value if !super.empty?
-       end
-       def octave
-         note_letter.octave + octave_shift.value
-       end
-       def note
-         note_letter.text_value.upcase
+         @value ||= Pitch.new(note_letter.text_value.upcase, 
+                              :octave => note_letter.octave + octave_shift.value, 
+                              :accidental => accidental.value)
        end
      } 
    end
@@ -2111,7 +2104,11 @@ rule key_field do
   # a !pp! bc2/3 [K:C#] def "@this $2was difficult to parse?" y |
   
   rule ignored_char do
-    "#" / "*" / ";" / "?" / "@" # TODO: issue warning
+    ("#" / "*" / ";" / "?" / "@") { # TODO: issue warning
+      def warning
+        "ignored char: #{text_value}"
+      end
+    }
   end
 
   rule space_or_ignored do
@@ -2816,6 +2813,7 @@ rule key_field do
   end
 
   rule decoration_delimiter_both do
+    decoration_delimiter_bang / decoration_delimiter_plus
   end
 
   rule decoration_delimiter_default do

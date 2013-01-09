@@ -66,6 +66,10 @@ module Treetop
         end
       end
 
+      def warnings
+        w = respond_to?(:warning) ? [warning] : []
+        terminal? ? w : elements.inject(w) { |w, el| w.concat(el.warnings) }
+      end
 
       def values(*types)
         if types.count > 0
