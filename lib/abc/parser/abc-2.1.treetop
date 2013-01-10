@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 # based on
-# http://abc.sourceforge.net/standard/abc2-draft.html
 # http://abcnotation.com/wiki/abc:standard:v2.1
 
-# TODO free text
 grammar ABC do
   
   # 2.1 Abc file identification
@@ -13,7 +11,7 @@ grammar ABC do
   #   %abc-2.1
   # Version numbers of 2.1 or higher indicate that the abc file is to be interpreted strictly according to the corresponding abc standard; if the version number is missing, the file will be treated under loose interpretation. The version field may also be used to indicate abc versions for individual tunes.
   
-  ## TODO deal with this in preprocessor?
+  ## ^^ TODO handle this
 
 
   # 2.2 Abc file structure
@@ -22,10 +20,12 @@ grammar ABC do
   # An abc file with more than one tune in it is called an abc tunebook.
 
   rule abc_file do
-    # guarantee at least one tune section, and allow text sections anywhere
-    file_header_section? text_section* tune_section (tune_section / text_section)* <FileNode> {
+    file_header_section? tune_or_text_section* <FileNode> {
       def value
         @value ||= Tunebook.new(values)
+      end
+      def error
+        "tunebook must contain at least 1 tune" if value.tunes.count == 0
       end
     }
   end
@@ -34,14 +34,30 @@ grammar ABC do
     !(typeset_text_section) file_header end_of_section
   end
 
-  rule text_section do
-    typeset_text_section / (free_text end_of_section)
+  rule tune_or_text_section do
+    tune_section / text_section / invalid_section
   end
 
   rule tune_section do
     tune end_of_section
   end
   
+  rule text_section do
+    typeset_text_section / (free_text end_of_section)
+  end
+
+  rule invalid_section do
+    (!(end_of_line end_of_section) .)+ end_of_section {
+      def error
+        "invalid section"
+      end
+      def christen
+        "invalid!"
+      end
+    }
+  end
+  
+
 
   # 2.2.1 Abc tune
   # The tune header is composed of several information field lines, which are further discussed in information fields. The tune header should start with an X:(reference number) field followed by a T:(title) field and finish with a K:(key) field.

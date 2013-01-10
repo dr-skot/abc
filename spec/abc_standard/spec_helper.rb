@@ -19,7 +19,7 @@ end
 
 def fail_to_parse(input)
   p = parser.parse(input)
-  p.should == nil
+  (p == nil).should == true
   p
 end
 
@@ -36,7 +36,7 @@ end
 
 def fail_to_parse_fragment(input)
   p = parser.parse_fragment(input)
-  p.should == nil
+  (p == nil).should == true
   p
 end
 

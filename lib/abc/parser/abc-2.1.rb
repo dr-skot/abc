@@ -3,10 +3,8 @@
 
 # -*- coding: utf-8 -*-
 # based on
-# http://abc.sourceforge.net/standard/abc2-draft.html
 # http://abcnotation.com/wiki/abc:standard:v2.1
 
-# TODO free text
 module ABC
   include Treetop::Runtime
 
@@ -15,15 +13,14 @@ module ABC
   end
 
   module AbcFile0
-    def tune_section
-      elements[2]
-    end
-
   end
 
   module AbcFile1
     def value
       @value ||= Tunebook.new(values)
+    end
+    def error
+      "tunebook must contain at least 1 tune" if value.tunes.count == 0
     end
   end
 
@@ -49,7 +46,7 @@ module ABC
     if r1
       s3, i3 = [], index
       loop do
-        r4 = _nt_text_section
+        r4 = _nt_tune_or_text_section
         if r4
           s3 << r4
         else
@@ -58,35 +55,6 @@ module ABC
       end
       r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
       s0 << r3
-      if r3
-        r5 = _nt_tune_section
-        s0 << r5
-        if r5
-          s6, i6 = [], index
-          loop do
-            i7 = index
-            r8 = _nt_tune_section
-            if r8
-              r7 = r8
-            else
-              r9 = _nt_text_section
-              if r9
-                r7 = r9
-              else
-                @index = i7
-                r7 = nil
-              end
-            end
-            if r7
-              s6 << r7
-            else
-              break
-            end
-          end
-          r6 = instantiate_node(SyntaxNode,input, i6...index, s6)
-          s0 << r6
-        end
-      end
     end
     if s0.last
       r0 = instantiate_node(FileNode,input, i0...index, s0)
@@ -154,6 +122,82 @@ module ABC
     r0
   end
 
+  def _nt_tune_or_text_section
+    start_index = index
+    if node_cache[:tune_or_text_section].has_key?(index)
+      cached = node_cache[:tune_or_text_section][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    r1 = _nt_tune_section
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_text_section
+      if r2
+        r0 = r2
+      else
+        r3 = _nt_invalid_section
+        if r3
+          r0 = r3
+        else
+          @index = i0
+          r0 = nil
+        end
+      end
+    end
+
+    node_cache[:tune_or_text_section][start_index] = r0
+
+    r0
+  end
+
+  module TuneSection0
+    def tune
+      elements[0]
+    end
+
+    def end_of_section
+      elements[1]
+    end
+  end
+
+  def _nt_tune_section
+    start_index = index
+    if node_cache[:tune_section].has_key?(index)
+      cached = node_cache[:tune_section][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    r1 = _nt_tune
+    s0 << r1
+    if r1
+      r2 = _nt_end_of_section
+      s0 << r2
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(TuneSection0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:tune_section][start_index] = r0
+
+    r0
+  end
+
   module TextSection0
     def free_text
       elements[0]
@@ -207,8 +251,8 @@ module ABC
     r0
   end
 
-  module TuneSection0
-    def tune
+  module InvalidSection0
+    def end_of_line
       elements[0]
     end
 
@@ -217,10 +261,28 @@ module ABC
     end
   end
 
-  def _nt_tune_section
+  module InvalidSection1
+  end
+
+  module InvalidSection2
+    def end_of_section
+      elements[1]
+    end
+  end
+
+  module InvalidSection3
+    def error
+      "invalid section"
+    end
+    def christen
+      "invalid!"
+    end
+  end
+
+  def _nt_invalid_section
     start_index = index
-    if node_cache[:tune_section].has_key?(index)
-      cached = node_cache[:tune_section][index]
+    if node_cache[:invalid_section].has_key?(index)
+      cached = node_cache[:invalid_section][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -229,21 +291,75 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_tune
+    s1, i1 = [], index
+    loop do
+      i2, s2 = index, []
+      i3 = index
+      i4, s4 = index, []
+      r5 = _nt_end_of_line
+      s4 << r5
+      if r5
+        r6 = _nt_end_of_section
+        s4 << r6
+      end
+      if s4.last
+        r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
+        r4.extend(InvalidSection0)
+      else
+        @index = i4
+        r4 = nil
+      end
+      if r4
+        r3 = nil
+      else
+        @index = i3
+        r3 = instantiate_node(SyntaxNode,input, index...index)
+      end
+      s2 << r3
+      if r3
+        if index < input_length
+          r7 = instantiate_node(SyntaxNode,input, index...(index + 1))
+          @index += 1
+        else
+          terminal_parse_failure("any character")
+          r7 = nil
+        end
+        s2 << r7
+      end
+      if s2.last
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+        r2.extend(InvalidSection1)
+      else
+        @index = i2
+        r2 = nil
+      end
+      if r2
+        s1 << r2
+      else
+        break
+      end
+    end
+    if s1.empty?
+      @index = i1
+      r1 = nil
+    else
+      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+    end
     s0 << r1
     if r1
-      r2 = _nt_end_of_section
-      s0 << r2
+      r8 = _nt_end_of_section
+      s0 << r8
     end
     if s0.last
       r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TuneSection0)
+      r0.extend(InvalidSection2)
+      r0.extend(InvalidSection3)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:tune_section][start_index] = r0
+    node_cache[:invalid_section][start_index] = r0
 
     r0
   end

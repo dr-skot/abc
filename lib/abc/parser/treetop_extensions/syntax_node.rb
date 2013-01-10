@@ -14,10 +14,23 @@ end
 module Treetop
   module Runtime
 
+    class Error
+      attr_reader :message
+      def initialize(syntax_node, message)
+        @node = syntax_node
+        @message = syntax_node.error
+      end
+      def input
+        @input ||= @node.input[@node.interval]
+      end
+    end
+
     class SyntaxNode
       attr_accessor :parser
       attr_reader :inclusion
       attr_accessor :with_macros
+      attr_reader :error
+      attr_reader :warning
 
       # default value is nil
       def value
@@ -39,7 +52,6 @@ module Treetop
       def item_values
         items.map { |it| it.value }
       end
-
       
       def christen_once
         christen if !@christened and respond_to? :christen
@@ -67,8 +79,13 @@ module Treetop
       end
 
       def warnings
-        w = respond_to?(:warning) ? [warning] : []
+        w = warning ? [warning] : []
         terminal? ? w : elements.inject(w) { |w, el| w.concat(el.warnings) }
+      end
+
+      def errors
+        err = error ? [Error.new(self, error)] : []
+        terminal? ? err : elements.inject(err) { |err, el| err.concat(el.errors) }
       end
 
       def values(*types)

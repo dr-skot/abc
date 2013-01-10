@@ -2,19 +2,22 @@ $LOAD_PATH.unshift File.expand_path('.')
 require 'spec/abc_standard/spec_helper'
 
 # 2.2 Abc file structure
-# An abc fil  e consists of one or more abc tune transcriptions, optionally interspersed with free text and typeset text annotations. It may optionally start with a file header to set up default values for processing the file.
+# An abc file consists of one or more abc tune transcriptions, optionally interspersed with free text and typeset text annotations. It may optionally start with a file header to set up default values for processing the file.
 # The file header, abc tunes and text annotations are separated from each other by empty lines (also known as blank lines).
 # An abc file with more than one tune in it is called an abc tunebook.
 
 describe "file structure" do
   it "must include at least 1 tune" do
-    fail_to_parse "C:Madonna"
-    fail_to_parse "free text"
-    fail_to_parse "%%text typeset text"
+    p = parse "C:Madonna"
+    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p = parse "free text"
+    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p = parse "%%text typeset text"
+    p.errors[0].message.should == "tunebook must contain at least 1 tune"
   end
   it "can consist of a single tune with no body" do
     p = parse_value "X:1\nT:Title\nK:C"
-    p.is_a?(ABC::Tunebook).should == true
+    p.is_a?(Tunebook).should == true
     p.tunes.count.should == 1
   end
   it "can consist of a single tune with a body" do
@@ -41,8 +44,9 @@ describe "file structure" do
     p.sections[0].is_a?(TypesetText).should == true
   end
   it "doesn't confuse a bad header with free text" do
-    fail_to_parse "X:1\n\nX:2\nT:T\nK:C"
-    # TODO return a legible warning in such cases
+    p = parse "X:1\n\nX:2\nT:T\nK:C"
+    p.errors[0].message.should == "invalid section"
+    p.errors[0].input.should == "X:1\n\n"
   end
 end
 
@@ -90,8 +94,9 @@ end
 
 describe "file header" do
   it "cannot appear between tunes" do
-    fail_to_parse "X:1\nT:Like a Prayer\nK:Dm\n\nC:Madonna\nZ:me\n\nX:2\nT:Like A Virgin\nK:F"
-    # TODO generate a legible warning in this case
+    p = parse "X:1\nT:Like a Prayer\nK:Dm\n\nC:Madonna\nZ:me\n\nX:2\nT:Like A Virgin\nK:F"
+    p.errors[0].message.should == "invalid section"
+    p.errors[0].input.should == "C:Madonna\nZ:me\n\n"
   end
   it "can contain comment lines" do
     p = parse_value "C:Madonna\n%comment\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
@@ -109,10 +114,15 @@ describe "file header" do
     p.transcription.should == "me"
   end
   it "cannot contain tune fields" do
-    fail_to_parse "C:Madonna\nZ:me\nK:C\n\nX:1\nT:Like a Prayer\nK:Dm" # note: K field is only allowed in tune headers
+    p = parse "C:Madonna\nZ:me\nK:C\n\nX:1\nT:Like a Prayer\nK:Dm" 
+    # K field is only allowed in tune headers
+    p.errors[0].message.should == "invalid section"
+    p.errors[0].input.should == "C:Madonna\nZ:me\nK:C\n\n"
   end 
   it "cannot be followed by music" do
-    fail_to_parse "C:Madonna\nZ:me\nabc\n\nX:1\nT:Like a Prayer\nK:Dm" 
+    p = parse "C:Madonna\nZ:me\nabc\n\nX:1\nT:Like a Prayer\nK:Dm" 
+    p.errors[0].message.should == "invalid section"
+    p.errors[0].input.should == "C:Madonna\nZ:me\nabc\n\n"
   end
   it "passes its settings to all tunes" do
     p = parse_value "C:Madonna\nZ:me\n\nX:1\nT:T\nK:Dm\nabc" 
@@ -193,7 +203,10 @@ describe "a comment" do
     p.items[3].pitch.note.should == "D"
   end
   it "does not introduce an empty line" do
-    fail_to_parse "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
+    p = parse "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
+    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p.errors[1].message.should == "invalid section"
+    p.errors[1].input.should == "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
   end
 end
 
