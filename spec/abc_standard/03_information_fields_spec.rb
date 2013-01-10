@@ -65,12 +65,14 @@ end
 
 describe "X: (reference number) field" do
   it "cannot be repeated" do
-    fail_to_parse "X:1\nT:Title\nX:2\nK:C"
-    # TODO error message
+    p = parse "X:1\nT:Title\nX:2\nK:C"
+    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p.errors[1].message.should == "invalid section"
   end
   it "must be an integer" do
-    fail_to_parse "X:one\nT:Title\nK:C"
-    # TODO error message
+    p = parse "X:one\nT:Title\nK:C"
+    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p.errors[1].message.should == "invalid section"
   end
   it "can be empty" do
     p = parse_value "X:\nT:Title\nK:C"

@@ -3,27 +3,28 @@ $LOAD_PATH.unshift File.expand_path('.')
 require 'spec/abc_standard/spec_helper'
 
 
-  # 5. Lyrics
-  # The W: information field (uppercase W) can be used for lyrics to be printed separately below the tune.
-  # The w: information field (lowercase w) in the tune body, supplies lyrics to be aligned syllable by syllable with previous notes of the current voice.
+# 5. Lyrics
+# The W: information field (uppercase W) can be used for lyrics to be printed separately below the tune.
+# The w: information field (lowercase w) in the tune body, supplies lyrics to be aligned syllable by syllable with previous notes of the current voice.
 
-  describe "W: (words, unaligned) field" do
-    it "can appear in the tune header" do
-      p = parse_value_fragment "W: Da doo run run run"
-      p.unaligned_lyrics.should == "Da doo run run run"
-      p.words.should == "Da doo run run run"
-    end
-    it "can't appear in the file header" do
-      fail_to_parse "W:doo wop she bop\n\nX:1\nT:\nK:C"
-    end
-    it "can appear in the tune body" do
-      p = parse_value_fragment "abc\nW:doo wop she bop\ndef"
-      p.items[3].value.should == "doo wop she bop"
-    end
-    it "can't appear as an inline field" do
-      fail_to_parse_fragment "abc[W:doo wop she bop]def"
-    end
+describe "W: (words, unaligned) field" do
+  it "can appear in the tune header" do
+    p = parse_value_fragment "W: Da doo run run run"
+    p.unaligned_lyrics.should == "Da doo run run run"
+    p.words.should == "Da doo run run run"
   end
+  it "can't appear in the file header" do
+    p = parse "W:doo wop she bop\n\nX:1\nT:\nK:C"
+    p.errors[0].message.should == "invalid section"
+  end
+  it "can appear in the tune body" do
+    p = parse_value_fragment "abc\nW:doo wop she bop\ndef"
+    p.items[3].value.should == "doo wop she bop"
+  end
+  it "can't appear as an inline field" do
+    fail_to_parse_fragment "abc[W:doo wop she bop]def"
+  end
+end
 
 
   # 5.1 Alignment
