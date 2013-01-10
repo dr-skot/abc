@@ -66,13 +66,11 @@ end
 describe "X: (reference number) field" do
   it "cannot be repeated" do
     p = parse "X:1\nT:Title\nX:2\nK:C"
-    p.errors[0].message.should == "tunebook must contain at least 1 tune"
-    p.errors[1].message.should == "invalid section"
+    p.errors[0].message.should == "duplicate refnum (X:) field"
   end
   it "must be an integer" do
     p = parse "X:one\nT:Title\nK:C"
-    p.errors[0].message.should == "tunebook must contain at least 1 tune"
-    p.errors[1].message.should == "invalid section"
+    p.errors[0].message.should == "refnum (X:) field must be a positive integer"
   end
   it "can be empty" do
     p = parse_value "X:\nT:Title\nK:C"

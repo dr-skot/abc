@@ -45,8 +45,8 @@ describe "file structure" do
   end
   it "doesn't confuse a bad header with free text" do
     p = parse "X:1\n\nX:2\nT:T\nK:C"
-    p.errors[0].message.should == "invalid section"
-    p.errors[0].input.should == "X:1\n\n"
+    p.errors[0].input.should == "X:1\n"
+    p.errors[0].message.should == "a title (T:) field must follow refnum (X:) field in tune header"
   end
 end
 
@@ -95,8 +95,8 @@ end
 describe "file header" do
   it "cannot appear between tunes" do
     p = parse "X:1\nT:Like a Prayer\nK:Dm\n\nC:Madonna\nZ:me\n\nX:2\nT:Like A Virgin\nK:F"
-    p.errors[0].message.should == "invalid section"
-    p.errors[0].input.should == "C:Madonna\nZ:me\n\n"
+    p.errors[0].message.should == "tune header must start with a refnum (X:) field"
+    p.errors[0].input.should == "C:Madonna\nZ:me\n"
   end
   it "can contain comment lines" do
     p = parse_value "C:Madonna\n%comment\nZ:me\n\nX:1\nT:Like a Prayer\nK:Dm"
@@ -115,14 +115,14 @@ describe "file header" do
   end
   it "cannot contain tune fields" do
     p = parse "C:Madonna\nZ:me\nK:C\n\nX:1\nT:Like a Prayer\nK:Dm" 
-    # K field is only allowed in tune headers
-    p.errors[0].message.should == "invalid section"
-    p.errors[0].input.should == "C:Madonna\nZ:me\nK:C\n\n"
+    # (K field is only allowed in tune headers)
+    p.errors[0].input.should == "C:Madonna\nZ:me\nK:C\n"
+    p.errors[0].message.should == "invalid file header"
   end 
   it "cannot be followed by music" do
     p = parse "C:Madonna\nZ:me\nabc\n\nX:1\nT:Like a Prayer\nK:Dm" 
-    p.errors[0].message.should == "invalid section"
-    p.errors[0].input.should == "C:Madonna\nZ:me\nabc\n\n"
+    p.errors[0].message.should == "tune header must start with a refnum (X:) field"
+    p.errors[0].input.should == "C:Madonna\nZ:me\n"
   end
   it "passes its settings to all tunes" do
     p = parse_value "C:Madonna\nZ:me\n\nX:1\nT:T\nK:Dm\nabc" 

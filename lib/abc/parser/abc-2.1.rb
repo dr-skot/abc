@@ -134,11 +134,11 @@ module ABC
     end
 
     i0 = index
-    r1 = _nt_tune_section
+    r1 = _nt_text_section
     if r1
       r0 = r1
     else
-      r2 = _nt_text_section
+      r2 = _nt_tune_section
       if r2
         r0 = r2
       else
@@ -273,9 +273,6 @@ module ABC
   module InvalidSection3
     def error
       "invalid section"
-    end
-    def christen
-      "invalid!"
     end
   end
 
@@ -427,7 +424,37 @@ module ABC
     r0
   end
 
-  module TuneHeader0
+  def _nt_tune_header
+    start_index = index
+    if node_cache[:tune_header].has_key?(index)
+      cached = node_cache[:tune_header][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    r1 = _nt_valid_tune_header
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_invalid_tune_header
+      if r2
+        r0 = r2
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
+
+    node_cache[:tune_header][start_index] = r0
+
+    r0
+  end
+
+  module ValidTuneHeader0
     def refnum_field_line
       elements[0]
     end
@@ -441,10 +468,10 @@ module ABC
     end
   end
 
-  def _nt_tune_header
+  def _nt_valid_tune_header
     start_index = index
-    if node_cache[:tune_header].has_key?(index)
-      cached = node_cache[:tune_header][index]
+    if node_cache[:valid_tune_header].has_key?(index)
+      cached = node_cache[:valid_tune_header][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -478,35 +505,65 @@ module ABC
     end
     if s0.last
       r0 = instantiate_node(HeaderNode,input, i0...index, s0)
-      r0.extend(TuneHeader0)
+      r0.extend(ValidTuneHeader0)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:tune_header][start_index] = r0
+    node_cache[:valid_tune_header][start_index] = r0
+
+    r0
+  end
+
+  module InvalidTuneHeader0
+    def error
+      if value.fields[0].type != :refnum
+        "tune header must start with a refnum (X:) field"
+      elsif !value.fields[1] || value.fields[1].type != :title
+        "a title (T:) field must follow refnum (X:) field in tune header"
+      elsif value.fields.select { |f| f.type == :refnum }.count > 1
+        "duplicate refnum (X:) field"
+      else
+        "invalid tune header"
+      end
+    end
+  end
+
+  def _nt_invalid_tune_header
+    start_index = index
+    if node_cache[:invalid_tune_header].has_key?(index)
+      cached = node_cache[:invalid_tune_header][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    s0, i0 = [], index
+    loop do
+      r1 = _nt_field_line
+      if r1
+        s0 << r1
+      else
+        break
+      end
+    end
+    if s0.empty?
+      @index = i0
+      r0 = nil
+    else
+      r0 = instantiate_node(HeaderNode,input, i0...index, s0)
+      r0.extend(InvalidTuneHeader0)
+    end
+
+    node_cache[:invalid_tune_header][start_index] = r0
 
     r0
   end
 
   module FileHeader0
-    def file_header_field
-      elements[0]
-    end
-
-    def line_ender
-      elements[1]
-    end
-  end
-
-  module FileHeader1
-  end
-
-  module FileHeader2
-    def christen
-      super
-      parser.globals[:file_header] = self.value
-    end
   end
 
   def _nt_file_header
@@ -533,22 +590,160 @@ module ABC
     r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
     s0 << r1
     if r1
+      i3 = index
+      r4 = _nt_valid_file_header
+      if r4
+        r3 = r4
+      else
+        r5 = _nt_invalid_file_header
+        if r5
+          r3 = r5
+        else
+          @index = i3
+          r3 = nil
+        end
+      end
+      s0 << r3
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(FileHeader0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:file_header][start_index] = r0
+
+    r0
+  end
+
+  module ValidFileHeader0
+    def file_header_field
+      elements[0]
+    end
+
+    def line_ender
+      elements[1]
+    end
+  end
+
+  module ValidFileHeader1
+  end
+
+  module ValidFileHeader2
+    def christen
+      super
+      parser.globals[:file_header] = self.value
+    end
+  end
+
+  def _nt_valid_file_header
+    start_index = index
+    if node_cache[:valid_file_header].has_key?(index)
+      cached = node_cache[:valid_file_header][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    s1, i1 = [], index
+    loop do
+      i2, s2 = index, []
+      r3 = _nt_file_header_field
+      s2 << r3
+      if r3
+        r4 = _nt_line_ender
+        s2 << r4
+      end
+      if s2.last
+        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
+        r2.extend(ValidFileHeader0)
+      else
+        @index = i2
+        r2 = nil
+      end
+      if r2
+        s1 << r2
+      else
+        break
+      end
+    end
+    if s1.empty?
+      @index = i1
+      r1 = nil
+    else
+      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+    end
+    s0 << r1
+    if r1
+      i5 = index
+      r6 = _nt_end_of_section
+      if r6
+        @index = i5
+        r5 = instantiate_node(SyntaxNode,input, index...index)
+      else
+        r5 = nil
+      end
+      s0 << r5
+    end
+    if s0.last
+      r0 = instantiate_node(HeaderNode,input, i0...index, s0)
+      r0.extend(ValidFileHeader1)
+      r0.extend(ValidFileHeader2)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:valid_file_header][start_index] = r0
+
+    r0
+  end
+
+  module InvalidFileHeader0
+  end
+
+  module InvalidFileHeader1
+    def error
+      "invalid file header"
+    end
+  end
+
+  def _nt_invalid_file_header
+    start_index = index
+    if node_cache[:invalid_file_header].has_key?(index)
+      cached = node_cache[:invalid_file_header][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    i1 = index
+    if has_terminal?('X:', false, index)
+      r2 = instantiate_node(SyntaxNode,input, index...(index + 2))
+      @index += 2
+    else
+      terminal_parse_failure('X:')
+      r2 = nil
+    end
+    if r2
+      r1 = nil
+    else
+      @index = i1
+      r1 = instantiate_node(SyntaxNode,input, index...index)
+    end
+    s0 << r1
+    if r1
       s3, i3 = [], index
       loop do
-        i4, s4 = index, []
-        r5 = _nt_file_header_field
-        s4 << r5
-        if r5
-          r6 = _nt_line_ender
-          s4 << r6
-        end
-        if s4.last
-          r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
-          r4.extend(FileHeader0)
-        else
-          @index = i4
-          r4 = nil
-        end
+        r4 = _nt_field_line
         if r4
           s3 << r4
         else
@@ -565,14 +760,14 @@ module ABC
     end
     if s0.last
       r0 = instantiate_node(HeaderNode,input, i0...index, s0)
-      r0.extend(FileHeader1)
-      r0.extend(FileHeader2)
+      r0.extend(InvalidFileHeader0)
+      r0.extend(InvalidFileHeader1)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:file_header][start_index] = r0
+    node_cache[:invalid_file_header][start_index] = r0
 
     r0
   end
@@ -1887,6 +2082,47 @@ module ABC
     r0
   end
 
+  module FieldLine0
+    def any_field
+      elements[0]
+    end
+
+    def line_ender
+      elements[1]
+    end
+  end
+
+  def _nt_field_line
+    start_index = index
+    if node_cache[:field_line].has_key?(index)
+      cached = node_cache[:field_line][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    r1 = _nt_any_field
+    s0 << r1
+    if r1
+      r2 = _nt_line_ender
+      s0 << r2
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(FieldLine0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:field_line][start_index] = r0
+
+    r0
+  end
+
   def _nt_special_field
     start_index = index
     if node_cache[:special_field].has_key?(index)
@@ -2916,6 +3152,9 @@ module ABC
     end
   end
 
+  module RefnumField1
+  end
+
   def _nt_refnum_field
     start_index = index
     if node_cache[:refnum_field].has_key?(index)
@@ -2937,7 +3176,19 @@ module ABC
     end
     s0 << r1
     if r1
-      r3 = _nt_posint
+      i3 = index
+      r4 = _nt_posint
+      if r4
+        r3 = r4
+      else
+        r5 = _nt_invalid_refnum
+        if r5
+          r3 = r5
+        else
+          @index = i3
+          r3 = nil
+        end
+      end
       if r3
         r2 = r3
       else
@@ -2948,12 +3199,38 @@ module ABC
     if s0.last
       r0 = instantiate_node(FieldNode,input, i0...index, s0)
       r0.extend(RefnumField0)
+      r0.extend(RefnumField1)
     else
       @index = i0
       r0 = nil
     end
 
     node_cache[:refnum_field][start_index] = r0
+
+    r0
+  end
+
+  module InvalidRefnum0
+    def error
+      "refnum (X:) field must be a positive integer"
+    end
+  end
+
+  def _nt_invalid_refnum
+    start_index = index
+    if node_cache[:invalid_refnum].has_key?(index)
+      cached = node_cache[:invalid_refnum][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    r0 = _nt_string_field_content
+    r0.extend(InvalidRefnum0)
+
+    node_cache[:invalid_refnum][start_index] = r0
 
     r0
   end

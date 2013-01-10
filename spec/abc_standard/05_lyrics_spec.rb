@@ -15,7 +15,7 @@ describe "W: (words, unaligned) field" do
   end
   it "can't appear in the file header" do
     p = parse "W:doo wop she bop\n\nX:1\nT:\nK:C"
-    p.errors[0].message.should == "invalid section"
+    p.errors[0].message.should == "invalid file header"
   end
   it "can appear in the tune body" do
     p = parse_value_fragment "abc\nW:doo wop she bop\ndef"

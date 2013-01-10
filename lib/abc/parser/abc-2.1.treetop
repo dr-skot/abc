@@ -35,7 +35,7 @@ grammar ABC do
   end
 
   rule tune_or_text_section do
-    tune_section / text_section / invalid_section
+    text_section / tune_section / invalid_section
   end
 
   rule tune_section do
@@ -50,9 +50,6 @@ grammar ABC do
     (!(end_of_line end_of_section) .)+ end_of_section {
       def error
         "invalid section"
-      end
-      def christen
-        "invalid!"
       end
     }
   end
@@ -74,7 +71,27 @@ grammar ABC do
   end
 
   rule tune_header do
+    valid_tune_header / invalid_tune_header
+  end
+
+  rule valid_tune_header do
     refnum_field_line title_field_line tune_header_line* key_field_line <HeaderNode>
+  end
+
+  rule invalid_tune_header do
+    field_line+ <HeaderNode> {
+      def error
+        if value.fields[0].type != :refnum
+          "tune header must start with a refnum (X:) field"
+        elsif !value.fields[1] || value.fields[1].type != :title
+          "a title (T:) field must follow refnum (X:) field in tune header"
+        elsif value.fields.select { |f| f.type == :refnum }.count > 1
+          "duplicate refnum (X:) field"
+        else
+          "invalid tune header"
+        end
+      end
+    }
   end
 
 
@@ -86,13 +103,27 @@ grammar ABC do
 
   # TODO allow stylesheet directives
   rule file_header do
-    comment_line* (file_header_field line_ender)+ <HeaderNode> {
+    comment_line* (valid_file_header / invalid_file_header)
+  end
+
+  rule valid_file_header do
+    (file_header_field line_ender)+ &end_of_section <HeaderNode> {
       def christen
         super
         parser.globals[:file_header] = self.value
       end
     }
   end
+
+  rule invalid_file_header do
+    !'X:' field_line+ <HeaderNode> {
+      def error
+        # TODO get more specific; which field in the header makes it invalid?
+        "invalid file header"
+      end
+    }
+  end
+
 
 
   # 2.2.3 Free text and typeset text
@@ -286,6 +317,10 @@ grammar ABC do
     typeset_text / special_field / string_field
   end
 
+  rule field_line do
+    any_field line_ender
+  end
+
   rule special_field do
     remarks_field / instruction_field / key_field / unit_note_length_field / meter_field / macro_field / tempo_field / symbol_line / user_defined_field / lyrics_line / refnum_field
   end
@@ -376,7 +411,16 @@ grammar ABC do
   # Recommendation for developers: Software which writes abc files is recommended to offer users the possibility to manage X: field numbering automatically. GUI applications may even hide the X: field from users although they should always allow the user access to the raw abc file.
 
   rule refnum_field do
-    'X:' content:posint? <FieldNode>
+    'X:' content:(posint / invalid_refnum)? <FieldNode> {
+    }
+  end
+
+  rule invalid_refnum do
+    string_field_content {
+      def error
+        "refnum (X:) field must be a positive integer"
+      end
+    }
   end
 
   rule refnum_field_line do
