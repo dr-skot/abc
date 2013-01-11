@@ -1,3 +1,4 @@
+require 'abc/parser/i18n'
 
 require "treetop"
 require "abc/parser/abc-2.1.rb"

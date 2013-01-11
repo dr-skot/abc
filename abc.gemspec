@@ -9,7 +9,7 @@ Gem::Specification.new do |gem|
   gem.homepage      = ""
 
   gem.add_dependency "treetop"
-  gem.add_dependency "polyglot"
+  gem.add_dependency "i18n"
 
   gem.add_development_dependency "rspec"
 

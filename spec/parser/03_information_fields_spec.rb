@@ -66,7 +66,7 @@ end
 describe "X: (reference number) field" do
   it "cannot be repeated" do
     p = parse "X:1\nT:Title\nX:2\nK:C"
-    p.errors[0].message.should == "duplicate refnum (X:) field"
+    p.errors[0].message.should == I18n.t('abc.errors.duplicate', item:"refnum (X:) field")
   end
   it "must be an integer" do
     p = parse "X:one\nT:Title\nK:C"
