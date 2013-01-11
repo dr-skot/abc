@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 $LOAD_PATH.unshift File.expand_path('.')
-require 'spec/abc_standard/spec_helper'
+require 'spec/parser/spec_helper'
 
 
 # 12. Dialects, strict / loose interpretation and backwards compatibility

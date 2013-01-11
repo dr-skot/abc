@@ -11,6 +11,9 @@ class Object
   end
 end
 
+
+# TODO move abc-specific stuff to ABCNode
+
 module Treetop
   module Runtime
 
@@ -118,6 +121,10 @@ module Treetop
       # returns the first child (of type, optionally) or nil if no children
       def child(type=nil)
         c = children(type)[0]
+      end
+
+      def t(*args)
+        I18n.t(*args)
       end
 
     end

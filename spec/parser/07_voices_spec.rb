@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 $LOAD_PATH.unshift File.expand_path('.')
-require 'spec/abc_standard/spec_helper'
+require 'spec/parser/spec_helper'
 
   # 7. Multiple voices
   # VOLATILE: Multi-voice music is under active review, with discussion about control voices and interaction between P:, V: and T: fields. It is intended that the syntax will be finalised in abc 2.2.

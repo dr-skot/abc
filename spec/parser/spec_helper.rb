@@ -1,6 +1,14 @@
 require 'abc/parser'
 include ABC
 
+def t(*args)
+  I18n.t(*args)
+end
+
+def field(type, identifier)
+  t('abc.field_type', type:type, identifier:identifier)
+end
+
 def parser
   @parser = ABC::Parser.new
 end

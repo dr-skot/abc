@@ -20,7 +20,7 @@ module ABC
       @value ||= Tunebook.new(values)
     end
     def error
-      "tunebook must contain at least 1 tune" if value.tunes.count == 0
+      t('abc.errors.no_tunes') if value.tunes.count == 0
     end
   end
 
@@ -519,11 +519,11 @@ module ABC
   module InvalidTuneHeader0
     def error
       if value.fields[0].type != :refnum
-        "tune header must start with a refnum (X:) field"
+        t('abc.errors.first_not_refnum')
       elsif !value.fields[1] || value.fields[1].type != :title
-        "a title (T:) field must follow refnum (X:) field in tune header"
+        t('abc.errors.second_not_title')
       elsif value.fields.select { |f| f.type == :refnum }.count > 1
-        "duplicate refnum (X:) field"
+        t('abc.errors.duplicate_refnum')
       else
         "invalid tune header"
       end
@@ -709,6 +709,7 @@ module ABC
 
   module InvalidFileHeader1
     def error
+      # TODO get more specific; which field in the header makes it invalid?
       "invalid file header"
     end
   end

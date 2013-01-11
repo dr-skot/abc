@@ -11,11 +11,11 @@ describe 'translation' do
     I18n.t('abc.hello').should == "Hello, ABC!"
   end
   it 'works with variables' do
-    I18n.t('abc.field', type:'refnum', identifier:'X').should == "refnum (X:) field"
+    I18n.t('abc.field_type', type:'refnum', identifier:'X').should == "refnum (X:) field"
   end
   it 'can be nested' do
     I18n.t('abc.errors.duplicate', 
-           item:I18n.t('abc.field', type:'refnum', identifier:'X')
+           item:I18n.t('abc.field_type', type:'refnum', identifier:'X')
            ).should == "duplicate refnum (X:) field"
   end
 end

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 $LOAD_PATH.unshift File.expand_path('.')
-require 'spec/abc_standard/spec_helper'
+require 'spec/parser/spec_helper'
 
 # 11. Stylesheet directives and pseudo-comments
 # 11.0 Introduction to directives

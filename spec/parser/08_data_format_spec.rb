@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 $LOAD_PATH.unshift File.expand_path('.')
-require 'spec/abc_standard/spec_helper'
+require 'spec/parser/spec_helper'
 
   # 8. Abc data format
   # Each line in the file may end with white-space which will be ignored. For the purpose of this standard, ASCII tab and space characters are equivalent and are both included in the term 'white-space'. Applications must be able to interpret end-of-line markers in Unix (<LF>), Windows/DOS (<CR><LF>), and Macintosh style (<CR>) correctly.

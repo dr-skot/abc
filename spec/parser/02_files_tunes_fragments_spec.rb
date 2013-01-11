@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift File.expand_path('.')
-require 'spec/abc_standard/spec_helper'
+require 'spec/parser/spec_helper'
 
 # 2.2 Abc file structure
 # An abc file consists of one or more abc tune transcriptions, optionally interspersed with free text and typeset text annotations. It may optionally start with a file header to set up default values for processing the file.
@@ -9,11 +9,11 @@ require 'spec/abc_standard/spec_helper'
 describe "file structure" do
   it "must include at least 1 tune" do
     p = parse "C:Madonna"
-    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p.errors[0].message.should == t('abc.errors.no_tunes')
     p = parse "free text"
-    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p.errors[0].message.should == t('abc.errors.no_tunes')
     p = parse "%%text typeset text"
-    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p.errors[0].message.should == t('abc.errors.no_tunes')
   end
   it "can consist of a single tune with no body" do
     p = parse_value "X:1\nT:Title\nK:C"
@@ -46,7 +46,7 @@ describe "file structure" do
   it "doesn't confuse a bad header with free text" do
     p = parse "X:1\n\nX:2\nT:T\nK:C"
     p.errors[0].input.should == "X:1\n"
-    p.errors[0].message.should == "a title (T:) field must follow refnum (X:) field in tune header"
+    p.errors[0].message.should == t('abc.errors.second_not_title')
   end
 end
 
@@ -95,7 +95,7 @@ end
 describe "file header" do
   it "cannot appear between tunes" do
     p = parse "X:1\nT:Like a Prayer\nK:Dm\n\nC:Madonna\nZ:me\n\nX:2\nT:Like A Virgin\nK:F"
-    p.errors[0].message.should == "tune header must start with a refnum (X:) field"
+    p.errors[0].message.should == t('abc.errors.first_not_refnum')
     p.errors[0].input.should == "C:Madonna\nZ:me\n"
   end
   it "can contain comment lines" do
@@ -121,7 +121,7 @@ describe "file header" do
   end 
   it "cannot be followed by music" do
     p = parse "C:Madonna\nZ:me\nabc\n\nX:1\nT:Like a Prayer\nK:Dm" 
-    p.errors[0].message.should == "tune header must start with a refnum (X:) field"
+    p.errors[0].message.should == t('abc.errors.first_not_refnum')
     p.errors[0].input.should == "C:Madonna\nZ:me\n"
   end
   it "passes its settings to all tunes" do
@@ -204,7 +204,7 @@ describe "a comment" do
   end
   it "does not introduce an empty line" do
     p = parse "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
-    p.errors[0].message.should == "tunebook must contain at least 1 tune"
+    p.errors[0].message.should == t('abc.errors.no_tunes')
     p.errors[1].message.should == "invalid section"
     p.errors[1].input.should == "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
   end

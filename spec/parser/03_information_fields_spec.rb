@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 $LOAD_PATH.unshift File.expand_path('.')
-require 'spec/abc_standard/spec_helper'
+require 'spec/parser/spec_helper'
+
 
 # 3. Information fields
 # Any line beginning with a letter in the range A-Z or a-z and immediately followed by a colon (:) is an information field. Information fields are used to notate things such as composer, meter, etc. In fact anything that isn't music.
@@ -66,11 +67,11 @@ end
 describe "X: (reference number) field" do
   it "cannot be repeated" do
     p = parse "X:1\nT:Title\nX:2\nK:C"
-    p.errors[0].message.should == I18n.t('abc.errors.duplicate', item:"refnum (X:) field")
+    p.errors[0].message.should == t('abc.errors.duplicate_refnum')
   end
   it "must be an integer" do
     p = parse "X:one\nT:Title\nK:C"
-    p.errors[0].message.should == "refnum (X:) field must be a positive integer"
+    p.errors[0].message.should == t('abc.errors.posint_required', item:field('refnum', 'X'))
   end
   it "can be empty" do
     p = parse_value "X:\nT:Title\nK:C"

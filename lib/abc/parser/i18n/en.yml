@@ -2,6 +2,12 @@ en:
   hello_world: "Hello, World!"
   abc:
     hello: Hello, ABC!
-    field: "%{type} (%{identifier}:) field"
+    field: field
+    field_type: "%{type} (%{identifier}:) field"
     errors:
       duplicate: "duplicate %{item}"
+      posint_required: "%{item} must be a positive integer"
+      no_tunes: "no tunes found"
+      first_not_refnum: "tune header must start with a refnum (X:) field"
+      duplicate_refnum: "duplicate refnum (X:) field"
+      second_not_title: "a title (T:) field must follow the refnum (X:) field"
