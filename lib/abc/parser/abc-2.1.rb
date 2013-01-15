@@ -2259,48 +2259,53 @@ module ABC
     if r1
       r0 = r1
     else
-      r2 = _nt_instruction_field
+      r2 = _nt_typeset_text
       if r2
         r0 = r2
       else
-        r3 = _nt_key_field
+        r3 = _nt_instruction_field
         if r3
           r0 = r3
         else
-          r4 = _nt_unit_note_length_field
+          r4 = _nt_key_field
           if r4
             r0 = r4
           else
-            r5 = _nt_meter_field
+            r5 = _nt_unit_note_length_field
             if r5
               r0 = r5
             else
-              r6 = _nt_macro_field
+              r6 = _nt_meter_field
               if r6
                 r0 = r6
               else
-                r7 = _nt_tempo_field
+                r7 = _nt_macro_field
                 if r7
                   r0 = r7
                 else
-                  r8 = _nt_symbol_line
+                  r8 = _nt_tempo_field
                   if r8
                     r0 = r8
                   else
-                    r9 = _nt_user_defined_field
+                    r9 = _nt_symbol_line
                     if r9
                       r0 = r9
                     else
-                      r10 = _nt_lyrics_line
+                      r10 = _nt_user_defined_field
                       if r10
                         r0 = r10
                       else
-                        r11 = _nt_refnum_field
+                        r11 = _nt_lyrics_line
                         if r11
                           r0 = r11
                         else
-                          @index = i0
-                          r0 = nil
+                          r12 = _nt_refnum_field
+                          if r12
+                            r0 = r12
+                          else
+                            @index = i0
+                            r0 = nil
+                          end
                         end
                       end
                     end
@@ -5862,7 +5867,7 @@ module ABC
   end
 
   module GeneralInstructionField0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[0]
     end
 
@@ -5896,7 +5901,7 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
       r2 = _nt_directive
@@ -5925,10 +5930,10 @@ module ABC
     r0
   end
 
-  def _nt_instruction_field_identifier
+  def _nt_instruction_field_id
     start_index = index
-    if node_cache[:instruction_field_identifier].has_key?(index)
-      cached = node_cache[:instruction_field_identifier][index]
+    if node_cache[:instruction_field_id].has_key?(index)
+      cached = node_cache[:instruction_field_id][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -5962,7 +5967,7 @@ module ABC
       end
     end
 
-    node_cache[:instruction_field_identifier][start_index] = r0
+    node_cache[:instruction_field_id][start_index] = r0
 
     r0
   end
@@ -6218,7 +6223,7 @@ module ABC
   end
 
   module GeneralInlineInstructionField0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[1]
     end
 
@@ -6259,7 +6264,7 @@ module ABC
     end
     s0 << r1
     if r1
-      r3 = _nt_instruction_field_identifier
+      r3 = _nt_instruction_field_id
       s0 << r3
       if r3
         r4 = _nt_directive
@@ -6348,7 +6353,7 @@ module ABC
   end
 
   module TuneHeaderInstructionFieldExcludes0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[0]
     end
 
@@ -6366,7 +6371,7 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
       if has_terminal?('abc-charset', false, index)
@@ -6403,7 +6408,7 @@ module ABC
   end
 
   module TuneBodyInstructionFieldExcludes0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[0]
     end
 
@@ -6421,7 +6426,7 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
       i2 = index
@@ -12220,7 +12225,7 @@ module ABC
   end
 
   module StavesField0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[0]
     end
 
@@ -12252,7 +12257,7 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
       i2 = index
@@ -13122,7 +13127,7 @@ module ABC
   end
 
   module MidiField0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[0]
     end
 
@@ -13150,7 +13155,7 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
       if has_terminal?('MIDI', false, index)
@@ -13645,7 +13650,7 @@ module ABC
   end
 
   module FormattingField0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[0]
     end
 
@@ -13673,7 +13678,7 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
       r2 = _nt_formatting_predicate
@@ -15738,7 +15743,7 @@ module ABC
   end
 
   module WritefieldsField0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[0]
     end
 
@@ -15765,7 +15770,7 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
       if has_terminal?('writefields', false, index)
@@ -17337,7 +17342,7 @@ module ABC
   end
 
   module IncludeField0
-    def instruction_field_identifier
+    def instruction_field_id
       elements[0]
     end
 
@@ -17367,7 +17372,7 @@ module ABC
     end
 
     i0, s0 = index, []
-    r1 = _nt_instruction_field_identifier
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
       if has_terminal?("abc-include", false, index)

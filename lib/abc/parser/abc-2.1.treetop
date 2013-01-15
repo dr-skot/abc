@@ -347,7 +347,8 @@ grammar ABC do
   end
 
   rule special_field do
-    remarks_field / instruction_field / key_field / unit_note_length_field / meter_field / 
+    remarks_field / typeset_text / instruction_field / key_field / unit_note_length_field / 
+      meter_field / 
       macro_field / tempo_field / symbol_line / user_defined_field / lyrics_line / refnum_field
   end
 
@@ -870,7 +871,7 @@ grammar ABC do
   end
 
   rule general_instruction_field do
-    instruction_field_identifier directive content:instruction_content? <FieldNode> {
+    instruction_field_id directive content:instruction_content? <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], directive.text_value, content.value || '')
       end
@@ -880,7 +881,7 @@ grammar ABC do
     }
   end
 
-  rule instruction_field_identifier do
+  rule instruction_field_id do
     # for %% see below: 11. Stylesheet directives and pseudo-comments
     'I:' / '%%'
   end
@@ -911,7 +912,7 @@ grammar ABC do
   
   rule general_inline_instruction_field do
     !tune_body_instruction_field_excludes 
-    instruction_field_identifier directive content:inline_instruction_content? <FieldNode> {
+    instruction_field_id directive content:inline_instruction_content? <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
       end
@@ -927,11 +928,11 @@ grammar ABC do
   end
 
   rule tune_header_instruction_field_excludes do
-    instruction_field_identifier ('abc-charset') !directive_chars
+    instruction_field_id ('abc-charset') !directive_chars
   end
 
   rule tune_body_instruction_field_excludes do
-    instruction_field_identifier
+    instruction_field_id
     ('abc-charset' / 'abc-include' / 'abc-version' / 'linebreak') !directive_chars
   end
 
@@ -2438,7 +2439,7 @@ grammar ABC do
   # Both %%score and %%staves directives accept the same parameters, but measure bar indications work the opposite way. Therefore, %%staves [S|A|T|B] is equivalent to %%score [S A T B] and means that continued bar lines are not drawn between the associated staves, while %%staves [S A T B] is equivalent to %%score [S|A|T|B] and means that they are drawn.
 
   rule staves_field do
-    instruction_field_identifier 
+    instruction_field_id 
     directive:('score'/'staves') field_space+ staves <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], 'staves', 
@@ -2543,7 +2544,7 @@ grammar ABC do
   # %%MIDI chordprog 20 % Church organ
 
   rule midi_field do
-    instruction_field_identifier 'MIDI' field_space+ midi_directive <FieldNode> {
+    instruction_field_id 'MIDI' field_space+ midi_directive <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], 'MIDI', midi_directive.value,
                                         :subdirective => midi_directive.directive.text_value)
@@ -2622,7 +2623,7 @@ grammar ABC do
 # %%landscape        <logical>
 
   rule formatting_field do
-    instruction_field_identifier pred:formatting_predicate <FieldNode> {
+    instruction_field_id pred:formatting_predicate <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], pred.directive.text_value, 
                                         pred.parameter.value)
@@ -2863,7 +2864,7 @@ grammar ABC do
 # See further information about directives for more details of the 2.0 alternatives.
   
   rule writefields_field do
-    instruction_field_identifier 'writefields' space+ writefields <FieldNode> {
+    instruction_field_id 'writefields' space+ writefields <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], 'writefields', writefields.value)
       end
@@ -3105,7 +3106,7 @@ grammar ABC do
   end
 
   rule include_field do
-    instruction_field_identifier "abc-include" field_space+ content:string_field_content {
+    instruction_field_id "abc-include" field_space+ content:string_field_content {
       def value
         @value ||= InstructionField.new(text_value[0], 'abc-include', content.value)
       end
