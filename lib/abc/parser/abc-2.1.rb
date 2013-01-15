@@ -704,9 +704,19 @@ module ABC
   end
 
   module InvalidFileHeader0
+    def generic_field
+      elements[0]
+    end
+
+    def line_ender
+      elements[1]
+    end
   end
 
   module InvalidFileHeader1
+  end
+
+  module InvalidFileHeader2
     def error
       # TODO get more specific; which field in the header makes it invalid?
       "invalid file header"
@@ -743,7 +753,20 @@ module ABC
     if r1
       s3, i3 = [], index
       loop do
-        r4 = _nt_field_line
+        i4, s4 = index, []
+        r5 = _nt_generic_field
+        s4 << r5
+        if r5
+          r6 = _nt_line_ender
+          s4 << r6
+        end
+        if s4.last
+          r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
+          r4.extend(InvalidFileHeader0)
+        else
+          @index = i4
+          r4 = nil
+        end
         if r4
           s3 << r4
         else
@@ -760,8 +783,8 @@ module ABC
     end
     if s0.last
       r0 = instantiate_node(HeaderNode,input, i0...index, s0)
-      r0.extend(InvalidFileHeader0)
       r0.extend(InvalidFileHeader1)
+      r0.extend(InvalidFileHeader2)
     else
       @index = i0
       r0 = nil
@@ -1566,7 +1589,7 @@ module ABC
   end
 
   module RemarksField0
-    def string_field_content
+    def generic_field_content
       elements[1]
     end
   end
@@ -1592,7 +1615,7 @@ module ABC
     end
     s0 << r1
     if r1
-      r2 = _nt_string_field_content
+      r2 = _nt_generic_field_content
       s0 << r2
     end
     if s0.last
@@ -1650,7 +1673,7 @@ module ABC
   end
 
   module InlineRemarksField0
-    def inline_string_field_content
+    def generic_inline_field_content
       elements[1]
     end
   end
@@ -1676,7 +1699,7 @@ module ABC
     end
     s0 << r1
     if r1
-      r2 = _nt_inline_string_field_content
+      r2 = _nt_generic_inline_field_content
       s0 << r2
     end
     if s0.last
@@ -2259,53 +2282,48 @@ module ABC
     if r1
       r0 = r1
     else
-      r2 = _nt_typeset_text
+      r2 = _nt_instruction_field
       if r2
         r0 = r2
       else
-        r3 = _nt_instruction_field
+        r3 = _nt_key_field
         if r3
           r0 = r3
         else
-          r4 = _nt_key_field
+          r4 = _nt_unit_note_length_field
           if r4
             r0 = r4
           else
-            r5 = _nt_unit_note_length_field
+            r5 = _nt_meter_field
             if r5
               r0 = r5
             else
-              r6 = _nt_meter_field
+              r6 = _nt_macro_field
               if r6
                 r0 = r6
               else
-                r7 = _nt_macro_field
+                r7 = _nt_tempo_field
                 if r7
                   r0 = r7
                 else
-                  r8 = _nt_tempo_field
+                  r8 = _nt_symbol_line
                   if r8
                     r0 = r8
                   else
-                    r9 = _nt_symbol_line
+                    r9 = _nt_user_defined_field
                     if r9
                       r0 = r9
                     else
-                      r10 = _nt_user_defined_field
+                      r10 = _nt_lyrics_line
                       if r10
                         r0 = r10
                       else
-                        r11 = _nt_lyrics_line
+                        r11 = _nt_refnum_field
                         if r11
                           r0 = r11
                         else
-                          r12 = _nt_refnum_field
-                          if r12
-                            r0 = r12
-                          else
-                            @index = i0
-                            r0 = nil
-                          end
+                          @index = i0
+                          r0 = nil
                         end
                       end
                     end
@@ -2323,16 +2341,16 @@ module ABC
     r0
   end
 
-  module StringField20
+  module StringField0
     def generic_field
       elements[1]
     end
   end
 
-  def _nt_string_field2
+  def _nt_string_field
     start_index = index
-    if node_cache[:string_field2].has_key?(index)
-      cached = node_cache[:string_field2][index]
+    if node_cache[:string_field].has_key?(index)
+      cached = node_cache[:string_field][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -2356,13 +2374,13 @@ module ABC
     end
     if s0.last
       r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(StringField20)
+      r0.extend(StringField0)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:string_field2][start_index] = r0
+    node_cache[:string_field][start_index] = r0
 
     r0
   end
@@ -2430,20 +2448,25 @@ module ABC
     end
 
     i0 = index
-    r1 = _nt_special_field
+    r1 = _nt_typeset_text
     if r1
       r0 = r1
     else
-      r2 = _nt_string_field2
+      r2 = _nt_special_field
       if r2
         r0 = r2
       else
-        r3 = _nt_unrecognized_field
+        r3 = _nt_string_field
         if r3
           r0 = r3
         else
-          @index = i0
-          r0 = nil
+          r4 = _nt_unrecognized_field
+          if r4
+            r0 = r4
+          else
+            @index = i0
+            r0 = nil
+          end
         end
       end
     end
@@ -2503,286 +2526,10 @@ module ABC
     r0
   end
 
-  def _nt_any_field
+  def _nt_disallowed_file_header_fields
     start_index = index
-    if node_cache[:any_field].has_key?(index)
-      cached = node_cache[:any_field][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0 = index
-    r1 = _nt_typeset_text
-    if r1
-      r0 = r1
-    else
-      r2 = _nt_special_field
-      if r2
-        r0 = r2
-      else
-        r3 = _nt_string_field
-        if r3
-          r0 = r3
-        else
-          @index = i0
-          r0 = nil
-        end
-      end
-    end
-
-    node_cache[:any_field][start_index] = r0
-
-    r0
-  end
-
-  module FieldLine0
-    def any_field
-      elements[0]
-    end
-
-    def line_ender
-      elements[1]
-    end
-  end
-
-  def _nt_field_line
-    start_index = index
-    if node_cache[:field_line].has_key?(index)
-      cached = node_cache[:field_line][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    r1 = _nt_any_field
-    s0 << r1
-    if r1
-      r2 = _nt_line_ender
-      s0 << r2
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(FieldLine0)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:field_line][start_index] = r0
-
-    r0
-  end
-
-  module StringField0
-    def content
-      elements[4]
-    end
-  end
-
-  def _nt_string_field
-    start_index = index
-    if node_cache[:string_field].has_key?(index)
-      cached = node_cache[:string_field][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    i1 = index
-    r2 = _nt_special_field_id
-    if r2
-      r1 = nil
-    else
-      @index = i1
-      r1 = instantiate_node(SyntaxNode,input, index...index)
-    end
-    s0 << r1
-    if r1
-      if has_terminal?('\G[A-Za-z]', true, index)
-        r3 = true
-        @index += 1
-      else
-        r3 = nil
-      end
-      s0 << r3
-      if r3
-        if has_terminal?(':', false, index)
-          r4 = instantiate_node(SyntaxNode,input, index...(index + 1))
-          @index += 1
-        else
-          terminal_parse_failure(':')
-          r4 = nil
-        end
-        s0 << r4
-        if r4
-          s5, i5 = [], index
-          loop do
-            r6 = _nt_field_space
-            if r6
-              s5 << r6
-            else
-              break
-            end
-          end
-          r5 = instantiate_node(SyntaxNode,input, i5...index, s5)
-          s0 << r5
-          if r5
-            r7 = _nt_string_field_content
-            s0 << r7
-          end
-        end
-      end
-    end
-    if s0.last
-      r0 = instantiate_node(FieldNode,input, i0...index, s0)
-      r0.extend(StringField0)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:string_field][start_index] = r0
-
-    r0
-  end
-
-  module StringFieldContent0
-  end
-
-  module StringFieldContent1
-    def line_ender
-      elements[0]
-    end
-
-    def content
-      elements[2]
-    end
-  end
-
-  module StringFieldContent2
-    def start
-      elements[0]
-    end
-
-    def extra
-      elements[1]
-    end
-  end
-
-  module StringFieldContent3
-    def value
-      TextString.new(start.text_value + (extra.empty? ? '' : ' ' + extra.content.value))
-    end
-  end
-
-  def _nt_string_field_content
-    start_index = index
-    if node_cache[:string_field_content].has_key?(index)
-      cached = node_cache[:string_field_content][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    s1, i1 = [], index
-    loop do
-      i2, s2 = index, []
-      i3 = index
-      r4 = _nt_line_ender
-      if r4
-        r3 = nil
-      else
-        @index = i3
-        r3 = instantiate_node(SyntaxNode,input, index...index)
-      end
-      s2 << r3
-      if r3
-        if index < input_length
-          r5 = instantiate_node(SyntaxNode,input, index...(index + 1))
-          @index += 1
-        else
-          terminal_parse_failure("any character")
-          r5 = nil
-        end
-        s2 << r5
-      end
-      if s2.last
-        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
-        r2.extend(StringFieldContent0)
-      else
-        @index = i2
-        r2 = nil
-      end
-      if r2
-        s1 << r2
-      else
-        break
-      end
-    end
-    r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
-    s0 << r1
-    if r1
-      i7, s7 = index, []
-      r8 = _nt_line_ender
-      s7 << r8
-      if r8
-        if has_terminal?('+:', false, index)
-          r9 = instantiate_node(SyntaxNode,input, index...(index + 2))
-          @index += 2
-        else
-          terminal_parse_failure('+:')
-          r9 = nil
-        end
-        s7 << r9
-        if r9
-          r10 = _nt_string_field_content
-          s7 << r10
-        end
-      end
-      if s7.last
-        r7 = instantiate_node(SyntaxNode,input, i7...index, s7)
-        r7.extend(StringFieldContent1)
-      else
-        @index = i7
-        r7 = nil
-      end
-      if r7
-        r6 = r7
-      else
-        r6 = instantiate_node(SyntaxNode,input, index...index)
-      end
-      s0 << r6
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(StringFieldContent2)
-      r0.extend(StringFieldContent3)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:string_field_content][start_index] = r0
-
-    r0
-  end
-
-  def _nt_file_header_field_excludes
-    start_index = index
-    if node_cache[:file_header_field_excludes].has_key?(index)
-      cached = node_cache[:file_header_field_excludes][index]
+    if node_cache[:disallowed_file_header_fields].has_key?(index)
+      cached = node_cache[:disallowed_file_header_fields][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -2797,15 +2544,15 @@ module ABC
       r0 = nil
     end
 
-    node_cache[:file_header_field_excludes][start_index] = r0
+    node_cache[:disallowed_file_header_fields][start_index] = r0
 
     r0
   end
 
-  def _nt_tune_header_field_excludes
+  def _nt_disallowed_tune_header_fields
     start_index = index
-    if node_cache[:tune_header_field_excludes].has_key?(index)
-      cached = node_cache[:tune_header_field_excludes][index]
+    if node_cache[:disallowed_tune_header_fields].has_key?(index)
+      cached = node_cache[:disallowed_tune_header_fields][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -2823,7 +2570,7 @@ module ABC
     if r1
       r0 = r1
     else
-      r2 = _nt_tune_header_instruction_field_excludes
+      r2 = _nt_disallowed_tune_header_instructions
       if r2
         r0 = r2
       else
@@ -2832,15 +2579,15 @@ module ABC
       end
     end
 
-    node_cache[:tune_header_field_excludes][start_index] = r0
+    node_cache[:disallowed_tune_header_fields][start_index] = r0
 
     r0
   end
 
-  def _nt_tune_body_field_excludes
+  def _nt_disallowed_tune_body_fields
     start_index = index
-    if node_cache[:tune_body_field_excludes].has_key?(index)
-      cached = node_cache[:tune_body_field_excludes][index]
+    if node_cache[:disallowed_tune_body_fields].has_key?(index)
+      cached = node_cache[:disallowed_tune_body_fields][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -2858,7 +2605,7 @@ module ABC
     if r1
       r0 = r1
     else
-      r2 = _nt_tune_body_instruction_field_excludes
+      r2 = _nt_disallowed_tune_body_instructions
       if r2
         r0 = r2
       else
@@ -2867,13 +2614,13 @@ module ABC
       end
     end
 
-    node_cache[:tune_body_field_excludes][start_index] = r0
+    node_cache[:disallowed_tune_body_fields][start_index] = r0
 
     r0
   end
 
   module FileHeaderField0
-    def any_field
+    def valid_field
       elements[1]
     end
   end
@@ -2891,7 +2638,7 @@ module ABC
 
     i0, s0 = index, []
     i1 = index
-    r2 = _nt_file_header_field_excludes
+    r2 = _nt_disallowed_file_header_fields
     if r2
       r1 = nil
     else
@@ -2900,7 +2647,7 @@ module ABC
     end
     s0 << r1
     if r1
-      r3 = _nt_any_field
+      r3 = _nt_valid_field
       s0 << r3
     end
     if s0.last
@@ -2936,7 +2683,7 @@ module ABC
     i0 = index
     i1, s1 = index, []
     i2 = index
-    r3 = _nt_tune_header_field_excludes
+    r3 = _nt_disallowed_tune_header_fields
     if r3
       @index = i2
       r2 = instantiate_node(SyntaxNode,input, index...index)
@@ -3078,7 +2825,7 @@ module ABC
     i0 = index
     i1, s1 = index, []
     i2 = index
-    r3 = _nt_tune_body_field_excludes
+    r3 = _nt_disallowed_tune_body_fields
     if r3
       @index = i2
       r2 = instantiate_node(SyntaxNode,input, index...index)
@@ -3200,175 +2947,20 @@ module ABC
     r0
   end
 
-  def _nt_inline_field_excludes
-    start_index = index
-    if node_cache[:inline_field_excludes].has_key?(index)
-      cached = node_cache[:inline_field_excludes][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
+  module GenericInlineField0
+    def field_id
+      elements[0]
     end
 
-    if has_terminal?('\G[A-Ga-gX-Zx-zHOSsTWw]', true, index)
-      r0 = instantiate_node(SyntaxNode,input, index...(index + 1))
-      @index += 1
-    else
-      r0 = nil
-    end
-
-    node_cache[:inline_field_excludes][start_index] = r0
-
-    r0
-  end
-
-  def _nt_any_inline_field
-    start_index = index
-    if node_cache[:any_inline_field].has_key?(index)
-      cached = node_cache[:any_inline_field][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0 = index
-    r1 = _nt_parts_body_field
-    if r1
-      r0 = r1
-    else
-      r2 = _nt_voice_body_field
-      if r2
-        r0 = r2
-      else
-        r3 = _nt_inline_special_field
-        if r3
-          r0 = r3
-        else
-          r4 = _nt_inline_string_field
-          if r4
-            r0 = r4
-          else
-            @index = i0
-            r0 = nil
-          end
-        end
-      end
-    end
-
-    node_cache[:any_inline_field][start_index] = r0
-
-    r0
-  end
-
-  module InlineSpecialField0
-    def special_field
-      elements[1]
-    end
-  end
-
-  def _nt_inline_special_field
-    start_index = index
-    if node_cache[:inline_special_field].has_key?(index)
-      cached = node_cache[:inline_special_field][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0 = index
-    r1 = _nt_inline_instruction_field
-    if r1
-      r0 = r1
-    else
-      r2 = _nt_inline_remarks_field
-      if r2
-        r0 = r2
-      else
-        i3, s3 = index, []
-        i4 = index
-        i5 = index
-        if has_terminal?('I', false, index)
-          r6 = instantiate_node(SyntaxNode,input, index...(index + 1))
-          @index += 1
-        else
-          terminal_parse_failure('I')
-          r6 = nil
-        end
-        if r6
-          r5 = r6
-        else
-          if has_terminal?('%%', false, index)
-            r7 = instantiate_node(SyntaxNode,input, index...(index + 2))
-            @index += 2
-          else
-            terminal_parse_failure('%%')
-            r7 = nil
-          end
-          if r7
-            r5 = r7
-          else
-            if has_terminal?('r', false, index)
-              r8 = instantiate_node(SyntaxNode,input, index...(index + 1))
-              @index += 1
-            else
-              terminal_parse_failure('r')
-              r8 = nil
-            end
-            if r8
-              r5 = r8
-            else
-              @index = i5
-              r5 = nil
-            end
-          end
-        end
-        if r5
-          r4 = nil
-        else
-          @index = i4
-          r4 = instantiate_node(SyntaxNode,input, index...index)
-        end
-        s3 << r4
-        if r4
-          r9 = _nt_special_field
-          s3 << r9
-        end
-        if s3.last
-          r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
-          r3.extend(InlineSpecialField0)
-        else
-          @index = i3
-          r3 = nil
-        end
-        if r3
-          r0 = r3
-        else
-          @index = i0
-          r0 = nil
-        end
-      end
-    end
-
-    node_cache[:inline_special_field][start_index] = r0
-
-    r0
-  end
-
-  module InlineStringField0
     def content
       elements[3]
     end
   end
 
-  def _nt_inline_string_field
+  def _nt_generic_inline_field
     start_index = index
-    if node_cache[:inline_string_field].has_key?(index)
-      cached = node_cache[:inline_string_field][index]
+    if node_cache[:generic_inline_field].has_key?(index)
+      cached = node_cache[:generic_inline_field][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -3377,64 +2969,66 @@ module ABC
     end
 
     i0, s0 = index, []
-    i1 = index
-    r2 = _nt_special_field_id
-    if r2
-      r1 = nil
-    else
-      @index = i1
-      r1 = instantiate_node(SyntaxNode,input, index...index)
-    end
+    r1 = _nt_field_id
     s0 << r1
     if r1
-      if has_terminal?('\G[A-Za-z]', true, index)
-        r3 = true
+      if has_terminal?(':', false, index)
+        r2 = instantiate_node(SyntaxNode,input, index...(index + 1))
         @index += 1
       else
-        r3 = nil
+        terminal_parse_failure(':')
+        r2 = nil
       end
-      s0 << r3
-      if r3
-        if has_terminal?(':', false, index)
-          r4 = instantiate_node(SyntaxNode,input, index...(index + 1))
-          @index += 1
-        else
-          terminal_parse_failure(':')
-          r4 = nil
+      s0 << r2
+      if r2
+        s3, i3 = [], index
+        loop do
+          r4 = _nt_space
+          if r4
+            s3 << r4
+          else
+            break
+          end
         end
-        s0 << r4
-        if r4
-          r5 = _nt_inline_string_field_content
+        r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
+        s0 << r3
+        if r3
+          r6 = _nt_generic_inline_field_content
+          if r6
+            r5 = r6
+          else
+            r5 = instantiate_node(SyntaxNode,input, index...index)
+          end
           s0 << r5
         end
       end
     end
     if s0.last
       r0 = instantiate_node(FieldNode,input, i0...index, s0)
-      r0.extend(InlineStringField0)
+      r0.extend(GenericInlineField0)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:inline_string_field][start_index] = r0
+    node_cache[:generic_inline_field][start_index] = r0
 
     r0
   end
 
-  module InlineStringFieldContent0
+  module GenericInlineFieldContent0
   end
 
-  module InlineStringFieldContent1
+  module GenericInlineFieldContent1
     def value
       TextString.new(text_value)
     end
   end
 
-  def _nt_inline_string_field_content
+  def _nt_generic_inline_field_content
     start_index = index
-    if node_cache[:inline_string_field_content].has_key?(index)
-      cached = node_cache[:inline_string_field_content][index]
+    if node_cache[:generic_inline_field_content].has_key?(index)
+      cached = node_cache[:generic_inline_field_content][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -3484,7 +3078,7 @@ module ABC
       end
       if s1.last
         r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
-        r1.extend(InlineStringFieldContent0)
+        r1.extend(GenericInlineFieldContent0)
       else
         @index = i1
         r1 = nil
@@ -3500,21 +3094,289 @@ module ABC
       r0 = nil
     else
       r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(InlineStringFieldContent1)
+      r0.extend(GenericInlineFieldContent1)
     end
 
-    node_cache[:inline_string_field_content][start_index] = r0
+    node_cache[:generic_inline_field_content][start_index] = r0
+
+    r0
+  end
+
+  def _nt_inline_special_field
+    start_index = index
+    if node_cache[:inline_special_field].has_key?(index)
+      cached = node_cache[:inline_special_field][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    r1 = _nt_inline_remarks_field
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_inline_instruction_field
+      if r2
+        r0 = r2
+      else
+        r3 = _nt_key_field
+        if r3
+          r0 = r3
+        else
+          r4 = _nt_unit_note_length_field
+          if r4
+            r0 = r4
+          else
+            r5 = _nt_meter_field
+            if r5
+              r0 = r5
+            else
+              r6 = _nt_tempo_field
+              if r6
+                r0 = r6
+              else
+                r7 = _nt_user_defined_field
+                if r7
+                  r0 = r7
+                else
+                  @index = i0
+                  r0 = nil
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+
+    node_cache[:inline_special_field][start_index] = r0
+
+    r0
+  end
+
+  module InlineStringField0
+    def generic_inline_field
+      elements[1]
+    end
+  end
+
+  def _nt_inline_string_field
+    start_index = index
+    if node_cache[:inline_string_field].has_key?(index)
+      cached = node_cache[:inline_string_field][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    i1 = index
+    r2 = _nt_string_field_id
+    if r2
+      @index = i1
+      r1 = instantiate_node(SyntaxNode,input, index...index)
+    else
+      r1 = nil
+    end
+    s0 << r1
+    if r1
+      r3 = _nt_generic_inline_field
+      s0 << r3
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(InlineStringField0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:inline_string_field][start_index] = r0
+
+    r0
+  end
+
+  module InlineUnrecognizedField0
+    def generic_inline_field
+      elements[1]
+    end
+  end
+
+  module InlineUnrecognizedField1
+    def warning
+      t("abc.warnings.unrecognized_field")
+    end
+  end
+
+  def _nt_inline_unrecognized_field
+    start_index = index
+    if node_cache[:inline_unrecognized_field].has_key?(index)
+      cached = node_cache[:inline_unrecognized_field][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    i1 = index
+    r2 = _nt_unrecognized_field_id
+    if r2
+      @index = i1
+      r1 = instantiate_node(SyntaxNode,input, index...index)
+    else
+      r1 = nil
+    end
+    s0 << r1
+    if r1
+      r3 = _nt_generic_inline_field
+      s0 << r3
+    end
+    if s0.last
+      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
+      r0.extend(InlineUnrecognizedField0)
+      r0.extend(InlineUnrecognizedField1)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:inline_unrecognized_field][start_index] = r0
+
+    r0
+  end
+
+  def _nt_inline_valid_field
+    start_index = index
+    if node_cache[:inline_valid_field].has_key?(index)
+      cached = node_cache[:inline_valid_field][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    r1 = _nt_inline_special_field
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_inline_string_field
+      if r2
+        r0 = r2
+      else
+        r3 = _nt_inline_unrecognized_field
+        if r3
+          r0 = r3
+        else
+          @index = i0
+          r0 = nil
+        end
+      end
+    end
+
+    node_cache[:inline_valid_field][start_index] = r0
+
+    r0
+  end
+
+  module InlineDisallowedField0
+    def error
+      t('abc.errors.field_not_allowed')
+    end
+  end
+
+  def _nt_inline_disallowed_field
+    start_index = index
+    if node_cache[:inline_disallowed_field].has_key?(index)
+      cached = node_cache[:inline_disallowed_field][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    r0 = _nt_generic_inline_field
+    r0.extend(InlineDisallowedField0)
+
+    node_cache[:inline_disallowed_field][start_index] = r0
+
+    r0
+  end
+
+  module InlineInvalidField0
+    def error
+      t("abc.errors.invalid_field", :id => text_value[0])
+    end
+  end
+
+  def _nt_inline_invalid_field
+    start_index = index
+    if node_cache[:inline_invalid_field].has_key?(index)
+      cached = node_cache[:inline_invalid_field][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    r0 = _nt_generic_inline_field
+    r0.extend(InlineInvalidField0)
+
+    node_cache[:inline_invalid_field][start_index] = r0
+
+    r0
+  end
+
+  def _nt_disallowed_inline_fields
+    start_index = index
+    if node_cache[:disallowed_inline_fields].has_key?(index)
+      cached = node_cache[:disallowed_inline_fields][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    if has_terminal?('\G[A-Ga-gX-Zx-zHOSsTWw]', true, index)
+      r1 = true
+      @index += 1
+    else
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+    else
+      r2 = _nt_disallowed_tune_body_instructions
+      if r2
+        r0 = r2
+      else
+        @index = i0
+        r0 = nil
+      end
+    end
+
+    node_cache[:disallowed_inline_fields][start_index] = r0
 
     r0
   end
 
   module InlineField0
-    def any_inline_field
+    def inline_field_inner
       elements[1]
     end
-  end
 
-  module InlineField1
   end
 
   def _nt_inline_field
@@ -3538,48 +3400,94 @@ module ABC
     end
     s0 << r1
     if r1
-      i2, s2 = index, []
-      i3 = index
-      r4 = _nt_inline_field_excludes
-      if r4
-        r3 = nil
-      else
-        @index = i3
-        r3 = instantiate_node(SyntaxNode,input, index...index)
-      end
-      s2 << r3
-      if r3
-        r5 = _nt_any_inline_field
-        s2 << r5
-      end
-      if s2.last
-        r2 = instantiate_node(SyntaxNode,input, i2...index, s2)
-        r2.extend(InlineField0)
-      else
-        @index = i2
-        r2 = nil
-      end
+      r2 = _nt_inline_field_inner
       s0 << r2
       if r2
         if has_terminal?(']', false, index)
-          r6 = instantiate_node(SyntaxNode,input, index...(index + 1))
+          r3 = instantiate_node(SyntaxNode,input, index...(index + 1))
           @index += 1
         else
           terminal_parse_failure(']')
-          r6 = nil
+          r3 = nil
         end
-        s0 << r6
+        s0 << r3
       end
     end
     if s0.last
       r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(InlineField1)
+      r0.extend(InlineField0)
     else
       @index = i0
       r0 = nil
     end
 
     node_cache[:inline_field][start_index] = r0
+
+    r0
+  end
+
+  module InlineFieldInner0
+    def inline_disallowed_field
+      elements[1]
+    end
+  end
+
+  def _nt_inline_field_inner
+    start_index = index
+    if node_cache[:inline_field_inner].has_key?(index)
+      cached = node_cache[:inline_field_inner][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0 = index
+    i1, s1 = index, []
+    i2 = index
+    r3 = _nt_disallowed_inline_fields
+    if r3
+      @index = i2
+      r2 = instantiate_node(SyntaxNode,input, index...index)
+    else
+      r2 = nil
+    end
+    s1 << r2
+    if r2
+      r4 = _nt_inline_disallowed_field
+      s1 << r4
+    end
+    if s1.last
+      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+      r1.extend(InlineFieldInner0)
+    else
+      @index = i1
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+    else
+      r5 = _nt_parts_body_field
+      if r5
+        r0 = r5
+      else
+        r6 = _nt_voice_body_field
+        if r6
+          r0 = r6
+        else
+          r7 = _nt_inline_valid_field
+          if r7
+            r0 = r7
+          else
+            @index = i0
+            r0 = nil
+          end
+        end
+      end
+    end
+
+    node_cache[:inline_field_inner][start_index] = r0
 
     r0
   end
@@ -6132,7 +6040,7 @@ module ABC
     end
     s0 << r1
     if r1
-      r3 = _nt_string_field_content
+      r3 = _nt_generic_field_content
       s0 << r3
     end
     if s0.last
@@ -6181,15 +6089,15 @@ module ABC
 
   module GeneralInlineInstructionField0
     def instruction_field_id
-      elements[1]
+      elements[0]
     end
 
     def directive
-      elements[2]
+      elements[1]
     end
 
     def content
-      elements[3]
+      elements[2]
     end
   end
 
@@ -6211,30 +6119,19 @@ module ABC
     end
 
     i0, s0 = index, []
-    i1 = index
-    r2 = _nt_tune_body_instruction_field_excludes
-    if r2
-      r1 = nil
-    else
-      @index = i1
-      r1 = instantiate_node(SyntaxNode,input, index...index)
-    end
+    r1 = _nt_instruction_field_id
     s0 << r1
     if r1
-      r3 = _nt_instruction_field_id
-      s0 << r3
-      if r3
-        r4 = _nt_directive
-        s0 << r4
+      r2 = _nt_directive
+      s0 << r2
+      if r2
+        r4 = _nt_inline_instruction_content
         if r4
-          r6 = _nt_inline_instruction_content
-          if r6
-            r5 = r6
-          else
-            r5 = instantiate_node(SyntaxNode,input, index...index)
-          end
-          s0 << r5
+          r3 = r4
+        else
+          r3 = instantiate_node(SyntaxNode,input, index...index)
         end
+        s0 << r3
       end
     end
     if s0.last
@@ -6292,7 +6189,7 @@ module ABC
     end
     s0 << r1
     if r1
-      r3 = _nt_inline_string_field_content
+      r3 = _nt_generic_inline_field_content
       s0 << r3
     end
     if s0.last
@@ -6309,17 +6206,17 @@ module ABC
     r0
   end
 
-  module TuneHeaderInstructionFieldExcludes0
+  module DisallowedTuneHeaderInstructions0
     def instruction_field_id
       elements[0]
     end
 
   end
 
-  def _nt_tune_header_instruction_field_excludes
+  def _nt_disallowed_tune_header_instructions
     start_index = index
-    if node_cache[:tune_header_instruction_field_excludes].has_key?(index)
-      cached = node_cache[:tune_header_instruction_field_excludes][index]
+    if node_cache[:disallowed_tune_header_instructions].has_key?(index)
+      cached = node_cache[:disallowed_tune_header_instructions][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -6353,28 +6250,28 @@ module ABC
     end
     if s0.last
       r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TuneHeaderInstructionFieldExcludes0)
+      r0.extend(DisallowedTuneHeaderInstructions0)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:tune_header_instruction_field_excludes][start_index] = r0
+    node_cache[:disallowed_tune_header_instructions][start_index] = r0
 
     r0
   end
 
-  module TuneBodyInstructionFieldExcludes0
+  module DisallowedTuneBodyInstructions0
     def instruction_field_id
       elements[0]
     end
 
   end
 
-  def _nt_tune_body_instruction_field_excludes
+  def _nt_disallowed_tune_body_instructions
     start_index = index
-    if node_cache[:tune_body_instruction_field_excludes].has_key?(index)
-      cached = node_cache[:tune_body_instruction_field_excludes][index]
+    if node_cache[:disallowed_tune_body_instructions].has_key?(index)
+      cached = node_cache[:disallowed_tune_body_instructions][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -6448,13 +6345,13 @@ module ABC
     end
     if s0.last
       r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TuneBodyInstructionFieldExcludes0)
+      r0.extend(DisallowedTuneBodyInstructions0)
     else
       @index = i0
       r0 = nil
     end
 
-    node_cache[:tune_body_instruction_field_excludes][start_index] = r0
+    node_cache[:disallowed_tune_body_instructions][start_index] = r0
 
     r0
   end
@@ -12156,7 +12053,7 @@ module ABC
       return cached
     end
 
-    r0 = _nt_string_field_content
+    r0 = _nt_generic_field_content
 
     node_cache[:macro_replace][start_index] = r0
 
@@ -17103,504 +17000,6 @@ module ABC
     end
 
     node_cache[:match_nothing][start_index] = r0
-
-    r0
-  end
-
-  module AbcFilePreprocess0
-    def tune_section_pre
-      elements[2]
-    end
-
-  end
-
-  def _nt_abc_file_preprocess
-    start_index = index
-    if node_cache[:abc_file_preprocess].has_key?(index)
-      cached = node_cache[:abc_file_preprocess][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    r2 = _nt_header_section_pre
-    if r2
-      r1 = r2
-    else
-      r1 = instantiate_node(SyntaxNode,input, index...index)
-    end
-    s0 << r1
-    if r1
-      s3, i3 = [], index
-      loop do
-        r4 = _nt_text_section
-        if r4
-          s3 << r4
-        else
-          break
-        end
-      end
-      r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
-      s0 << r3
-      if r3
-        r5 = _nt_tune_section_pre
-        s0 << r5
-        if r5
-          s6, i6 = [], index
-          loop do
-            r7 = _nt_any_section_pre
-            if r7
-              s6 << r7
-            else
-              break
-            end
-          end
-          r6 = instantiate_node(SyntaxNode,input, i6...index, s6)
-          s0 << r6
-        end
-      end
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(AbcFilePreprocess0)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:abc_file_preprocess][start_index] = r0
-
-    r0
-  end
-
-  module HeaderSectionPre0
-    def any_field_pre
-      elements[0]
-    end
-
-    def line_ender
-      elements[1]
-    end
-  end
-
-  module HeaderSectionPre1
-    def end_of_section
-      elements[2]
-    end
-  end
-
-  def _nt_header_section_pre
-    start_index = index
-    if node_cache[:header_section_pre].has_key?(index)
-      cached = node_cache[:header_section_pre][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    s1, i1 = [], index
-    loop do
-      r2 = _nt_comment_line
-      if r2
-        s1 << r2
-      else
-        break
-      end
-    end
-    r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
-    s0 << r1
-    if r1
-      s3, i3 = [], index
-      loop do
-        i4, s4 = index, []
-        r5 = _nt_any_field_pre
-        s4 << r5
-        if r5
-          r6 = _nt_line_ender
-          s4 << r6
-        end
-        if s4.last
-          r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
-          r4.extend(HeaderSectionPre0)
-        else
-          @index = i4
-          r4 = nil
-        end
-        if r4
-          s3 << r4
-        else
-          break
-        end
-      end
-      if s3.empty?
-        @index = i3
-        r3 = nil
-      else
-        r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
-      end
-      s0 << r3
-      if r3
-        r7 = _nt_end_of_section
-        s0 << r7
-      end
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(HeaderSectionPre1)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:header_section_pre][start_index] = r0
-
-    r0
-  end
-
-  def _nt_any_field_pre
-    start_index = index
-    if node_cache[:any_field_pre].has_key?(index)
-      cached = node_cache[:any_field_pre][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0 = index
-    r1 = _nt_include_field
-    if r1
-      r0 = r1
-    else
-      r2 = _nt_macro_field
-      if r2
-        r0 = r2
-      else
-        r3 = _nt_any_other_field_pre
-        if r3
-          r0 = r3
-        else
-          @index = i0
-          r0 = nil
-        end
-      end
-    end
-
-    node_cache[:any_field_pre][start_index] = r0
-
-    r0
-  end
-
-  module IncludeField0
-    def instruction_field_id
-      elements[0]
-    end
-
-    def content
-      elements[3]
-    end
-  end
-
-  module IncludeField1
-    def value
-      @value ||= InstructionField.new(text_value[0], 'abc-include', content.value)
-    end
-    def inclusion # handles abc-include
-      value.inclusion
-    end
-  end
-
-  def _nt_include_field
-    start_index = index
-    if node_cache[:include_field].has_key?(index)
-      cached = node_cache[:include_field][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    r1 = _nt_instruction_field_id
-    s0 << r1
-    if r1
-      if has_terminal?("abc-include", false, index)
-        r2 = instantiate_node(SyntaxNode,input, index...(index + 11))
-        @index += 11
-      else
-        terminal_parse_failure("abc-include")
-        r2 = nil
-      end
-      s0 << r2
-      if r2
-        s3, i3 = [], index
-        loop do
-          r4 = _nt_field_space
-          if r4
-            s3 << r4
-          else
-            break
-          end
-        end
-        if s3.empty?
-          @index = i3
-          r3 = nil
-        else
-          r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
-        end
-        s0 << r3
-        if r3
-          r5 = _nt_string_field_content
-          s0 << r5
-        end
-      end
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(IncludeField0)
-      r0.extend(IncludeField1)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:include_field][start_index] = r0
-
-    r0
-  end
-
-  module AnyOtherFieldPre0
-    def string_field_content
-      elements[2]
-    end
-  end
-
-  def _nt_any_other_field_pre
-    start_index = index
-    if node_cache[:any_other_field_pre].has_key?(index)
-      cached = node_cache[:any_other_field_pre][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    if has_terminal?('\G[A-Za-z]', true, index)
-      r1 = true
-      @index += 1
-    else
-      r1 = nil
-    end
-    s0 << r1
-    if r1
-      if has_terminal?(':', false, index)
-        r2 = instantiate_node(SyntaxNode,input, index...(index + 1))
-        @index += 1
-      else
-        terminal_parse_failure(':')
-        r2 = nil
-      end
-      s0 << r2
-      if r2
-        r3 = _nt_string_field_content
-        s0 << r3
-      end
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(AnyOtherFieldPre0)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:any_other_field_pre][start_index] = r0
-
-    r0
-  end
-
-  module TuneSectionPre0
-    def tune_header_pre
-      elements[0]
-    end
-
-    def tune_body_pre
-      elements[1]
-    end
-  end
-
-  def _nt_tune_section_pre
-    start_index = index
-    if node_cache[:tune_section_pre].has_key?(index)
-      cached = node_cache[:tune_section_pre][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    r1 = _nt_tune_header_pre
-    s0 << r1
-    if r1
-      r2 = _nt_tune_body_pre
-      s0 << r2
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TuneSectionPre0)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:tune_section_pre][start_index] = r0
-
-    r0
-  end
-
-  module TuneHeaderPre0
-    def any_field_pre
-      elements[0]
-    end
-
-    def line_ender
-      elements[1]
-    end
-  end
-
-  module TuneHeaderPre1
-    def key_field_line
-      elements[2]
-    end
-  end
-
-  def _nt_tune_header_pre
-    start_index = index
-    if node_cache[:tune_header_pre].has_key?(index)
-      cached = node_cache[:tune_header_pre][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    s1, i1 = [], index
-    loop do
-      r2 = _nt_comment_line
-      if r2
-        s1 << r2
-      else
-        break
-      end
-    end
-    r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
-    s0 << r1
-    if r1
-      s3, i3 = [], index
-      loop do
-        i4, s4 = index, []
-        r5 = _nt_any_field_pre
-        s4 << r5
-        if r5
-          r6 = _nt_line_ender
-          s4 << r6
-        end
-        if s4.last
-          r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
-          r4.extend(TuneHeaderPre0)
-        else
-          @index = i4
-          r4 = nil
-        end
-        if r4
-          s3 << r4
-        else
-          break
-        end
-      end
-      if s3.empty?
-        @index = i3
-        r3 = nil
-      else
-        r3 = instantiate_node(SyntaxNode,input, i3...index, s3)
-      end
-      s0 << r3
-      if r3
-        r7 = _nt_key_field_line
-        s0 << r7
-      end
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TuneHeaderPre1)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:tune_header_pre][start_index] = r0
-
-    r0
-  end
-
-  def _nt_any_section_pre
-    start_index = index
-    if node_cache[:any_section_pre].has_key?(index)
-      cached = node_cache[:any_section_pre][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0 = index
-    r1 = _nt_tune_section_pre
-    if r1
-      r0 = r1
-    else
-      r2 = _nt_text_section
-      if r2
-        r0 = r2
-      else
-        @index = i0
-        r0 = nil
-      end
-    end
-
-    node_cache[:any_section_pre][start_index] = r0
-
-    r0
-  end
-
-  def _nt_tune_body_pre
-    start_index = index
-    if node_cache[:tune_body_pre].has_key?(index)
-      cached = node_cache[:tune_body_pre][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    r0 = _nt_match_nothing
-
-    node_cache[:tune_body_pre][start_index] = r0
 
     r0
   end

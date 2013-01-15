@@ -405,7 +405,8 @@ describe "G: (group) field" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[G:group]def"
+    p = parse_fragment "abc[G:group]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
 end
 
@@ -435,7 +436,8 @@ describe "H: (history) field" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[H:history]def"
+    p = parse_fragment "abc[H:history]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "differentiates between continuation and separate anecdotes" do 
     p = parse_value_fragment "H:this is considered\n+:as a single entry\nH:this usage is considered as two entries\nH:rather than one"
@@ -643,7 +645,8 @@ describe "B: (book) field" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[B:book]def"
+    p = parse_fragment "abc[B:book]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
 end
 
@@ -661,7 +664,8 @@ describe "D: (discography) field" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[D:discography]def"
+    p = parse_fragment "abc[D:discography]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
 end
 
@@ -679,7 +683,8 @@ describe "F: (file url) field" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[F:file url]def"
+    p = parse_fragment "abc[F:file url]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
 end
 
@@ -697,7 +702,8 @@ describe "S: (source) field" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[S:source]def"
+    p = parse_fragment "abc[S:source]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
 end
 
@@ -764,7 +770,8 @@ describe "I:abc-charset utf-8" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[I:abc-charset utf-8]def"
+    p = parse_fragment "abc[I:abc-charset utf-8]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
 end
 
@@ -791,7 +798,8 @@ describe "I:abc-version instruction" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[I:abc-version 2.0]def"
+    p = parse_fragment "abc[I:abc-version 2.0]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
 end
 
@@ -827,7 +835,8 @@ describe "I:abc-include instruction" do
     p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[I:abc-include #{@filename}]def"
+    p = parse_fragment "abc[I:abc-include #{@filename}]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "ignores whiespace at the end of the include file" do
     IO.write(@filename, "C:Bach\n\n\n   \n     ")

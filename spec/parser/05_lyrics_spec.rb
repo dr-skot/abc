@@ -22,7 +22,8 @@ describe "W: (words, unaligned) field" do
     p.items[3].value.should == "doo wop she bop"
   end
   it "can't appear as an inline field" do
-    fail_to_parse_fragment "abc[W:doo wop she bop]def"
+    p = parse_fragment "abc[W:doo wop she bop]def"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
 end
 

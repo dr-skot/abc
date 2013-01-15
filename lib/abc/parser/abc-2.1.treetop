@@ -112,7 +112,7 @@ grammar ABC do
   end
 
   rule invalid_file_header do
-    !'X:' field_line+ <HeaderNode> {
+    !'X:' (generic_field line_ender)+ <HeaderNode> {
       def error
         # TODO get more specific; which field in the header makes it invalid?
         "invalid file header"
@@ -217,7 +217,7 @@ grammar ABC do
   # TODO should we have special rules for the r: field here?
 
   rule remarks_field do
-    'r:' string_field_content
+    'r:' generic_field_content
   end
 
   rule remarks_field_line do
@@ -225,7 +225,7 @@ grammar ABC do
   end
 
   rule inline_remarks_field do
-    'r:' inline_string_field_content
+    'r:' generic_inline_field_content
   end
 
 
@@ -347,12 +347,11 @@ grammar ABC do
   end
 
   rule special_field do
-    remarks_field / typeset_text / instruction_field / key_field / unit_note_length_field / 
-      meter_field / 
+    remarks_field / instruction_field / key_field / unit_note_length_field / meter_field / 
       macro_field / tempo_field / symbol_line / user_defined_field / lyrics_line / refnum_field
   end
 
-  rule string_field2 do
+  rule string_field do
     &string_field_id generic_field
   end
 
@@ -365,7 +364,7 @@ grammar ABC do
   end
 
   rule valid_field do
-    special_field / string_field2 / unrecognized_field
+    typeset_text / special_field / string_field / unrecognized_field
   end
 
   rule disallowed_field do
@@ -384,44 +383,25 @@ grammar ABC do
     }
   end
 
-  rule any_field do
-    typeset_text / special_field / string_field
-  end
 
-  rule field_line do
-    any_field line_ender
-  end
-
-  rule string_field do
-    !special_field_id [A-Za-z] ':' field_space* content:string_field_content <FieldNode>
-  end
-
-  rule string_field_content do
-    start:(!line_ender .)* extra:(line_ender '+:' content:string_field_content)? {
-      def value
-        TextString.new(start.text_value + (extra.empty? ? '' : ' ' + extra.content.value))
-      end
-    }
-  end
-
-  rule file_header_field_excludes do
+  rule disallowed_file_header_fields do
     [KPQsTVWwX]
   end
 
-  rule tune_header_field_excludes do
-    [sw] / tune_header_instruction_field_excludes
+  rule disallowed_tune_header_fields do
+    [sw] / disallowed_tune_header_instructions
   end
 
-  rule tune_body_field_excludes do
-    [A-Ga-gX-Zx-zHOSm] / tune_body_instruction_field_excludes
+  rule disallowed_tune_body_fields do
+    [A-Ga-gX-Zx-zHOSm] / disallowed_tune_body_instructions
   end
   
   rule file_header_field do
-    !file_header_field_excludes any_field
+    !disallowed_file_header_fields valid_field
   end
   
   rule tune_header_field do
-    &tune_header_field_excludes disallowed_field / 
+    &disallowed_tune_header_fields disallowed_field / 
       parts_header_field / voice_header_field / valid_field
   end
   
@@ -430,7 +410,7 @@ grammar ABC do
   end
 
   rule tune_body_field do
-    &tune_body_field_excludes disallowed_field / 
+    &disallowed_tune_body_fields disallowed_field / 
       parts_body_field / voice_body_field / valid_field
   end
 
@@ -440,23 +420,18 @@ grammar ABC do
 
   # TODO move these to later section
 
-  rule inline_field_excludes do
-    [A-Ga-gX-Zx-zHOSsTWw]
+  # Unfortunately, almost the entire rules pattern for fields has to be duplicated for
+  # inline fields, because all dependencies on generic_field must be changed to dependencies
+  # on generic_inline_field.
+  # Unlike generic_field, generic_inline_field has an end delimiter of ']', and doesn't
+  # allow multi-line continuation with '+:'
+  # I can't think of any way around this repetition using the language of treetop.
+
+  rule generic_inline_field do
+    field_id ':' space* content:generic_inline_field_content? <FieldNode> 
   end
 
-  rule any_inline_field do
-    parts_body_field / voice_body_field / inline_special_field / inline_string_field
-  end
-  
-  rule inline_special_field do
-    inline_instruction_field / inline_remarks_field / !('I'/'%%'/'r') special_field
-  end
-
-  rule inline_string_field do
-    !special_field_id [A-Za-z] ':' content:inline_string_field_content <FieldNode>
-  end
-
-  rule inline_string_field_content do
+  rule generic_inline_field_content do
     (!(']'/line_ender) .)+ {
       def value
         TextString.new(text_value)
@@ -464,8 +439,55 @@ grammar ABC do
     }
   end
 
+  rule inline_special_field do
+    inline_remarks_field / inline_instruction_field / 
+      key_field / unit_note_length_field / meter_field / 
+      tempo_field / user_defined_field
+  end
+
+  rule inline_string_field do
+    &string_field_id generic_inline_field
+  end
+
+  rule inline_unrecognized_field do
+    &unrecognized_field_id generic_inline_field {
+      def warning
+        t("abc.warnings.unrecognized_field")
+      end
+    }
+  end
+  
+  rule inline_valid_field do
+    inline_special_field / inline_string_field / inline_unrecognized_field
+  end
+
+  rule inline_disallowed_field do
+    generic_inline_field {
+      def error
+        t('abc.errors.field_not_allowed')
+      end
+    }
+  end
+
+  rule inline_invalid_field do
+    generic_inline_field {
+      def error
+        t("abc.errors.invalid_field", :id => text_value[0])
+      end
+    }
+  end
+
+  rule disallowed_inline_fields do
+    [A-Ga-gX-Zx-zHOSsTWw] / disallowed_tune_body_instructions
+  end
+
   rule inline_field do
-    '[' (!inline_field_excludes any_inline_field) ']'
+    '[' inline_field_inner ']'
+  end
+
+  rule inline_field_inner do
+    &disallowed_inline_fields inline_disallowed_field / 
+      parts_body_field / voice_body_field / inline_valid_field
   end
   
 
@@ -889,7 +911,7 @@ grammar ABC do
   end
 
   rule instruction_content do
-    field_space+ text:string_field_content {
+    field_space+ text:generic_field_content {
       def value
         text.value
       end
@@ -901,7 +923,6 @@ grammar ABC do
   end
   
   rule general_inline_instruction_field do
-    !tune_body_instruction_field_excludes 
     instruction_field_id directive content:inline_instruction_content? <FieldNode> {
       def value
         @value ||= InstructionField.new(text_value[0], directive.text_value, content.value)
@@ -910,18 +931,18 @@ grammar ABC do
   end
 
   rule inline_instruction_content do
-    space+ text:inline_string_field_content {
+    space+ text:generic_inline_field_content {
       def value
         text.text_value
       end
     }
   end
 
-  rule tune_header_instruction_field_excludes do
+  rule disallowed_tune_header_instructions do
     instruction_field_id ('abc-charset') !directive_chars
   end
 
-  rule tune_body_instruction_field_excludes do
+  rule disallowed_tune_body_instructions do
     instruction_field_id
     ('abc-charset' / 'abc-include' / 'abc-version' / 'linebreak') !directive_chars
   end
@@ -2357,7 +2378,7 @@ grammar ABC do
   end
 
   rule macro_replace do
-    string_field_content
+    generic_field_content
   end
   
   # TODO really differentiate between static and transposing?
@@ -3082,49 +3103,6 @@ grammar ABC do
 
 
 
-
-  rule abc_file_preprocess do
-    header_section_pre? text_section* tune_section_pre (any_section_pre)*
-  end
-
-  rule header_section_pre do
-    comment_line* (any_field_pre line_ender)+ end_of_section
-  end
-
-  rule any_field_pre do
-    include_field / macro_field / any_other_field_pre
-  end
-
-  rule include_field do
-    instruction_field_id "abc-include" field_space+ content:string_field_content {
-      def value
-        @value ||= InstructionField.new(text_value[0], 'abc-include', content.value)
-      end
-      def inclusion # handles abc-include
-        value.inclusion
-      end
-    }
-  end
-
-  rule any_other_field_pre do
-    [A-Za-z] ':' string_field_content
-  end
-
-  rule tune_section_pre do
-    tune_header_pre tune_body_pre
-  end
-
-  rule tune_header_pre do
-    comment_line* (any_field_pre line_ender)+ key_field_line
-  end
-
-  rule any_section_pre do
-    tune_section_pre / text_section
-  end
-
-  rule tune_body_pre do
-    match_nothing
-  end
 
 
   end
