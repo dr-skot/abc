@@ -2802,10 +2802,10 @@ module ABC
     r0
   end
 
-  def _nt_tune_header_excludes
+  def _nt_tune_header_field_excludes
     start_index = index
-    if node_cache[:tune_header_excludes].has_key?(index)
-      cached = node_cache[:tune_header_excludes][index]
+    if node_cache[:tune_header_field_excludes].has_key?(index)
+      cached = node_cache[:tune_header_field_excludes][index]
       if cached
         cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
         @index = cached.interval.end
@@ -2832,7 +2832,7 @@ module ABC
       end
     end
 
-    node_cache[:tune_header_excludes][start_index] = r0
+    node_cache[:tune_header_field_excludes][start_index] = r0
 
     r0
   end
@@ -2916,36 +2916,6 @@ module ABC
     r0
   end
 
-  def _nt_tune_header_special_field
-    start_index = index
-    if node_cache[:tune_header_special_field].has_key?(index)
-      cached = node_cache[:tune_header_special_field][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0 = index
-    r1 = _nt_parts_header_field
-    if r1
-      r0 = r1
-    else
-      r2 = _nt_voice_header_field
-      if r2
-        r0 = r2
-      else
-        @index = i0
-        r0 = nil
-      end
-    end
-
-    node_cache[:tune_header_special_field][start_index] = r0
-
-    r0
-  end
-
   module TuneHeaderField0
     def disallowed_field
       elements[1]
@@ -2966,7 +2936,7 @@ module ABC
     i0 = index
     i1, s1 = index, []
     i2 = index
-    r3 = _nt_tune_header_excludes
+    r3 = _nt_tune_header_field_excludes
     if r3
       @index = i2
       r2 = instantiate_node(SyntaxNode,input, index...index)
@@ -2988,16 +2958,21 @@ module ABC
     if r1
       r0 = r1
     else
-      r5 = _nt_tune_header_special_field
+      r5 = _nt_parts_header_field
       if r5
         r0 = r5
       else
-        r6 = _nt_valid_field
+        r6 = _nt_voice_header_field
         if r6
           r0 = r6
         else
-          @index = i0
-          r0 = nil
+          r7 = _nt_valid_field
+          if r7
+            r0 = r7
+          else
+            @index = i0
+            r0 = nil
+          end
         end
       end
     end
@@ -3083,83 +3058,10 @@ module ABC
     r0
   end
 
-  module TuneBodyDisallowedField0
+  module TuneBodyField0
     def disallowed_field
       elements[1]
     end
-  end
-
-  def _nt_tune_body_disallowed_field
-    start_index = index
-    if node_cache[:tune_body_disallowed_field].has_key?(index)
-      cached = node_cache[:tune_body_disallowed_field][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0, s0 = index, []
-    i1 = index
-    r2 = _nt_tune_body_field_excludes
-    if r2
-      @index = i1
-      r1 = instantiate_node(SyntaxNode,input, index...index)
-    else
-      r1 = nil
-    end
-    s0 << r1
-    if r1
-      r3 = _nt_disallowed_field
-      s0 << r3
-    end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TuneBodyDisallowedField0)
-    else
-      @index = i0
-      r0 = nil
-    end
-
-    node_cache[:tune_body_disallowed_field][start_index] = r0
-
-    r0
-  end
-
-  def _nt_tune_body_special_field
-    start_index = index
-    if node_cache[:tune_body_special_field].has_key?(index)
-      cached = node_cache[:tune_body_special_field][index]
-      if cached
-        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
-        @index = cached.interval.end
-      end
-      return cached
-    end
-
-    i0 = index
-    r1 = _nt_parts_body_field
-    if r1
-      r0 = r1
-    else
-      r2 = _nt_voice_body_field
-      if r2
-        r0 = r2
-      else
-        r3 = _nt_special_field
-        if r3
-          r0 = r3
-        else
-          @index = i0
-          r0 = nil
-        end
-      end
-    end
-
-    node_cache[:tune_body_special_field][start_index] = r0
-
-    r0
   end
 
   def _nt_tune_body_field
@@ -3174,21 +3076,41 @@ module ABC
     end
 
     i0 = index
-    r1 = _nt_tune_body_disallowed_field
+    i1, s1 = index, []
+    i2 = index
+    r3 = _nt_tune_body_field_excludes
+    if r3
+      @index = i2
+      r2 = instantiate_node(SyntaxNode,input, index...index)
+    else
+      r2 = nil
+    end
+    s1 << r2
+    if r2
+      r4 = _nt_disallowed_field
+      s1 << r4
+    end
+    if s1.last
+      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+      r1.extend(TuneBodyField0)
+    else
+      @index = i1
+      r1 = nil
+    end
     if r1
       r0 = r1
     else
-      r2 = _nt_tune_body_special_field
-      if r2
-        r0 = r2
+      r5 = _nt_parts_body_field
+      if r5
+        r0 = r5
       else
-        r3 = _nt_string_field2
-        if r3
-          r0 = r3
+        r6 = _nt_voice_body_field
+        if r6
+          r0 = r6
         else
-          r4 = _nt_unrecognized_field
-          if r4
-            r0 = r4
+          r7 = _nt_valid_field
+          if r7
+            r0 = r7
           else
             @index = i0
             r0 = nil
@@ -3212,6 +3134,16 @@ module ABC
     end
   end
 
+  module TuneBodyFieldLine1
+    def invalid_field
+      elements[0]
+    end
+
+    def line_ender
+      elements[1]
+    end
+  end
+
   def _nt_tune_body_field_line
     start_index = index
     if node_cache[:tune_body_field_line].has_key?(index)
@@ -3223,19 +3155,44 @@ module ABC
       return cached
     end
 
-    i0, s0 = index, []
-    r1 = _nt_tune_body_field
-    s0 << r1
-    if r1
-      r2 = _nt_line_ender
-      s0 << r2
+    i0 = index
+    i1, s1 = index, []
+    r2 = _nt_tune_body_field
+    s1 << r2
+    if r2
+      r3 = _nt_line_ender
+      s1 << r3
     end
-    if s0.last
-      r0 = instantiate_node(SyntaxNode,input, i0...index, s0)
-      r0.extend(TuneBodyFieldLine0)
+    if s1.last
+      r1 = instantiate_node(SyntaxNode,input, i1...index, s1)
+      r1.extend(TuneBodyFieldLine0)
     else
-      @index = i0
-      r0 = nil
+      @index = i1
+      r1 = nil
+    end
+    if r1
+      r0 = r1
+    else
+      i4, s4 = index, []
+      r5 = _nt_invalid_field
+      s4 << r5
+      if r5
+        r6 = _nt_line_ender
+        s4 << r6
+      end
+      if s4.last
+        r4 = instantiate_node(SyntaxNode,input, i4...index, s4)
+        r4.extend(TuneBodyFieldLine1)
+      else
+        @index = i4
+        r4 = nil
+      end
+      if r4
+        r0 = r4
+      else
+        @index = i0
+        r0 = nil
+      end
     end
 
     node_cache[:tune_body_field_line][start_index] = r0

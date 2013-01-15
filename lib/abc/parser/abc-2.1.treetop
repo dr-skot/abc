@@ -408,7 +408,7 @@ grammar ABC do
     [KPQsTVWwX]
   end
 
-  rule tune_header_excludes do
+  rule tune_header_field_excludes do
     [sw] / tune_header_instruction_field_excludes
   end
 
@@ -420,32 +420,22 @@ grammar ABC do
     !file_header_field_excludes any_field
   end
   
-  rule tune_header_special_field do
-    parts_header_field / voice_header_field
-  end
-
   rule tune_header_field do
-    &tune_header_excludes disallowed_field / tune_header_special_field / valid_field
+    &tune_header_field_excludes disallowed_field / 
+      parts_header_field / voice_header_field / valid_field
   end
   
   rule tune_header_line do
     tune_header_field line_ender / invalid_field line_ender
   end
 
-  rule tune_body_disallowed_field do
-    &tune_body_field_excludes disallowed_field
-  end
-  
-  rule tune_body_special_field do
-    parts_body_field / voice_body_field / special_field
-  end
-
   rule tune_body_field do
-    tune_body_disallowed_field / tune_body_special_field / string_field2 / unrecognized_field
+    &tune_body_field_excludes disallowed_field / 
+      parts_body_field / voice_body_field / valid_field
   end
 
   rule tune_body_field_line do
-    tune_body_field line_ender
+    tune_body_field line_ender / invalid_field line_ender
   end
 
   # TODO move these to later section
