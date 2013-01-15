@@ -29,7 +29,7 @@ module ABC
       "Db Bbm Abmix Ebdor Fphr Gblyd Cloc" => Hash.split_keys("D E G A B" => -1),
       "Gb Ebm Dbmix Abdor Bbphr Cblyd Floc" => Hash.split_keys("C D E G A B" => -1),
       "Cb Abm Gbmix Dbdor Ebphr Fblyd Bbloc" => Hash.split_keys("C D E F G A B" => -1),
-      "HP Hp" => { 'C' => 1, 'F' => 1, 'G' => 0 },
+      "HP Hp" => { 'C' => 1, 'F' => 1, 'G' => 0 }
     )
 
     MODES = three_letter_index("major minor ionian aeolean mixolydian dorian phrygian lydian locrian".split)

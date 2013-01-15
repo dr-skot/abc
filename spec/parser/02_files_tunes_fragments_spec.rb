@@ -79,7 +79,6 @@ describe "tune" do
     p.tunes.count.should == 1
     p.tunes[0].key.tonic.should == "D"
   end
-  # TODO should we allow tunes to *start* with comments?
   it "can appear with no body" do
     p = parse_value "X:1\nT:T\nK:C\n"
   end
@@ -204,9 +203,8 @@ describe "a comment" do
   end
   it "does not introduce an empty line" do
     p = parse "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
-    p.errors[0].message.should == t('abc.errors.no_tunes')
-    p.errors[1].message.should == "invalid section"
-    p.errors[1].input.should == "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
+    p.errors[0].input.should == "X:2"
   end
 end
 

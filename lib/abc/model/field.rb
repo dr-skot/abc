@@ -1,6 +1,6 @@
 module ABC
 
-  # note: symbol lines (s:) and lyric lines (w:) not treated as regular fields
+  # note: instruction fields (I:) symbol lines (s:) and lyric lines (w:) not treated regular
   FIELD_TYPES = {
     'A' => :area,
     'B' => :book,
@@ -9,7 +9,6 @@ module ABC
     'F' => :file_url,
     'G' => :group,
     'H' => :history,
-    'I' => :instruction,
     'K' => :key,
     'L' => :unit_note_length,
     'M' => :meter,

@@ -87,7 +87,8 @@ module ABC
 
   # MNEMONIC_REGEXP = Regexp.new('/\\(%s)/' % MNEMONICS.keys.join('|'))
   
-  ACCENTS_AND_LIGATURES = Hash.split_keys(
+=begin
+  ACCENTS_AND_LIGATURES = ABC::Key.split_keys(
     '\\`A &Agrave; \\u00c0' => 'À',
      '\\`a &agrave; \\u00e0' => 'à',
      '\\`E &Egrave; \\u00c8' => 'È',
@@ -168,7 +169,8 @@ module ABC
      '\\TH &THORN; \\u00de' => 'Þ',
      '\\th &thorn; \\u00fe' => 'þ',
     )
-     
+=end
+
   class TextString < String
     attr_reader :original
 

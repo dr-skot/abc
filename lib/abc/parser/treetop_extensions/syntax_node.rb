@@ -26,6 +26,13 @@ module Treetop
       def input
         @input ||= @node.input[@node.interval]
       end
+      alias_method :inspect_orig, :inspect
+      def inspect3
+        node, @node = @node, nil
+        result = inspect_orig
+        @node = node
+        result
+      end
     end
 
     class SyntaxNode
@@ -49,7 +56,7 @@ module Treetop
       #   first:thing rest:(delimiter item:thing)*
       # this returns a list of those things, provided first, rest, and item are so defined
       def items
-        rest.elements.inject([first]) { |list, el| list << el.item }
+        (rest.elements || []).inject([first]) { |list, el| list << el.item }
       end
 
       def item_values

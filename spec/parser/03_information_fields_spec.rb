@@ -71,7 +71,11 @@ describe "X: (reference number) field" do
   end
   it "must be an integer" do
     p = parse "X:one\nT:Title\nK:C"
-    p.errors[0].message.should == t('abc.errors.posint_required', item:field('refnum', 'X'))
+    p.errors[0].message.should == t('abc.errors.invalid_field', :id => 'X')
+  end
+  it "must contain only an integer" do
+    p = parse "X:1 (one)\nT:Title\nK:C"
+    p.errors[0].message.should == t('abc.errors.invalid_field', :id => 'X')
   end
   it "can be empty" do
     p = parse_value "X:\nT:Title\nK:C"
@@ -353,7 +357,8 @@ describe "Z: (transcription) field" do
     p.transcription.should == "abc-copyright © John Smith"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "K:C\nZ:abc-copyright © John Smith\nabc"
+    p = parse_fragment "K:C\nZ:abc-copyright &copy; John Smith\nabc"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   # TODO specific support for abc-copyright and abc-edited-by
 end
@@ -396,7 +401,8 @@ describe "G: (group) field" do
     p.group.should == "group"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nG:group\ndef"
+    p = parse_fragment "abc\nG:group\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[G:group]def"
@@ -425,7 +431,8 @@ describe "H: (history) field" do
     p.history.should == "history"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nH:history\ndef"
+    p = parse_fragment "abc\nH:history\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[H:history]def"
@@ -632,7 +639,8 @@ describe "B: (book) field" do
     p.book.should == "book"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nB:book\ndef"
+    p = parse_fragment "abc\nB:book\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[B:book]def"
@@ -649,7 +657,8 @@ describe "D: (discography) field" do
     p.discography.should == "discography"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nD:discography\ndef"
+    p = parse_fragment "abc\nD:discography\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[D:discography]def"
@@ -666,7 +675,8 @@ describe "F: (file url) field" do
     p.url.should == "file url"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nF:file url\ndef"
+    p = parse_fragment "abc\nF:file url\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[F:file url]def"
@@ -683,7 +693,8 @@ describe "S: (source) field" do
     p.source.should == "source"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nS:source\ndef"
+    p = parse_fragment "abc\nS:source\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[S:source]def"
@@ -741,14 +752,16 @@ end
 
 describe "I:abc-charset utf-8" do
   it "can't appear in the tune header" do
-    fail_to_parse_fragment "I:abc-charset utf-8"
+    p = parse_fragment "I:abc-charset utf-8"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can appear in the file header" do
     p = parse_value "I:abc-charset utf-8\n\nX:1\nT:\nK:C"
     p.instructions['abc-charset'].should == "utf-8"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nI:abc-charset utf-8\ndef"
+    p = parse_fragment "abc\nI:abc-charset utf-8\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[I:abc-charset utf-8]def"
@@ -774,7 +787,8 @@ describe "I:abc-version instruction" do
     p.instructions['abc-version'].should == "2.0"
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nI:abc-version 2.0\ndef"
+    p = parse_fragment "abc\nI:abc-version 2.0\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[I:abc-version 2.0]def"
@@ -809,7 +823,8 @@ describe "I:abc-include instruction" do
     p.composer.should == 'Bach'
   end
   it "can't appear in the tune body" do
-    fail_to_parse_fragment "abc\nI:abc-include #{@filename}\ndef"
+    p = parse_fragment "abc\nI:abc-include #{@filename}\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
   end
   it "can't appear as an inline field" do
     fail_to_parse_fragment "abc[I:abc-include #{@filename}]def"

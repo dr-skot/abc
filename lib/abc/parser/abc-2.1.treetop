@@ -71,24 +71,19 @@ grammar ABC do
   end
 
   rule tune_header do
-    valid_tune_header / invalid_tune_header
-  end
-
-  rule valid_tune_header do
-    refnum_field_line title_field_line tune_header_line* key_field_line <HeaderNode>
-  end
-
-  rule invalid_tune_header do
-    field_line+ <HeaderNode> {
+    ((!'K' tune_header_line)+ key_field_line? / key_field_line) '' <HeaderNode> {
       def error
-        if value.fields[0].type != :refnum
+        # NB use #local_fields, not #fields which includes file header fields
+        if value.local_fields[0].type != :refnum
+          # puts "not refnum: #{value.local_fields[0].inspect}"
           t('abc.errors.first_not_refnum')
-        elsif !value.fields[1] || value.fields[1].type != :title
+        elsif !value.local_fields[1] || value.local_fields[1].type != :title
+          # puts "not title: #{value.local_fields[1].inspect}"
           t('abc.errors.second_not_title')
-        elsif value.fields.select { |f| f.type == :refnum }.count > 1
+        elsif value.local_fields.select { |f| f.type == :refnum }.count > 1
           t('abc.errors.duplicate_refnum')
-        else
-          "invalid tune header"
+        elsif value.local_fields[-1].type != :key
+          t('abc.errors.no_key_field')
         end
       end
     }
@@ -111,6 +106,7 @@ grammar ABC do
       def christen
         super
         parser.globals[:file_header] = self.value
+        # puts "valid file header"
       end
     }
   end
@@ -288,7 +284,15 @@ grammar ABC do
   end
 
   rule partial_tune_header do
-    '' (refnum_field_line? (tune_header_line* key_field_line / tune_header_line+) / refnum_field_line) <HeaderNode>
+    tune_header {
+      # same parsing as tune header, but more forgiving on the errors
+      def error
+        # NB use #local_fields, not #fields which includes file header fields
+        if value.local_fields.select { |f| f.type == :refnum }.count > 1
+          t('abc.errors.duplicate_refnum')
+        end
+      end
+    }
   end
 
 
@@ -313,6 +317,72 @@ grammar ABC do
   # Other instruction-type information fields in the tune header also override the previous occurrence of that field.
   # Within the tune body each line of code is processed in sequence. Therefore, with the exception of s:(symbol line), w:(words) and W:(words) which have their own syntax, the same information field may occur a number of times, for example to change key, meter, tempo or voice, and each occurrence has the effect of overriding the previous one, either for the remainder of the tune, or until the next occurrence. See use of fields within the tune body for more details.
 
+  rule field_id do
+    [A-Za-z]
+  end
+
+  rule special_field_id do
+    [IKLMmPQrsUwX]
+  end
+
+  rule string_field_id do
+    [ABCDFGHNORSTWZ]
+  end
+
+  rule unrecognized_field_id do
+    !(special_field_id / string_field_id)
+  end
+
+  rule generic_field do
+    field_id ':' space* content:generic_field_content <FieldNode>
+  end
+
+  rule generic_field_content do
+    # TODO possible stylesheet directives after line_ender
+    start:(!line_ender .)* extra:(line_ender '+:' content:generic_field_content)? {
+      def value
+        TextString.new(start.text_value + (extra.empty? ? '' : ' ' + extra.content.value))
+      end
+    }
+  end
+
+  rule special_field do
+    remarks_field / instruction_field / key_field / unit_note_length_field / meter_field / 
+      macro_field / tempo_field / symbol_line / user_defined_field / lyrics_line / refnum_field
+  end
+
+  rule string_field2 do
+    &string_field_id generic_field
+  end
+
+  rule unrecognized_field do
+    &unrecognized_field_id generic_field {
+      def warning
+        t("abc.warnings.unrecognized_field")
+      end
+    }
+  end
+
+  rule valid_field do
+    special_field / string_field2 / unrecognized_field
+  end
+
+  rule disallowed_field do
+    generic_field {
+      def error
+        t('abc.errors.field_not_allowed')
+      end
+    }
+  end
+
+  rule invalid_field do
+    generic_field {
+      def error
+        t("abc.errors.invalid_field", :id => text_value[0])
+      end
+    }
+  end
+
   rule any_field do
     typeset_text / special_field / string_field
   end
@@ -321,12 +391,8 @@ grammar ABC do
     any_field line_ender
   end
 
-  rule special_field do
-    remarks_field / instruction_field / key_field / unit_note_length_field / meter_field / macro_field / tempo_field / symbol_line / user_defined_field / lyrics_line / refnum_field
-  end
-
   rule string_field do
-    !special_field_identifier [A-Za-z] ':' field_space* content:string_field_content <FieldNode>
+    !special_field_id [A-Za-z] ':' field_space* content:string_field_content <FieldNode>
   end
 
   rule string_field_content do
@@ -337,16 +403,12 @@ grammar ABC do
     }
   end
 
-  rule special_field_identifier do
-    [IKLMmPQrsUwX]
-  end
-
   rule file_header_field_excludes do
     [KPQsTVWwX]
   end
 
-  rule tune_header_field_excludes do
-    [swXK] / tune_header_instruction_field_excludes
+  rule tune_header_excludes do
+    [sw] / tune_header_instruction_field_excludes
   end
 
   rule tune_body_field_excludes do
@@ -357,16 +419,28 @@ grammar ABC do
     !file_header_field_excludes any_field
   end
   
-  rule tune_header_field do
-    parts_header_field / voice_header_field / !tune_header_field_excludes any_field
+  rule tune_header_special_field do
+    parts_header_field / voice_header_field
   end
 
-  rule tune_header_line do
-    tune_header_field line_ender
+  rule tune_header_field do
+    &tune_header_excludes disallowed_field / tune_header_special_field / valid_field
   end
   
+  rule tune_header_line do
+    tune_header_field line_ender / invalid_field line_ender
+  end
+
+  rule tune_body_disallowed_field do
+    &tune_body_field_excludes disallowed_field
+  end
+  
+  rule tune_body_special_field do
+    parts_body_field / voice_body_field / special_field
+  end
+
   rule tune_body_field do
-    parts_body_field / voice_body_field / !tune_body_field_excludes any_field
+    tune_body_disallowed_field / tune_body_special_field / string_field2 / unrecognized_field
   end
 
   rule tune_body_field_line do
@@ -388,7 +462,7 @@ grammar ABC do
   end
 
   rule inline_string_field do
-    !special_field_identifier [A-Za-z] ':' content:inline_string_field_content <FieldNode>
+    !special_field_id [A-Za-z] ':' content:inline_string_field_content <FieldNode>
   end
 
   rule inline_string_field_content do
@@ -411,16 +485,7 @@ grammar ABC do
   # Recommendation for developers: Software which writes abc files is recommended to offer users the possibility to manage X: field numbering automatically. GUI applications may even hide the X: field from users although they should always allow the user access to the raw abc file.
 
   rule refnum_field do
-    'X:' content:(posint / invalid_refnum)? <FieldNode> {
-    }
-  end
-
-  rule invalid_refnum do
-    string_field_content {
-      def error
-        "refnum (X:) field must be a positive integer"
-      end
-    }
+    'X:' content:posint? <FieldNode>
   end
 
   rule refnum_field_line do
@@ -434,13 +499,8 @@ grammar ABC do
   # The T: field can also be used within a tune to name parts of a tune - in this case it should come before any key or meter changes.
   # See typesetting information fields for details of how the title and alternatives are included in the printed score.
 
-  rule title_field do
-    'T:' content:string_field_content <FieldNode>
-  end
+  # ^^ all covered under string_field; after X: requirement covered by tune_header
 
-  rule title_field_line do
-    title_field line_ender
-  end
 
   # 3.1.3 C: - composer
   # The C: field is used to indicate the composer(s).
@@ -708,16 +768,23 @@ grammar ABC do
   # By default, the abc tune will be typeset with a treble clef. You can add special clef specifiers to the K: field, with or without a key signature, to change the clef and various other staff properties, such as transposition. K: clef=bass, for example, would indicate the bass clef. See clefs and transposition for full details.
   # Note that the first occurrence of the K: field, which must appear in every tune, finishes the tune header. All following lines are considered to be part of the tune body.
 
-rule key_field do
+  rule key_field do
     'K:' content:(key/"none") <FieldNode> {
       def content_value
         content.text_value == "none" ? Key::NONE : content.value
+      end
+      def christen
+        # puts "key field"
       end
     }
   end
 
   rule key_field_line do
-    key_field line_ender
+    key_field line_ender {
+      def christen
+        # puts "key field line"
+      end
+    }
   end
 
 

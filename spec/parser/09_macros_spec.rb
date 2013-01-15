@@ -3,28 +3,29 @@ $LOAD_PATH.unshift File.expand_path('.')
 require 'spec/parser/spec_helper'
 
 
-  # 9. Macros
-  # This standard defines an optional system of macros which is principally used to define the way in which ornament symbols such as the tilde ~ are played (although it could be used for many other purposes).
-  # Software implementing these macros, should first expand the macros defined in this section, and only afterwards apply any relevant U: replacement (see Redefinable symbols).
-  # When these macros are stored in an abc header file (see include field), they may form a powerful library.
-  # There are two kinds of macro, called Static and Transposing.
+# 9. Macros
+# This standard defines an optional system of macros which is principally used to define the way in which ornament symbols such as the tilde ~ are played (although it could be used for many other purposes).
+# Software implementing these macros, should first expand the macros defined in this section, and only afterwards apply any relevant U: replacement (see Redefinable symbols).
+# When these macros are stored in an abc header file (see include field), they may form a powerful library.
+# There are two kinds of macro, called Static and Transposing.
 
-  describe "m: (macro) field" do
-    it "can appear in the tune header" do
-      p = parse_value_fragment "m:~a3=a{d}a{e}a"
-      p.macros['~a3'] = 'a{d}a{e}a'
-    end
-    it "can appear in the file header" do
-      p = parse_value "m:~a3=a{d}a{e}a\n\nX:1\nT:\nK:C"
-      p.macros['~a3'] = 'a{d}a{e}a'
-    end
-    it "can't appear in the tune body" do
-      fail_to_parse_fragment "abc\nm:~a3=a{d}a{e}a\ndef"
-    end
-    it "can't appear as an inline field" do
-      fail_to_parse_fragment "abc[m:~a3=a{d}a{e}a]def"
-    end
+describe "m: (macro) field" do
+  it "can appear in the tune header" do
+    p = parse_value_fragment "m:~a3=a{d}a{e}a"
+    p.macros['~a3'] = 'a{d}a{e}a'
   end
+  it "can appear in the file header" do
+    p = parse_value "m:~a3=a{d}a{e}a\n\nX:1\nT:\nK:C"
+    p.macros['~a3'] = 'a{d}a{e}a'
+  end
+  it "can't appear in the tune body" do
+    p = parse_fragment "abc\nm:~a3=a{d}a{e}a\ndef"
+    p.errors[0].message.should == t('abc.errors.field_not_allowed')
+  end
+  it "can't appear as an inline field" do
+    fail_to_parse_fragment "abc[m:~a3=a{d}a{e}a]def"
+  end
+end
 
 
   # 9.1 Static macros

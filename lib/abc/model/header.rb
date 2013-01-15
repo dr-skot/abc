@@ -82,9 +82,9 @@ module ABC
       if (fh = parser.globals[:file_header]) && fh != self
         self.master_header = fh
       end
-      field = fields(:instruction).select { |f| f.name == "linebreak" }.last
+      field = fields.select { |f| f.is_a?(InstructionField, :name => "linebreak") }.last
       field.adjust_parser(parser) if field
-      field = fields(:instruction).select { |f| f.name == "decoration" }.last
+      field = fields.select { |f| f.is_a?(InstructionField, :name => "decoration") }.last
       field.adjust_parser(parser) if field
     end
 

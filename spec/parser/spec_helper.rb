@@ -22,7 +22,9 @@ def parse(input)
 end
 
 def parse_value(input)
-  parse(input).value
+  p = parse(input)
+  p.errors.should == []
+  p.value
 end
 
 def fail_to_parse(input)
@@ -39,7 +41,9 @@ def parse_fragment(input)
 end
 
 def parse_value_fragment(input)
-  parse_fragment(input).value
+  p = parse_fragment(input)
+  p.errors.should == []
+  p.value
 end
 
 def fail_to_parse_fragment(input)
