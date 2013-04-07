@@ -7,10 +7,10 @@ module ABC
     attr_reader :text
     def initialize(attr, text)
       @attr = attr
-      @text = text
+      @text = TextString.new(text)
     end
     def alignment
-      # TODO refined this
+      # TODO refine this
       attr == 'center' ? :center : :left
     end
   end
@@ -20,6 +20,9 @@ module ABC
     def initialize(lines)
       super('%', lines, :typeset_text)
       @lines = lines
+    end
+    def text
+      TextString.new @lines.map { |line| line.text }.join("\n");
     end
   end
 
