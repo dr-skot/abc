@@ -76,7 +76,6 @@ require 'spec/parser/spec_helper'
       p.notes[0].pitch.octave.should == -2
       p.notes[1].pitch.octave.should == 2
     end
-    # TODO make this work when we get to clef
     it "can be octave-shifted by the K: field" do
        p = parse_value_fragment "[K:treble-8]C"
        p.notes[0].pitch.octave.should == -1
