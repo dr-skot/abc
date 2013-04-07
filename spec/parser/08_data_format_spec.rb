@@ -156,11 +156,14 @@ require 'spec/parser/spec_helper'
       p = parse_value "free text\n\nX:1\nT:T\nK:C"
       p.sections[0].text.is_a?(ABC::TextString).should == true
     end
-    # TODO uh oh typeset text isn't working
-    # it "is what typeset text is" do
-    #   p = parse_value '%%text typeset text\n\nX:1\nT:T\nK:C'
-    #   p.sections[0].text.is_a?(ABC::TextString).should == true
-    # end
+    it "is what typeset text is" do
+       p = parse_value "%%text typeset text\n\nX:1\nT:T\nK:C"
+       p.sections[0].text.is_a?(ABC::TextString).should == true
+    end
+    it "is what each line of typeset text is" do
+       p = parse_value "%%text typeset text\n%%text more\n\nX:1\nT:T\nK:C"
+       p.sections[0].lines[1].text.is_a?(ABC::TextString).should == true
+    end
     it "interprets mnemonics" do
       TextString.new("\\`e").should == "è"
     end
