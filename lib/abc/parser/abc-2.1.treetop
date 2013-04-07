@@ -31,7 +31,7 @@ grammar ABC do
   end
 
   rule file_header_section do
-    !(typeset_text_section) file_header end_of_section
+    file_header end_of_section
   end
 
   rule tune_or_text_section do
