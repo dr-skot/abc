@@ -252,7 +252,9 @@ module ABC
         if it.is_a?(Field, :type => :user_defined)
           symbols[it.value.shortcut] = it.value
         else
-          it.apply_redefinable_symbols(symbols)
+          it.embellishments.map! do |em|
+            em.shortcut && symbols[em.shortcut] ? symbols[em.shortcut] : em
+          end
         end
       end
     end
