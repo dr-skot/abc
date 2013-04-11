@@ -2,7 +2,7 @@ require 'abc/model/music_element'
 
 module ABC
 
-  class MusicUnit < MusicElement
+  class MusicUnit < EmbellishedElement
     attr_accessor :unit_note_length
     attr_accessor :broken_rhythm
     attr_accessor :broken_rhythm_marker

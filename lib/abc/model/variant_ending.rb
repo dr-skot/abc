@@ -1,5 +1,5 @@
 module ABC
-  class VariantEnding < MusicElement
+  class VariantEnding < MusicItem
 
     attr_reader :range_list
 

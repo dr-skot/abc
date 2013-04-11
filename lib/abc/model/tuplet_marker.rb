@@ -1,5 +1,5 @@
 module ABC
-  class TupletMarker < MusicElement
+  class TupletMarker < MusicItem
 
     attr_accessor :compound_meter
     alias_method :compound_meter?, :compound_meter

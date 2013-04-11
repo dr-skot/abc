@@ -1,5 +1,5 @@
 module ABC
-  class Spacer < MusicElement
+  class Spacer < EmbellishedElement
     def initialize(embellishments=nil)
       super(embellishments, :spacer)
     end

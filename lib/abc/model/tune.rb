@@ -62,7 +62,7 @@ module ABC
     end
     
     def all_items
-      @all_items ||= children(MusicElement)
+      @all_items ||= children(MusicItem)
     end
     
     def all_notes
@@ -176,16 +176,16 @@ module ABC
           item.tied_left = tied_left
           last_note = item
           tied_left, start_slur, start_dotted_slur = false, 0, 0
-        elsif item.is_a?(ABCElement, :type => :start_slur)
+        elsif item.type == :start_slur
           start_slur += 1
-        elsif item.is_a?(ABCElement, :type => :start_dotted_slur)
+        elsif item.type == :start_dotted_slur
           start_dotted_slur += 1
-        elsif item.is_a?(ABCElement, :type => :end_slur)
+        elsif item.type == :end_slur
           last_note.end_slur += 1
-        elsif item.is_a?(ABCElement, :type => :tie)
+        elsif item.type == :tie
           last_note.tied_right = true
           tied_left = true
-        elsif item.is_a?(ABCElement, :type => :dotted_tie)
+        elsif item.type == :dotted_tie
           last_note.tied_right_dotted = true
           tied_left = true
         end
@@ -251,7 +251,7 @@ module ABC
       all_items.each do |it|
         if it.is_a?(Field, :type => :user_defined)
           symbols[it.value.shortcut] = it.value
-        else
+        elsif it.is_a?(EmbellishedElement)
           it.embellishments.map! do |em|
             em.shortcut && symbols[em.shortcut] ? symbols[em.shortcut] : em
           end

@@ -10,7 +10,7 @@ module ABC
     end
 
     def items
-      @items ||= elements.select { |element| element.is_a?(MusicElement) }
+      @items ||= elements.select { |element| element.is_a?(MusicItem) }
     end
 
     def notes

@@ -65,7 +65,7 @@ module ABC
             containers.shift
             waiting_for_content = true
           end
-        elsif waiting_for_content && !element.is_a?(MusicElement)
+        elsif waiting_for_content && !element.is_a?(MusicItem)
           blank_elements << element
         else
           waiting_for_content = false

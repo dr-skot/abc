@@ -1774,7 +1774,7 @@ module ABC
 
   module CodeLinebreak1
     def value
-      ABCElement::CODE_LINEBREAK
+      MusicElement::CODE_LINEBREAK
     end
   end
 
@@ -7795,7 +7795,7 @@ module ABC
 
   module MusicSpace0
     def value
-      @value ||= ABCElement.new(:beam_break)
+      @value ||= MusicElement.new(:beam_break)
     end
   end
 
@@ -8413,7 +8413,7 @@ module ABC
 
   module Tie1
     def value
-      @value ||= ABCElement.new(text_value[0] == '.' ? :dotted_tie : :tie)
+      @value ||= MusicElement.new(text_value[0] == '.' ? :dotted_tie : :tie)
     end
   end
 
@@ -8471,7 +8471,7 @@ module ABC
 
   module Slur1
     def value
-      @value ||= ABCElement.new(text_value == '.(' ? :start_dotted_slur : 
+      @value ||= MusicElement.new(text_value == '.(' ? :start_dotted_slur : 
                                 text_value == '(' ? :start_slur : :end_slur)
     end
   end
@@ -10997,7 +10997,7 @@ module ABC
 
   module ScoreLinebreakDollar0
     def value
-      ABCElement::SCORE_LINEBREAK
+      MusicElement::SCORE_LINEBREAK
     end
   end
 
@@ -11028,7 +11028,7 @@ module ABC
 
   module ScoreLinebreakBang0
     def value
-      ABCElement::SCORE_LINEBREAK
+      MusicElement::SCORE_LINEBREAK
     end
   end
 

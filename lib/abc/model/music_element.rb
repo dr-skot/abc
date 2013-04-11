@@ -1,41 +1,45 @@
 module ABC
-  
-  # Base class for musical elements in an ABC tune.
-  #
-  # Subclasses are Field, MusicUnit, BarLine, Spacer, TupletMarker, and VariantEnding.
-  # 
-  # Some elements can have annotations, decorations, and/or chord symbols attached to them. 
-  # Collectively these are called _embellishments_.
-  class MusicElement < ABCElement
 
-    # <em>array of SymbolUnit</em> 
-    # Any annotations, decorations, or chord symbols attached to this element.
-    attr_reader :embellishments
+  # Base class for any element in an abc tune.
+  class MusicElement
+    
+    # _symbol_ What type of element is this?
+    # Possible values are those for MusicElement and Field, plus
+    # +:beam_break+::        whitespace between notes in the original abc code; 
+    #                        notes with this element between them should not be beamed together
+    # +:tie+::               "-" between notes in the original code, meaning the notes are tied
+    # +:dotted_tie+::        ".-" in the original code, meaning tie the notes with a dotted tie  
+    # +:start_slur+::        "(" in the original code, meaning start a new slur at the next note
+    # +:start_dotted_slur+:: ".(" in the original, meaning start a dotted slur at the next note
+    # +:end_slur+::          ")" in the original, meaning the most recently started slur 
+    #                        (dotted or otherwise) ends at the preceding note
+    # +:code_linebreak+::    marks where a linebreak occured in the original abc code
+    # +:score_linebreak+::   an explicit linebreak in the score, indicated by "$" in the code 
+    #                        (or "!" in some dialects)
+    # Elements indicating slurs, ties, and beam breaks can be ignored in most applications
+    # because this information is more conveniently available as attributes of the notes 
+    # involved. See NoteOrChord.
+    attr_reader :type
 
-    # Creates a new music element with optional embellishments.
-    def initialize(embellishments=nil, type=nil)
-      super(type)
-      @embellishments = embellishments || []
+    # _string_ In which part of a multipart tune does this element appear?
+    attr_accessor :part
+
+    # _string_ In which voice of a multivoice tune does this element occur?
+    attr_accessor :voice
+
+    # Creates a new element of type <code>type</code>.
+    def initialize(type=nil)
+      @type = type
     end
 
-    # <em>array of Decoration</em> 
-    # Returns all the embellishements that are Decoration objects.
-    def decorations
-      embellishments.select { |e| e.is_a?(Decoration) }
-    end
+    # A MusicElement with type <code>:code_linebreak</code>, 
+    # corresponding to a linebreak in the original abc code.
+    CODE_LINEBREAK = MusicElement.new(:code_linebreak)
 
-    # <em>array of Annotation</em> 
-    # Returns all the embellishments that are Annotation objects.
-    def annotations
-      embellishments.select { |e| e.is_a?(Annotation) }
-    end
-
-    # _ChordSymbol_ Returns the embellishment that is a ChordSymbol, if any.
-    # There should not be more than one chord symbol, but if there is
-    # this method will only return the last one.
-    def chord_symbol
-      @chord_symbol ||= embellishments.select { |e| e.is_a?(ChordSymbol) }[-1]
-    end
+    # An MusicElement with type <code>:score_linebreak</code>,
+    # representing an explicit linebreak specified by the linebreak symbol <code>$</code> 
+    # (or <code>!</code> in some dialects).
+    SCORE_LINEBREAK = MusicElement.new(:score_linebreak)
 
   end
 end

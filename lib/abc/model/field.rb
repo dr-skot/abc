@@ -26,7 +26,7 @@ module ABC
     'Z' => :transcription,
   }
 
-  class Field < MusicElement
+  class Field < MusicItem
 
     attr_reader :identifier
     attr_reader :value

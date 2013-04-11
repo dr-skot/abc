@@ -1,5 +1,6 @@
-require "abc/model/abc_element"
 require "abc/model/music_element"
+require "abc/model/music_item"
+require "abc/model/embellished_element"
 require "abc/model/music_unit"
 
 require "abc/model/section"

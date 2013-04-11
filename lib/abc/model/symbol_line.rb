@@ -1,5 +1,5 @@
 module ABC
-  class SymbolLine < ABCElement
+  class SymbolLine < MusicElement
 
     attr_reader :symbols
 

@@ -31,7 +31,7 @@ grammar ABC do
   end
 
   rule file_header_section do
-    file_header end_of_section
+    !typeset_text_section file_header end_of_section
   end
 
   rule tune_or_text_section do
@@ -249,7 +249,7 @@ grammar ABC do
   rule code_linebreak do
     '' line_ender <ValueNode> {
       def value
-        ABCElement::CODE_LINEBREAK
+        MusicElement::CODE_LINEBREAK
       end
     }
   end
@@ -1257,7 +1257,7 @@ grammar ABC do
   rule music_space do
     space+ <ValueNode> {
       def value
-        @value ||= ABCElement.new(:beam_break)
+        @value ||= MusicElement.new(:beam_break)
       end
     }
   end
@@ -1402,7 +1402,7 @@ grammar ABC do
   rule tie do
     '.'? '-' <ValueNode> {
       def value
-        @value ||= ABCElement.new(text_value[0] == '.' ? :dotted_tie : :tie)
+        @value ||= MusicElement.new(text_value[0] == '.' ? :dotted_tie : :tie)
       end
     }
   end
@@ -1410,7 +1410,7 @@ grammar ABC do
   rule slur do
     ('.(' / '(' / ')') '' <ValueNode> {
       def value
-        @value ||= ABCElement.new(text_value == '.(' ? :start_dotted_slur : 
+        @value ||= MusicElement.new(text_value == '.(' ? :start_dotted_slur : 
                                   text_value == '(' ? :start_slur : :end_slur)
       end
     }
@@ -2006,7 +2006,7 @@ grammar ABC do
   rule score_linebreak_dollar do
     '$' <ValueNode> {
       def value
-        ABCElement::SCORE_LINEBREAK
+        MusicElement::SCORE_LINEBREAK
       end
     }
   end
@@ -2014,7 +2014,7 @@ grammar ABC do
   rule score_linebreak_bang do
     '!' <ValueNode> {
       def value
-        ABCElement::SCORE_LINEBREAK
+        MusicElement::SCORE_LINEBREAK
       end
     }
   end

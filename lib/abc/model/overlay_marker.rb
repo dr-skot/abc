@@ -1,5 +1,5 @@
 module ABC
-  class OverlayMarker < ABCElement
+  class OverlayMarker < MusicElement
     
     attr_reader :num_measures
 

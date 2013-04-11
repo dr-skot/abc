@@ -142,27 +142,27 @@ require 'spec/parser/spec_helper'
   describe "a text string" do
     it "is what the value of a string field is" do
       p = parse_value_fragment "T:Title"
-      p.title.is_a?(ABC::TextString).should == true
+      p.title.is_a?(TextString).should == true
     end
     it "is what the value of an inline string field is" do
       p = parse_value_fragment "[N:notation]abc"
-      p.items[0].value.is_a?(ABC::TextString).should == true
+      p.items[0].value.is_a?(TextString).should == true
     end
     it "is what an annotation is" do
       p = parse_value_fragment '"^an annotation"C'
-      p.notes[0].annotations[0].text.is_a?(ABC::TextString).should == true
+      p.notes[0].annotations[0].text.is_a?(TextString).should == true
     end
     it "is what free text is" do
       p = parse_value "free text\n\nX:1\nT:T\nK:C"
-      p.sections[0].text.is_a?(ABC::TextString).should == true
+      p.sections[0].text.is_a?(TextString).should == true
     end
     it "is what typeset text is" do
        p = parse_value "%%text typeset text\n\nX:1\nT:T\nK:C"
-       p.sections[0].text.is_a?(ABC::TextString).should == true
+       p.sections[0].text.is_a?(TextString).should == true
     end
     it "is what each line of typeset text is" do
        p = parse_value "%%text typeset text\n%%text more\n\nX:1\nT:T\nK:C"
-       p.sections[0].lines[1].text.is_a?(ABC::TextString).should == true
+       p.sections[0].lines[1].text.is_a?(TextString).should == true
     end
     it "interprets mnemonics" do
       TextString.new("\\`e").should == "è"

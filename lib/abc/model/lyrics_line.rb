@@ -1,5 +1,5 @@
 module ABC
-  class LyricsLine < ABCElement
+  class LyricsLine < MusicElement
 
     attr_reader :units
 

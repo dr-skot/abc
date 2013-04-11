@@ -67,7 +67,7 @@ describe "tune" do
   it "can contain comment lines in the tune" do
     p = parse_value "X:1\nT:T\nK:D\nabc\n% more comments\ndef"
     p.tunes.count.should == 1
-    p.tunes[0].items[3].pitch.note.should == "D"
+    p.tunes[0].notes[3].pitch.letter.should == "D"
   end
   it "can start with comment lines" do
     p = parse_value "%comment\n%comment\nX:1\nT:T\nK:D\nabc\ndef"
@@ -194,12 +194,12 @@ describe "a comment" do
   it "can appear at the end of an abc line" do
     p = parse_value_fragment "abc % comment\ndef"
     p.lines.count.should == 2
-    p.items[3].pitch.note.should == "D"
+    p.notes[3].pitch.letter.should == "D"
   end
   it "can appear as a line in its own right" do
     p = parse_value_fragment "abc\n   % comment\ndef"
     p.lines.count.should == 2
-    p.items[3].pitch.note.should == "D"
+    p.notes[3].pitch.note.should == "D"
   end
   it "does not introduce an empty line" do
     p = parse "X:1\nT:T\nK:C\n  %comment\nX:2\nT:T2\nK:D"
@@ -250,10 +250,10 @@ describe "music line continuation" do
   it "combines two lines with a backslash" do
     p = parse_value_fragment "abc\ndef"
     p.lines.count.should == 2
-    p.lines[0].items.count.should == 3
+    p.lines[0].notes.count.should == 3
     p = parse_value_fragment "abc\\\ndef"
     p.lines.count.should == 1
-    p.lines[0].items.count.should == 6
+    p.lines[0].notes.count.should == 6
   end
   it "can combine more than two lines" do
     p = parse_value_fragment "abc\\\ndef\\\nabc\\\ndef"
