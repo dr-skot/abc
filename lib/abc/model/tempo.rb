@@ -1,41 +1,5 @@
 module ABC
 
-  class Fraction
-    attr_accessor :numerator, :denominator
-    def initialize(num=1, den=1)
-      @numerator = num
-      @denominator = den
-    end
-    def to_f
-      1.0 * numerator / denominator
-    end
-    def to_s
-      "#{numerator}/#{denominator}"
-    end
-    def to_rational
-      Rational @numerator, @denominator
-    end
-
-    # returns whether this fraction represents a dotted note
-    def dotted?
-    end
-  end
-
-  class NoteType
-    attr_reader :type, :dotted
-    def initialize(numerator, denominator)
-      if denominator & (denominator-1) == 0 # is denominator a power of 2?
-        if numerator == 1 && denominator >= 1 && denominator <= 64
-          @type = denominator
-          @dotted = false
-        elsif numerator == 3 && denominator >= 2 && denominator <= 128
-          @type = denominator/2
-          @dotted = true
-        end
-      end
-    end
-  end
-
   class Tempo
     attr_accessor :unit_length
     attr_accessor :beat_parts

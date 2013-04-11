@@ -5,7 +5,7 @@ module ABC
   # See #type.
   class ABCElement
     
-    # what type of element is this?
+    # _symbol_ What type of element is this?
     # Possible values are those for MusicElement and Field, plus
     # +:beam_break+::        whitespace between notes in the original abc code; 
     #                        notes with this element between them should not be beamed together
@@ -23,10 +23,10 @@ module ABC
     # involved. See NoteOrChord.
     attr_reader :type
 
-    # in which part of a multipart tune does this element appear?
+    # _string_ In which part of a multipart tune does this element appear?
     attr_accessor :part
 
-    # in which voice of a multivoice tune does this element occur?
+    # _string_ In which voice of a multivoice tune does this element occur?
     attr_accessor :voice
 
     # Creates a new element of type <code>type</code>.
@@ -34,11 +34,11 @@ module ABC
       @type = type
     end
 
-    # An instance of ABCElement with type <code>:code_linebreak</code>, 
-    # representing a linebreak in the original abc code.
+    # An ABCElement with type <code>:code_linebreak</code>, 
+    # corresponding to a linebreak in the original abc code.
     CODE_LINEBREAK = ABCElement.new(:code_linebreak)
 
-    # An instance of ABCElement with type <code>:score_linebreak</code>,
+    # An ABCElement with type <code>:score_linebreak</code>,
     # representing an explicit linebreak specified by the linebreak symbol <code>$</code> 
     # (or <code>!</code> in some dialects).
     SCORE_LINEBREAK = ABCElement.new(:score_linebreak)

@@ -43,7 +43,6 @@ require "abc/model/meter"
 require "abc/model/part_sequence"
 require "abc/model/staff"
 
-require "abc/model/music_line_break"
 require "abc/model/spacer"
 require "abc/model/overlay_marker"
 

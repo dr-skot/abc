@@ -78,29 +78,29 @@ require 'spec/parser/spec_helper'
     end
     it "can be octave-shifted by the K: field" do
        p = parse_value_fragment "[K:treble-8]C"
-       p.notes[0].pitch.octave.should == -1
+       p.notes[0].pitch.effective_octave.should == -1
     end
     it "can be octave-shifted by the K: field in the header" do
        p = parse_value_fragment "K:treble-8\nC"
-       p.notes[0].pitch.octave.should == -1
+       p.notes[0].pitch.effective_octave.should == -1
     end
     it "can be octave-shifted by the K: field inline" do
        p = parse_value_fragment "[K:treble-8]C"
-       p.notes[0].pitch.octave.should == -1
+       p.notes[0].pitch.effective_octave.should == -1
     end
     it "can be octave-shifted by the V: field" do
        p = parse_value_fragment "V:1 treble+8\nK:C\n[V:1]C"
-       p.voices['1'].notes[0].pitch.octave.should == 1
+       p.voices['1'].notes[0].pitch.effective_octave.should == 1
     end
     it "will not have its octave-shift canceled by a K: field with no clef" do
        p = parse_value_fragment "V:1 treble+8\nK:C\n[V:1][K:D]C"
        p.voices['1'].notes[0].pitch.clef.should == p.voices['1'].clef
-       p.voices['1'].notes[0].pitch.octave.should == 1
+       p.voices['1'].notes[0].pitch.effective_octave.should == 1
     end
     it "will use the tune's clef if the voice doesn't specify one" do
        p = parse_value_fragment "K:treble+8\n[V:1]C"
        p.voices['1'].notes[0].pitch.clef.should == p.clef
-       p.voices['1'].notes[0].pitch.octave.should == 1
+       p.voices['1'].notes[0].pitch.effective_octave.should == 1
     end
   end
   
