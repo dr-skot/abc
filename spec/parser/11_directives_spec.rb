@@ -273,6 +273,10 @@ describe "an instrumentation (%%MIDI) directive" do
     p.midi.voices['Tb'].bank.should == 1
     p.midi.voices['Tb'].mute?.should == false
   end
+  it "can specify instruments for multiple voices" do
+    tune = parse_value_fragment "%%MIDI voice V1 instrument=59\n%%MIDI voice V2 instrument=60"
+    tune.directive_values("MIDI", "voice")[1].instrument.should == 60
+  end
   it "can specify a voice instrument in the tune body" do
     p = parse_value_fragment "K:C\nV:Rueckpos\n%%MIDI voice Rueckpos instrument=53 bank=2\nA3B"
     p.items[1].is_a?(InstructionField).should == true

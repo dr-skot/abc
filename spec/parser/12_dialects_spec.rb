@@ -45,6 +45,7 @@ require 'spec/parser/spec_helper'
 describe 'the "I:decoration" instruction' do
   it 'can change the decoration delimiter to +' do
     p = parse_value_fragment "I:decoration +\n+trill+abc"
+    p.directive_values("decoration").should == ["+"]
     p.notes[0].decorations[0].symbol.should == 'trill'
   end
   it 'can change the decoration delimiter back to !' do
