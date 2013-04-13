@@ -22,18 +22,12 @@ module ABC
       @parser = ABCParser.new
       p = @parser.parse(input, options)
       if p
-        input_with_inclusions = p.text_value_with_inclusions
-        if input != input_with_inclusions
-          parse(input_with_inclusions, options)
+        if input != (incl = p.text_value_with_inclusions)
+          parse(incl, options)
+        elsif input != (macr = p.text_value_with_macros)
+          parse(macr, options)
         else
-          input_with_macros = p.text_value_with_macros
-          if input != input_with_macros
-            parse(input_with_macros, options)
-          else
-            # puts "warnings #{p.warnings}"
-            p.value.postprocess
-            p
-          end
+          p
         end
       end
     end

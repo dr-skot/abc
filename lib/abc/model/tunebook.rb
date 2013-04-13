@@ -15,13 +15,5 @@ module ABC
       tunes.select { |f| f.refnum == refnum }.last
     end
 
-    def postprocess
-      tunes.each do |tune| 
-        tune.master_node = self
-        tune.postprocess
-      end
-      self
-    end
-
   end
 end

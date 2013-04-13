@@ -9,6 +9,11 @@ module ABC
 
     attr_reader :first_voice
 
+    def initialize(children)
+      super(children)
+      postprocess
+    end
+
     def refnum
       num = header.value(:refnum) || 1
       num == "" ? nil : num
@@ -98,6 +103,64 @@ module ABC
     def midi
       @midi ||= MidiSettings.new(header.fields(:instruction).select { |f| f.directive == 'MIDI' })
     end
+
+    def propagate_accidentals
+      instructions['propagate-accidentals']
+    end
+
+    def parts
+      @parts ||= {}
+    end
+
+    def next_part
+      p = part_sequence.next_part
+      parts[p]
+    end
+
+    def lines
+      if !@lines
+        @lines = [line = TuneLine.new]
+        code_linebreaks = code_linebreaks?
+        elements.each do |it|
+          line.elements << it
+          if it.type == :score_linebreak || (code_linebreaks && it.type == :code_linebreak)
+            @lines << (line = TuneLine.new(it.type == :score_linebreak))
+          end
+        end
+        @lines.pop if @lines[-1].elements.count == 0
+      end
+      @lines
+    end
+
+    private
+    def code_linebreaks?
+      linebreak_field = header.fields(:instruction).select { |f| f.name == "linebreak" }.last
+      linebreak_field ? linebreak_field.value.include?('<EOL>') : true
+    end
+
+    public
+    def writefields(letter)
+      letter.length == 1 && writefields_chars.include?(letter)
+    end
+
+    private
+    def writefields_chars
+      # TODO refactor this magic string value
+      @writefields_chars ||= header.fields(:instruction).select do |f| 
+        f.name == 'writefields'
+      end.inject('TCOPQwW') do |chars, f|
+        chars = f.value.apply(chars)
+      end
+    end
+
+    public
+    def christen(node)
+      # these parser methods must reset after each tune is parsed
+      node.parser.alias_rule(:score_linebreak, :score_linebreak_default)
+      node.parser.alias_rule(:decoration_delimiter, :decoration_delimiter_default)
+    end
+
+    private
 
     def postprocess
       divvy_voices
@@ -238,10 +301,6 @@ module ABC
       voices.each_value { |v| v.apply_key_signatures(key, propagate_accidentals) }
     end
 
-    def propagate_accidentals
-      instructions['propagate-accidentals']
-    end
-
     def apply_clefs
       voices.each_value { |v| v.apply_clefs(clef) }
     end
@@ -259,15 +318,6 @@ module ABC
       end
     end
 
-
-    def parts
-      @parts ||= {}
-    end
-
-    def next_part
-      p = part_sequence.next_part
-      parts[p]
-    end
 
     def apply_symbol_lines
       voices.each_value { |v| v.apply_symbol_lines }
@@ -291,48 +341,6 @@ module ABC
           voice_id = item.value
         end
       end
-    end
-
-    def lines
-      if !@lines
-        @lines = [line = TuneLine.new]
-        elements.each do |it|
-          line.elements << it
-          if it.type == :score_linebreak || (it.type == :code_linebreak && code_linebreaks?)
-            @lines << (line = TuneLine.new(it.type == :score_linebreak))
-          end
-        end
-        @lines.pop if @lines[-1].elements.count == 0
-      end
-      @lines
-    end
-
-    def code_linebreaks?
-      if @code_linebreaks
-        @code_linebreaks
-      else
-        linebreak_field = header.fields(:instruction).select { |f| f.name == "linebreak" }.last
-        @code_linebreaks = linebreak_field ? linebreak_field.value.include?('<EOL>') : true
-      end
-    end
-
-    def writefields(letter)
-      letter.length == 1 && writefields_chars.include?(letter)
-    end
-
-    def writefields_chars
-      # TODO refactor this magic string value
-      @writefields_chars ||= header.fields(:instruction).select do |f| 
-        f.name == 'writefields'
-      end.inject('TCOPQwW') do |chars, f|
-        chars = f.value.apply(chars)
-      end
-    end
-
-    def christen(node)
-      # these parser methods must reset after each tune is parsed
-      node.parser.alias_rule(:score_linebreak, :score_linebreak_default)
-      node.parser.alias_rule(:decoration_delimiter, :decoration_delimiter_default)
     end
 
   end
